@@ -12,12 +12,10 @@ app.use(express.json())
 app.use(cors())
 app.use(helmet())
 
-app.get('/', async (req, res) => {
-  res.send('Billing API — see /public/forms.html for test forms');
-});
-
+//endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));
 
+//endpoint to test database
 app.get('/test-db', async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
