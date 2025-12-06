@@ -1,6 +1,6 @@
 import React from 'react'
 import Navbar from './components/Navbarr.jsx'
-import Footer from './components/footer.jsx'
+import Footer from './components/Footer.jsx'
 import InvoiceForm from './components/Invoice_form.jsx'
 
 function Invoice() {
