@@ -3,93 +3,101 @@ import { useState } from 'react'
 import Button from './Button.jsx'
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import Link from "../link.jsx"
 
 function Party_form() {
     const [party, setParty] = useState({
-        Name: "",
-        Address: '',
-        State: "",
-        PinCode: "",
-        GSTIN: "",
-        ContactPerson: "",
-        Phone: "",
-        VendorCode: "",
-        Type: "",
+        party_name: "",
+        gstin_no: '',
+        type: "",
+        billing_address: "",
+        shipping_address: "",
+        supply_state_code: "",
+        vendore_code: "",
+        pin_code: "",
+        contact_person: "",
+        mobile_no: "",
     });
-    const notify = () => toast("Party Created Successfully!");
-    const notify2 = () => toast("Error in Creating Party!");
-    const navigate = useNavigate();
+       const notify = () => toast("Party Created Successfully!");
+       const navigate = useNavigate();
 
   return (
     <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md'>
         <h1 className="text-2xl font-bold mb-6">Create Party</h1>
         <div className="grid grid-cols-3 gap-4 mb-6">
         <input
-          name="PartyName"
+          name="party_name"
           placeholder="Party Name"
           className="border p-2 rounded"
-          value={party.Name}
-          onChange={(e) => setParty({ ...party, Name: e.target.value })}
+          value={party.party_name}
+          onChange={(e) => setParty({ ...party, party_name: e.target.value })}
         />
         <input
-          name="Address"
-          placeholder="Address"
+          name="billing_address"
+          placeholder="Billing Address"
           className="border p-2 rounded"
-          value={party.Address}
-          onChange={(e) => setParty({ ...party, Address: e.target.value })}
+          value={party.billing_address}
+          onChange={(e) => setParty({ ...party, billing_address: e.target.value })}
+        />
+          <input
+          name="shipping_address"
+          placeholder="Shipping Address"
+          className="border p-2 rounded"
+          value={party.shipping_address}
+          onChange={(e) => setParty({ ...party, shipping_address: e.target.value })}
         />
         <input
-          name="State"
+          name='supply_state_code'
           placeholder="State"
           className="border p-2 rounded"
-          value={party.State}
-          onChange={(e) => setParty({ ...party, State: e.target.value })}
+          value={party.supply_state_code}
+          onChange={(e) => setParty({ ...party, supply_state_code: e.target.value })}
         />
         <input
-          name="PinCode"
+          name="pin_code"
           placeholder="Pin Code"
           className="border p-2 rounded"
-          value={party.PinCode}
-          onChange={(e) => setParty({ ...party, PinCode: e.target.value })}
+          value={party.pin_code}
+          onChange={(e) => setParty({ ...party, pin_code: e.target.value })}
         />
         <input
-          name="GSTIN"
+          name="gstin_no"
           placeholder="GSTIN Number"
           className="border p-2 rounded"
-          value={party.GSTIN}
-          onChange={(e) => setParty({ ...party, GSTIN: e.target.value })}
+          value={party.gstin_no}
+          onChange={(e) => setParty({ ...party, gstin_no: e.target.value })}
         />
         <input
-          name="ContactPerson"
+          name="contact_person"
           placeholder="Contact Person"
           className="border p-2 rounded"
-          value={party.ContactPerson}
-          onChange={(e) => setParty({ ...party, ContactPerson: e.target.value })}
+          value={party.contact_person}
+          onChange={(e) => setParty({ ...party, contact_person: e.target.value })}
         />
         <input
-          name="Phone"
+          name="mobile_no"
           placeholder="Phone Number"
           className="border p-2 rounded"
-          value={party.Phone}
-          onChange={(e) => setParty({ ...party, Phone: e.target.value })}
+          value={party.mobile_no}
+          onChange={(e) => setParty({ ...party, mobile_no: e.target.value })}
         />
         <input
-          name="VendorCode"
+          name="vendore_code"
           placeholder="Vendor Code"
           className="border p-2 rounded"
-          value={party.VendorCode}
-          onChange={(e) => setParty({ ...party, VendorCode: e.target.value })}
+          value={party.vendore_code}
+          onChange={(e) => setParty({ ...party, vendore_code: e.target.value })}
         />
         <input
-          name="Type"
+          name="type"
           placeholder="Type"
           className="border p-2 rounded shadow-md"
-          value={party.Type}
-          onChange={(e) => setParty({ ...party, Type: e.target.value })}
+          value={party.type}
+          onChange={(e) => setParty({ ...party, type: e.target.value })}
         />  
       </div>
       <div className='flex justify-end space-x-4'>
-     <Button text="Save" color="green" onClick={() => {notify();notify2();}}/>
+     <Button text="Save" color="green" onClick={() => {notify();Link}}/>
       <ToastContainer className={"font-bold"} /> 
       <Button text='Create Invoice' color='blue' onClick={()=> navigate("/Invoice")}></Button>
       </div>
