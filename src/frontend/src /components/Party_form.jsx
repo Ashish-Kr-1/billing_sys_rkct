@@ -6,25 +6,25 @@ import { useNavigate } from 'react-router-dom';
 import Link from "../link.jsx"
 
 function Party_form() {
-    const [party, setParty] = useState({
-        party_name: "",
-        gstin_no: '',
-        type: "",
-        billing_address: "",
-        shipping_address: "",
-        supply_state_code: "",
-        vendore_code: "",
-        pin_code: "",
-        contact_person: "",
-        mobile_no: "",
-    });
-       const notify = () => toast("Party Created Successfully!");
-       const navigate = useNavigate();
+  const [party, setParty] = useState({
+    party_name: "",
+    gstin_no: '',
+    type: "",
+    billing_address: "",
+    shipping_address: "",
+    supply_state_code: "",
+    vendore_code: "",
+    pin_code: "",
+    contact_person: "",
+    mobile_no: "",
+  });
+  const notify = () => toast("Party Created Successfully!");
+  const navigate = useNavigate();
 
   return (
     <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md'>
-        <h1 className="text-2xl font-bold mb-6">Create Party</h1>
-        <div className="grid grid-cols-3 gap-4 mb-6">
+      <h1 className="text-2xl font-bold mb-6">Create Party</h1>
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <input
           name="party_name"
           placeholder="Party Name"
@@ -39,7 +39,7 @@ function Party_form() {
           value={party.billing_address}
           onChange={(e) => setParty({ ...party, billing_address: e.target.value })}
         />
-          <input
+        <input
           name="shipping_address"
           placeholder="Shipping Address"
           className="border p-2 rounded"
@@ -94,12 +94,12 @@ function Party_form() {
           className="border p-2 rounded shadow-md"
           value={party.type}
           onChange={(e) => setParty({ ...party, type: e.target.value })}
-        />  
+        />
       </div>
       <div className='flex justify-end space-x-4'>
-     <Button text="Save" color="green" onClick={() => {notify();Link}}/>
-      <ToastContainer className={"font-bold"} /> 
-      <Button text='Create Invoice' color='blue' onClick={()=> navigate("/Invoice")}></Button>
+        <Button text="Save" color="green" onClick={() => { notify(); Link(party); }} />
+        <ToastContainer className={"font-bold"} />
+        <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
       </div>
     </div>
   )
