@@ -61,7 +61,7 @@ function Party_form() {
         />
         <input
           name="ContactPerson"
-          placeholder="Contact Personn"
+          placeholder="Contact Person"
           className="border p-2 rounded"
           value={party.ContactPerson}
           onChange={(e) => setParty({ ...party, ContactPerson: e.target.value })}
@@ -90,7 +90,7 @@ function Party_form() {
       </div>
       <div className='flex justify-end space-x-4'>
      <Button text="Save" color="green" onClick={() => {notify();notify2();}}/>
-      <ToastContainer /> 
+      <ToastContainer className={"font-bold"} /> 
       <Button text='Create Invoice' color='blue' onClick={()=> navigate("/Invoice")}></Button>
       </div>
     </div>
