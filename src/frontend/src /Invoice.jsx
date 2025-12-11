@@ -8,7 +8,7 @@ function Invoice() {
     <>
     <Navbar></Navbar>
     <div className='pt-40 mb-12 shadow-2xl bg-amber-50 shadow-[#004d4341] rounded-4xl p-8'></div>
-    <div className='pt-30 rounded-2xl bg-[#004f43cc] '>
+    <div className='pt-30  w-full rounded-2xl bg-[#004f43cc] '>
     <InvoiceForm></InvoiceForm>
      <Footer></Footer>  
     </div>

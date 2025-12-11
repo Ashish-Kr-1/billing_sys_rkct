@@ -1,18 +1,31 @@
 import { useState } from "react";
 import Button from './Button.jsx';
 import Invoice_header from './Invoice_header.jsx';
-import Bank from "./Bank.jsx";
-
-
+import { useNavigate } from "react-router-dom";
 
 export default function InvoiceForm() {
   const [invoice, setInvoice] = useState({
     clientName: "",
+    clientName2: "",
+    clientAddress2: "",
     clientAddress: "",
+    GSTIN2:"",
     GSTIN: "",
     InvoiceDate: "",
+    InvoiceNo: "",
+    PODate:"",
+    TrasnportBy: "",
+    PlaceofSupply : "",
+    PONo:"",
+    VehicleNo:"",
+    EwayBillNo:"",
+    VendorCode:"",
+    ChallanNo:"",
+    ChallanDate:"",
     items: [{ description: "", HSNCode: "" ,  quantity:'', price: "" }],
   });
+
+  const navigate = useNavigate();
 
   // HANDLE BASIC INPUTS
   function handleChange(e) {
@@ -58,9 +71,107 @@ export default function InvoiceForm() {
 
   return (
 
- <div className="flex justify-items-start ">
-    <div className="max-w-3xl ml-6  p-6 bg-white rounded-xl shadow-md">
+ <div className=" flex justify-center items-center">
+    <div className="max-w-6xl p-6 bg-white rounded-xl shadow-md">
       <Invoice_header></Invoice_header>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <input
+        type="text"
+          name="InvoiceNo"
+          placeholder="Invoice Number "
+          className="border p-2 rounded"
+          value={invoice.InvoiceNo}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="TrasnportBy"
+          placeholder=" Trasnport By"
+          className="border p-2 rounded"
+          value={invoice.TrasnportBy}
+          onChange={handleChange}
+        />
+        <div className="flex justify-around items-center border">
+          <h1 className="font-bold textfont-['Rubik'] rounded-md">Invoice Date </h1>
+         <input
+          type="Date"
+          name="InvoiceDate"
+          placeholder="Invoice Date"
+          className=" p-2 rounded"
+          value={invoice.InvoiceDate}
+          onChange={handleChange}
+        />
+        </div>
+        <input
+          type="text"
+          name="VehicleNo"
+          placeholder="Vehicle Number"
+          className="border p-2 rounded"
+          value={invoice.VehicleNo}
+          onChange={handleChange}
+        />
+         <input
+          type="text"
+          name="PlaceofSupply"
+          placeholder="Place of Supply"
+          className="border p-2 rounded"
+          value={invoice.PlaceofSupply}
+          onChange={handleChange}
+        />
+         <input
+          type="text"
+          name="EwayBillNo"
+          placeholder="Eway Bill Number"
+          className="border p-2 rounded"
+          value={invoice.EwayBillNo}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="PONo"
+          placeholder="PO Number"
+          className="border p-2 rounded"
+          value={invoice.PONo}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="VenderCode"
+          placeholder="Vendor Code"
+          className="border p-2 rounded"
+          value={invoice.VendorCode}
+          onChange={handleChange}
+        />
+        <div className="flex justify-around items-center border">
+          <h1 className="font-bold textfont-['Rubik'] rounded-md"> PO Date </h1>
+         <input
+          type="Date"
+          name="PODate"
+          placeholder="PO Date"
+          className="p-2 rounded"
+          value={invoice.PODate}
+          onChange={handleChange}
+        />
+        </div>
+        <div className="flex justify-around items-center border">
+          <h1 className="font-bold textfont-['Rubik'] rounded-md">Gatepass/Challan No. </h1>
+          <input
+          type="text"
+          name="ChallanNo"
+          placeholder="Challan Number"
+          className="p-2 rounded"
+          value={invoice.ChallanNo}
+          onChange={handleChange}/>
+         <input
+          type="Date"
+          name="ChallanDate"
+          placeholder="Challan Date"
+          className="p-2 rounded"
+          value={invoice.ChallanDate}
+          onChange={handleChange}
+        />
+        </div>
+      </div>
       <h1 className="text-2xl mb-3 font-bold ">Bill To Party</h1>
       {/* BASIC INFO */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -90,26 +201,27 @@ export default function InvoiceForm() {
          <h1 className="text-2xl mt-3 mb-3 font-bold ">Ship To Party</h1>
          <div className="grid grid-cols-2 gap-4 mb-6">
         <input
-          name="clientName"
+        type="text"
+          name="clientName2"
           placeholder="Client Name"
           className="border p-2 rounded"
-          value={invoice.clientName}
+          value={invoice.clientName2}
           onChange={handleChange}
         />
         <input
           type="text"
-          name="GSTIN"
+          name="GSTIN2"
           placeholder="GSTIN Number"
           className="border p-2 rounded"
-          value={invoice.GSTIN}
+          value={invoice.GSTIN2}
           onChange={handleChange}
         />
       </div>
          <input
-          name="clientAddress"
+          name="clientAddress2"
           placeholder="Client Address"
           className="border p-2 rounded w-full"
-          value={invoice.clientAddress}
+          value={invoice.clientAddress2}
           onChange={handleChange}
         />
 
@@ -121,7 +233,7 @@ export default function InvoiceForm() {
         <div key={index} className="grid grid-cols-5 gap-4 mb-3">
           <input
             placeholder="Name"
-            className="border p-2 px-3.5  rounded "
+            className="border p-2 px-3.5 rounded "
             value={item.description}
             onChange={(e) =>
               handleItemChange(index, "description", e.target.value)
@@ -152,7 +264,7 @@ export default function InvoiceForm() {
             value={item.price}
             min={0}
             onChange={(e) =>
-              handleItemChange(index, "price", Number(e.target.value))
+            handleItemChange(index, "price", Number(e.target.value))
             }
           />
           <div className="flex items-center mr-16">
@@ -190,24 +302,18 @@ export default function InvoiceForm() {
         </div>
            <div className="flex justify-end mt-6 items-center">
           <h1 className="text-xl font-bold  mr-3.5">Subtotal</h1>
-          <p className="text-xl font-bold">₹ {subtotalAmount}</p>
+          <p className="text-xl font-bold">₹ {Math.round(subtotalAmount)}</p>
           </div>
       </div>
 
       <div className=" mt-2 flex justify-end items-center">
         <h2 className="text-xl font-bold mr-3.5">Total Amount</h2>
-        <p className="text-xl font-bold">₹ {totalAmount}</p>
+        <p className="text-xl font-bold">₹ {Math.round(totalAmount)}</p>
       </div>
-      <Bank></Bank>
-    </div>
-    <div>
-      <div className=" max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
-         <h1 className=" font-bold text-sm md:text-xl lg:text-2xl mb-6">Invoice Templete </h1>
+      <div className=" max-w-3xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
+         <button className=" mx-32 md:mx-80 rounded-md font-bold cursor-progress " onClick={() => navigate("/Preview",{ state: { invoice, subtotalAmount, totalAmount, sgst, cgst } })}> Preview </button>
       </div>
-      {/* PREVIEW SECTION */}
-
-
-    </div>
+   </div>
     </div>
   );
 }
