@@ -11,6 +11,7 @@ dotenv.config()
 const app = express()
 const router = express.Router()
 const routerB = express.Router()
+const routerParty = express.Router()
 
 
 // const validators = [
@@ -30,6 +31,7 @@ app.use(helmet())
 //endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));
 
+
 //endpoint to test database
 app.get('/test-db', async (req, res) => {
   try {
@@ -42,8 +44,8 @@ app.get('/test-db', async (req, res) => {
 
 app.get('/parties', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * from parties");
-    res.json(result);
+    const result = await pool.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -53,10 +55,69 @@ app.get('/items', async (req, res) => {
   try {
     const result = await pool.query("SELECT * from items");
     res.json(result);
+    console.log(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 })
+
+async function partyList(req, res){
+  const client = await pool.connect();
+  try{
+    await client.query("BEGIN");
+    const result = await pool.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    res.json(result.rows);
+  }catch(err){
+    await client.query('ROLLBACK').catch(() => { });
+    console.log("Party list error ".err);
+    if(err.code=='23505')
+      return res.status(409).json({error: "Duplicate key"});
+    return res.status(500).json({error: "Internal server error"});
+  }finally{
+    client.release();
+  }
+}
+
+async function partyDetails(req, res){
+  const client = await pool.connect();
+  const partyId = parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(partyId)) {
+    return res.status(400).json({ error: 'Invalid party id' });
+  }
+
+  try{
+    await client.query("BEGIN");
+
+    const { rows } = await pool.query(
+      `
+      SELECT
+        party_id,
+        party_name,
+        gstin_no,
+        billing_address,
+        shipping_address
+      FROM parties
+      WHERE party_id = $1
+      `,
+      [partyId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Party not found' });
+    }
+
+    return res.json({ party: rows[0] });
+  }catch(err){
+    await client.query('ROLLBACK').catch(() => { });
+    console.log("Party list error ".err);
+    if(err.code=='23505')
+      return res.status(409).json({error: "Duplicate key"});
+    return res.status(500).json({error: "Internal server error"});
+  }finally{
+    client.release();
+  }
+}
 
 async function createItemHandler(req, res) {
   const {
@@ -121,7 +182,6 @@ async function createPartyHandler(req, res) {
 
   const client = await pool.connect();
   try {
-
     await client.query('BEGIN');
 
     // If you want to prevent duplicates by GSTIN:
@@ -175,5 +235,9 @@ routerB.post('/', createItemHandler)
 
 router.post('/', createPartyHandler);
 
+routerParty.get('/', partyList);
+routerParty.get('/:id', partyDetails);
+
+app.use('/parties',routerParty);
 app.use('/createParty', router);
 app.use('/createItem', routerB);
