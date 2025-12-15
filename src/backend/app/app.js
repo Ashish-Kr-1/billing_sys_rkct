@@ -10,6 +10,8 @@ dotenv.config()
 
 const app = express()
 const router = express.Router()
+const routerB = express.Router()
+
 
 // const validators = [
 //   body('party_name').trim().notEmpty().withMessage('party_name required').isLength({ max: 200 }),
@@ -47,6 +49,58 @@ app.get('/parties', async (req, res) => {
   }
 })
 
+app.get('/items', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * from items");
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+})
+
+async function createItemHandler(req, res) {
+  const {
+    item_name, hsn_code, unit, rate
+  } = req.body;
+  console.log(req.body)
+
+  //if (!hsn_code) return res.status(400).json({ error: 'All fields are required' })
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const dup = await client.query("SELECT item_id from items WHERE hsn_code = $1", [hsn_code]);
+    if (dup.rowCount > 0) {
+      await client.query("ROLLBACK")
+      return res.status(409).json({ error: 'Item with this hsn code already exists', item_id: dup.rows[0].item_id });
+    }
+
+    const INSERT_SQL = `INSERT INTO items
+      (item_name, hsn_code, unit, rate)
+      VALUES ($1,$2,$3,$4)
+      RETURNING item_name, hsn_code, unit, rate`;
+
+    const vals = [item_name, hsn_code, unit, rate]
+    const { rows } = await client.query(INSERT_SQL, vals);
+
+    const result = { party: rows[0] };
+
+    await client.query('COMMIT');
+
+    const status = res.status(201).json(result);
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => { });
+    console.error('create item error', err);
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Duplicate key' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+}
 
 async function createPartyHandler(req, res) {
   const {
@@ -117,8 +171,9 @@ app.listen(5000, () => {
   console.log("App has started on 5000");
 });
 
-
+routerB.post('/', createItemHandler)
 
 router.post('/', createPartyHandler);
 
 app.use('/createParty', router);
+app.use('/createItem', routerB);

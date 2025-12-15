@@ -9,7 +9,6 @@
   }**/
 
 export default async function createItem(data) {
-
     try {
         const res = await fetch("http://localhost:5000/createItem", {
             method: "POST",
