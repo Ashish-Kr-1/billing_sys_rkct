@@ -62,6 +62,9 @@ export default async function getPartyList(){
         const res = await fetch("http://localhost:5000/parties");
         const data = await res.json();
         console.log(data);
+        party_name = []
+        party_id = []
+        
         return data;
     }catch(err){
         console.error("Network error:", err);
