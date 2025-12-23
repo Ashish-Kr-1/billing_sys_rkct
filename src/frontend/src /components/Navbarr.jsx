@@ -1,5 +1,5 @@
 import React from 'react'
-import logo from '../assets/Logo.png'
+import logo from '../assets/logo.png'
 import { ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 

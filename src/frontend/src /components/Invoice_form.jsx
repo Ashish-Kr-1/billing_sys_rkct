@@ -240,17 +240,18 @@ const [cgst, setCgst] = useState(initialData?.cgst || 0);
       {/* BASIC INFO */}
          <div className="mb-4">
        <label className="font-bold block mb-1">Select Party</label>
-     <select
+         <select
            value={selectedPartyId}
            onChange={(e) => handlePartySelect(e.target.value)}
            className="border p-2 rounded w-full"
          >
            <option value="">-- Select Party --</option>
            {parties.map(party => (
-             <option key={party._id} value={party._id}>
-               {party.party_name}
-             </option>
-           ))}
+           <option key={party.party_id} value={party.party_id}>
+            {party.party_name}
+            </option>
+            ))}
+
          </select>
 </div>
 
