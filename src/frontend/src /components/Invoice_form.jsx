@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from './Button.jsx';
 import Invoice_header from './Invoice_header.jsx';
 import { useNavigate } from "react-router-dom";
 
-export default function InvoiceForm() {
-  const [invoice, setInvoice] = useState({
+
+export default function InvoiceForm({ initialData }) {
+  const [invoice, setInvoice] = useState(
+    initialData?.invoice ||{
     clientName: "",
     clientName2: "",
     clientAddress2: "",
@@ -22,10 +24,55 @@ export default function InvoiceForm() {
     VendorCode:"",
     ChallanNo:"",
     ChallanDate:"",
+    Terms:"",
+     AccountName: "R.K CASTING AND ENGINEERING WORKS",
+      CurrentACCno: "08710210000724",
+      IFSCcode: "UCBA0000871",
+      Branch: "Moonidih | Branch Code - 0871",
     items: [{ description: "", HSNCode: "" ,  quantity:'', price: "" }],
   });
 
   const navigate = useNavigate();
+  const [parties, setParties] = useState([]);
+  const [selectedPartyId, setSelectedPartyId] = useState("");
+
+ useEffect(() => {
+  fetch("http://localhost:5000/parties")
+    .then(res => res.json())
+    .then(data => setParties(data))
+    .catch(err => console.error(err));
+}, []);
+    
+
+
+   //HANDLE Select Party from Backend
+   function handlePartySelect(partyId) {
+  setSelectedPartyId(partyId);
+
+  const party = parties.find(p => p.party_id === Number(partyId));
+  if (!party) return;
+
+  // Fetch full details
+  fetch(`http://localhost:5000/parties/${partyId}`)
+    .then(res => res.json())
+    .then(data => {
+      const p = data.party;
+
+      setInvoice(prev => ({
+        ...prev,
+        clientName: p.party_name,
+        clientName2: p.party_name,
+        clientAddress: p.billing_address,
+        clientAddress2: p.shipping_address,
+        GSTIN: p.gstin_no,
+        GSTIN2: p.gstin_no,
+      }));
+    })
+    .catch(err => console.error(err));
+}
+
+
+
 
   // HANDLE BASIC INPUTS
   function handleChange(e) {
@@ -38,7 +85,7 @@ export default function InvoiceForm() {
   // HANDLE LINE ITEMS
   function handleItemChange(index, field, value) {
     const updatedItems = [...invoice.items];
-    updatedItems[index][field] = value;
+    updatedItems[index][field] = value;   
     setInvoice({ ...invoice, items: updatedItems });
   }
 
@@ -63,10 +110,13 @@ export default function InvoiceForm() {
   );
 
   // TOTAL CALCULATION
-  const [sgst,setSgst]= useState(0);
-  const [cgst,setCgst]= useState(0);
+ const [sgst, setSgst] = useState(initialData?.sgst || 0);
+const [cgst, setCgst] = useState(initialData?.cgst || 0);
+
   
   const totalAmount = subtotalAmount + (subtotalAmount * sgst) /100 + (subtotalAmount * cgst)/100;
+   
+
 
 
   return (
@@ -91,17 +141,21 @@ export default function InvoiceForm() {
           value={invoice.TrasnportBy}
           onChange={handleChange}
         />
-        <div className="flex justify-around items-center border">
-          <h1 className="font-bold textfont-['Rubik'] rounded-md">Invoice Date </h1>
-         <input
-          type="Date"
+        <div className="flex flex-col md:flex-row md:justify-around md:items-center border gap-2 md:gap-4">
+        <h1 className="font-bold font-['Rubik']">
+         Invoice Date
+        </h1>
+
+       <input
+          type="date"
           name="InvoiceDate"
           placeholder="Invoice Date"
-          className=" p-2 rounded"
+          className="w-full md:w-auto rounded px-2 py-1"
           value={invoice.InvoiceDate}
           onChange={handleChange}
-        />
-        </div>
+            />
+          </div>
+
         <input
           type="text"
           name="VehicleNo"
@@ -142,38 +196,64 @@ export default function InvoiceForm() {
           value={invoice.VendorCode}
           onChange={handleChange}
         />
-        <div className="flex justify-around items-center border">
-          <h1 className="font-bold textfont-['Rubik'] rounded-md"> PO Date </h1>
-         <input
-          type="Date"
-          name="PODate"
-          placeholder="PO Date"
-          className="p-2 rounded"
-          value={invoice.PODate}
-          onChange={handleChange}
-        />
-        </div>
-        <div className="flex justify-around items-center border">
-          <h1 className="font-bold textfont-['Rubik'] rounded-md">Gatepass/Challan No. </h1>
-          <input
-          type="text"
-          name="ChallanNo"
-          placeholder="Challan Number"
-          className="p-2 rounded"
-          value={invoice.ChallanNo}
-          onChange={handleChange}/>
-         <input
-          type="Date"
-          name="ChallanDate"
-          placeholder="Challan Date"
-          className="p-2 rounded"
-          value={invoice.ChallanDate}
-          onChange={handleChange}
-        />
-        </div>
+        <div className="flex flex-col md:flex-row md:justify-around md:items-center border gap-2 md:gap-4">
+  <h1 className="font-bold font-['Rubik']">
+    PO Date
+  </h1>
+
+  <input
+    type="date"
+    name="PODate"
+    placeholder="PO Date"
+    className="w-full md:w-auto p-2 rounded "
+    value={invoice.PODate}
+    onChange={handleChange}
+  />
+</div>
+
+                  <div className="flex flex-wrap md:flex-nowrap items-center border gap-2 md:gap-4">
+  <h1 className="font-bold font-['Rubik']">
+    Gatepass/Challan No.
+  </h1>
+
+  <input
+    type="text"
+    name="ChallanNo"
+    placeholder="Challan Number"
+    className="flex-1 min-w-[140px] p-2 rounded "
+    value={invoice.ChallanNo}
+    onChange={handleChange}
+  />
+
+  <input
+    type="date"
+    name="ChallanDate"
+    placeholder="Challan Date"
+    className="flex-1 min-w-[140px] p-2 rounded "
+    value={invoice.ChallanDate}
+    onChange={handleChange}
+  />
+</div>
+
       </div>
       <h1 className="text-2xl mb-3 font-bold ">Bill To Party</h1>
       {/* BASIC INFO */}
+         <div className="mb-4">
+       <label className="font-bold block mb-1">Select Party</label>
+     <select
+           value={selectedPartyId}
+           onChange={(e) => handlePartySelect(e.target.value)}
+           className="border p-2 rounded w-full"
+         >
+           <option value="">-- Select Party --</option>
+           {parties.map(party => (
+             <option key={party._id} value={party._id}>
+               {party.party_name}
+             </option>
+           ))}
+         </select>
+</div>
+
       <div className="grid grid-cols-2 gap-4 mb-6">
         <input
           name="clientName"
@@ -302,16 +382,81 @@ export default function InvoiceForm() {
         </div>
            <div className="flex justify-end mt-6 items-center">
           <h1 className="text-xl font-bold  mr-3.5">Subtotal</h1>
-          <p className="text-xl font-bold">₹ {Math.round(subtotalAmount)}</p>
+          <p className="text-xl font-bold">₹ {subtotalAmount}</p>
           </div>
       </div>
 
       <div className=" mt-2 flex justify-end items-center">
         <h2 className="text-xl font-bold mr-3.5">Total Amount</h2>
-        <p className="text-xl font-bold">₹ {Math.round(totalAmount)}</p>
+        <p className="text-xl font-bold">₹ {totalAmount.toFixed(2)}</p>
       </div>
+        <div className='border-t mt-1.5'>
+  <h1 className="text-center sm:text-lg font-bold mb-2 underline">
+    BANK DETAILS
+  </h1>
+  <div className='grid grid-cols-2 gap-4'> 
+    <div className='grid grid-cols-2 '>
+    <h2 className=" sm:text-lg font-bold text-center ">Account Name</h2>
+    <input
+        type="text"
+          name="AccountName"
+          placeholder="Account Name "
+          className="border p-2 rounded "
+          value={invoice.AccountName}
+          onChange={handleChange}
+   />
+   </div>
+   <div className='grid grid-cols-2'>
+    <h2 className="text-base sm:text-lg font-bold text-center">Current Account No.</h2>
+    <input
+        type="text"
+          name="CurrentACCno"
+          placeholder="Current Account no "
+          className="border p-2 rounded"
+          value={invoice.CurrentACCno}
+          onChange={handleChange}
+   />
+   </div>
+    <div className='grid grid-cols-2'>
+    <h2 className="text-base sm:text-lg font-bold  text-center">IFSC CODE </h2>
+    <input
+        type="text"
+          name="IFSCcode"
+          placeholder="IFSC code "
+          className="border p-2 rounded "
+          value={invoice.IFSCcode}
+          onChange={handleChange}
+   />
+   </div>
+   <div className='grid grid-cols-2'>
+    <h2 className="text-base sm:text-lg font-bold  text-center">Branch</h2>
+    <input
+        type="text"
+          name="Branch"
+          placeholder="Branch"
+          className="border p-2 rounded"
+          value={invoice.Branch}
+          onChange={handleChange}
+        />
+              </div>
+              </div> 
+               </div>
+                      <div className="mt-4 border rounded-md p-3">
+             <h2 className="font-semibold mb-2">
+               Terms &amp; Conditions
+             </h2>
+             <textarea
+               name="Terms"
+               rows={4}
+               className="w-full border rounded-md p-2 text-sm resize-y"
+               placeholder="Enter terms and conditions here..."
+               value={invoice.Terms}
+               onChange={handleChange}
+             />
+           </div>
+
       <div className=" max-w-3xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
-         <button className=" mx-32 md:mx-80 rounded-md font-bold cursor-progress " onClick={() => navigate("/Preview",{ state: { invoice, subtotalAmount, totalAmount, sgst, cgst } })}> Preview </button>
+         <button className=" mx-32 md:mx-80 rounded-md font-bold cursor-progress " onClick={() => navigate("/Preview",{ state: { invoice, subtotalAmount, totalAmount, sgst, cgst,} })}> Preview </button>
       </div>
    </div>
     </div>

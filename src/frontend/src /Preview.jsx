@@ -1,10 +1,12 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import InvoiceTemplate from "./components/InvoiceTemplate";
 
+
 export default function Preview() {
 
+ const navigate = useNavigate();
   const { state } = useLocation();
 
   const invoice = state.invoice;
@@ -17,7 +19,7 @@ export default function Preview() {
     const element = document.getElementById("invoice-download");
 
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 1.2,
       useCORS: true,
       backgroundColor: "#ffffff"
     });
@@ -40,9 +42,22 @@ export default function Preview() {
         cgst={cgst}
       />
       <div className="flex justify-around">
-      <button onClick={downloadPDF} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded">
+      <button onClick={downloadPDF} className="mt-6 px-6 py-3 bg-blue-600 hover:bg-[#3d8ecb] text-white rounded">
         Download PDF
       </button>
+      <button
+          className="mt-6 px-6 py-3 bg-[#1F5E6C] hover:bg-[#1f6c53] text-white rounded"
+           onClick={() => navigate("/Invoice",{ state: { invoice, subtotalAmount, totalAmount, sgst, cgst,} })}
+        >
+          Edit
+        </button>
+        <button
+  className="mt-6 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded"
+  onClick={() => navigate("/Invoice")}
+>
+  New Invoice
+</button>
+
       </div>
     </div>
   );

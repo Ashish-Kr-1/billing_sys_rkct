@@ -1,5 +1,5 @@
 import React from 'react'
-import Logo from '../assets/react.svg';
+import Logo from '../assets/logo.png';
 
 function Invoice_header() {
   return (

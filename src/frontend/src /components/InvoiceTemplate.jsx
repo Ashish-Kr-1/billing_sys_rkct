@@ -1,88 +1,112 @@
+import Logo from '../assets/logo.png';
+import { useNavigate } from "react-router-dom";
 export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst }) {
+   const navigate = useNavigate();
   return (
     <div
       id="invoice-download"
-      className="w-[820px] mt-32 py-12 mx-auto bg-white shadow-lg p-6👉"
-      style={{ fontFamily: "Rubik", color: "#1A1A1A" }}
+      className="w-[999px]  py-2 mx-auto bg-white shadow-lg px-6"
+      style={{ fontFamily: "Rubik", color: "#1A1A1A", minHeight: "1122px" }}
     >
       {/* HEADER */}
-      <div className="flex justify-between items-center pb-8 border-b-4" style={{ borderColor: "#0A4350" }}>
-        <div>
-             <p className="text-center"style={{ fontSize: "32px", color: "#0A4350", fontWeight: "600" , }}>INVOICE</p>
-             <p className="font-['Rubik']"style={{ fontSize: "20px", color: "#0A4350", fontWeight: "600" , }}>GSTIN :20DAMPK8203A1ZB</p>
-          <h1 className="font-['Rubik']"style={{ fontSize: "32px", fontWeight: "800", color: "#0A4350", letterSpacing: "1px" }}>
+      <div> <p className="text-center underline font-serif "style={{ fontSize: "32px", color: "#0A4350", fontWeight: "600" , }}>INVOICE</p></div>
+      <div className="flex justify-center items-center gap-0 pb-2 border-b-4 " style={{ borderColor: "#0A4350" }}>
+          <div className=''>
+            <p className=""style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600" , }}>GSTIN :20DAMPK8203A1ZB</p>
+            <img 
+                  src={Logo}
+                  alt="Company Logo"
+                  className=" w-52 h-auto mr-5"
+                />
+          </div>
+        <div className="max-w-full pr-10">
+          <h1 className="font-serif"style={{ fontSize: "28px", fontWeight: "800",  letterSpacing: "1px" }}>
             M/S R.K Casting & Engineering Works
           </h1>
-          <p style={{ fontSize: "12px", color: "#0A4350", fontWeight: "600" }}>
+          <p style={{ fontSize: "12px", fontWeight: "600" }}>
             Plot No. 125, Khata No.19, Rakuwa No. 05,
             Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129 </p>
-          <p style={{ fontSize: "14px", color: "#0A4350", fontWeight: "600" }}>
+          <p style={{ fontSize: "14px", fontWeight: "600" }}>
             Mobile No : +91 6204583192</p>
-           <p style={{ fontSize: "14px", color: "#0A4350", fontWeight: "600" }}>
+           <p style={{ fontSize: "14px",  fontWeight: "600" }}>
            Email Id : rkcastingmoonidih@gmail.com</p>
 
-           <p style={{ fontSize: "14px", color: "#0A4350", fontWeight: "600" }}>
-             T. License No. - SEA2135400243601</p>
-          
-        </div>
-
-        {/* RIGHT HEADER */}
-        <div className="text-center">
-          <p style={{ fontSize: "20px", fontWeight: "700", color: "#0A4350" }}>
-          </p>
-          <p style={{ fontSize: "14px", marginTop: "4px" }}>
-            {invoice.InvoiceDate || "10/12/2025"}
-          </p>
+           <p style={{ fontSize: "14px", fontWeight: "600" }}>
+             T. License No. - SEA2135400243601</p>      
         </div>
       </div>
-      .....
+      {/*Upper section*/}
+       <div className="text-sm grid grid-cols-3 gap-0.5 border-b-2 mt-2">
+          <p style={{ fontWeight: "700" }}>Invoice Number : {invoice.InvoiceNo}</p>
+          <p style={{ fontWeight: "700" }}>Transported By : {invoice.TrasnportBy}</p>
+          <p style={{ fontWeight: "700" }}> Vehicle Number : {invoice.VehicleNo}</p>
+          <p style={{ fontWeight: "700" }}> Date : {invoice.InvoiceDate}</p>
+          <p style={{ fontWeight: "700" }}> Place of Supply : {invoice.PlaceofSupply}</p>
+          <p style={{ fontWeight: "700" }}> Eway Bill No. : {invoice.EwayBillNo}</p>
+          <p style={{ fontWeight: "700" }}> PO No. : {invoice.PONo}</p>
+          <p style={{ fontWeight: "700" }}> PO Date : {invoice.PODate}</p>
+          <p style={{ fontWeight: "700" }}> Vendor Code : {invoice.VendorCode}</p>
+          <p style={{ fontWeight: "700" , marginBottom: "6px" }}> GatePass/Challan No. : {invoice.ChallanNo}</p>
+           <p style={{ marginBottom: "6px" }}> {invoice.ChallanDate}</p>
+        </div>
+      
 
       {/* BILLING SECTION */}
-      <div className="gap-10 mt-8">
-        <div>
-          <h2 style={{ fontWeight: "700", marginBottom: "6px", color: "#0A4350" }}>BILLED TO PARTY :</h2>
-          <p className="font-bold text-md">{invoice.clientName}</p>
+      <div className='grid grid-cols-2 gap-3.5'>
+      <div className="gap-10 mt-2 text-sm">
+        <div className="border rounded-md text-sm p-3">
+          <h2 className='flex items-center justify-center pb-2.5 rounded ' style={{ fontWeight: "700", marginBottom: "3px", backgroundColor: "#3E7373", color: "white"}}>BILLED TO PARTY </h2>
+          <p className="font-bold text-sm">{invoice.clientName}</p>
           <p>{invoice.clientAddress}</p>
           <p style={{ fontWeight: "700", marginBottom: "6px" }}>GSTIN Number : {invoice.GSTIN}</p>
         </div>
       </div>
-          <div className= " gap-10 mt-8">
-        <div>
-          <h2 style={{ fontWeight: "700", marginBottom: "6px", color: "#0A4350" }}>SHIPPED TO PARTY :</h2>
+          <div className= "gap-10 mt-2 text-sm ">
+        <div className="border rounded-md p-3">
+          <h2 className='text-center rounded pb-2.5'style={{ fontWeight: "700", marginBottom: "3px", color: "#0A4350",backgroundColor: "#3E7373", color: "white" }}>SHIPPED TO PARTY </h2>
           <p className="font-bold text-md">{invoice.clientName2}</p>
           <p>{invoice.clientAddress2}</p>
           <p className=""style={{ fontWeight: "700", marginBottom: "6px" }}>GSTIN Number : {invoice.GSTIN2}</p>
         </div>
       </div>
+      </div>
 
       {/* ITEMS TABLE */}
-      <table className="w-full mt-12 border-collapse">
+      <table className="w-full  mt-6 border-collapse ">
         <thead>
-          <tr style={{ backgroundColor: "#0A4350", color: "white", height: "50px" }}>
-            <th className="text-left pl-4">DESCRIPTION</th>
-            <th>HSN</th>
-            <th>QTY</th>
-            <th>PRICE</th>
-            <th className="pr-4">AMOUNT</th>
+          <tr style={{ backgroundColor: "#0A4350", color: "white", height: "30px" }}>
+            <th className="text-left pl-4 pb-2.5">DESCRIPTION</th>
+            <th className='pb-2.5'>HSN</th>
+            <th className='pb-2.5'>QTY</th>
+            <th className='pb-2.5'>PRICE</th>
+            <th className="pr-4 pb-2.5">AMOUNT</th>
           </tr>
         </thead>
 
         <tbody>
           {invoice.items.map((item, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid #D9D9D9", height: "42px" }}>
-              <td className="pl-4">{item.description}</td>
-              <td className="text-center">{item.HSNCode}</td>
-              <td className="text-center">{item.quantity}</td>
-              <td className="text-center">₹{item.price}</td>
-              <td className="text-center pr-4">₹{item.quantity * item.price}</td>
+            <tr key={i} style={{ borderBottom: "1px solid #D9D9D9", height: "16px" }}>
+              <td className="pl-4 pb-2.5">{item.description}</td>
+              <td className="text-center pb-2.5">{item.HSNCode}</td>
+              <td className="text-center pb-2.5">{item.quantity}</td>
+              <td className="text-center pb-2.5">₹{item.price}</td>
+              <td className="text-center pr-4 pb-2.5">₹{item.quantity * item.price}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {/* TOTALS SECTION */}
-      <div className="mt-10 flex justify-end">
-        <div className="w-64">
+      <div className="mt-4 grid grid-cols-2 ">
+         <div className="border rounded-2xl p-5" style={{ borderColor: "#D9D9D9" }}>
+        <p className="text-xl font-bold"> Bank Details :- </p>
+        <p className=" text-sm">{invoice.AccountName}</p>
+        <p className=" text-sm">{invoice.CurrentACCno}</p>
+        <p className=" text-sm">{invoice.IFSCcode}</p>
+        <p className=" text-sm">{invoice.Branch}</p>
+      </div>
+      <div className='flex justify-end'>
+        <div className="w-64 ">
           <div className="flex justify-around mb-2">
             <span>Subtotal</span>
             <span>₹{(subtotalAmount.toFixed(2))}</span>
@@ -106,16 +130,18 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
             <span>₹{Math.round(totalAmount)}</span>
           </div>
         </div>
+        </div>
       </div>
 
       {/* FOOTER */}
-      <div className="mt-14 pt-8 border-t border-b pb-8" style={{ borderColor: "#D9D9D9" }}>
-        <p className="text-xl font-bold"> Bank Details :- </p>
-        <p className=" text-sm">Account Name : R.K CASTING AND ENGINEERING WORKS</p>
-        <p className=" text-sm">Current Account Number : 08710210000724</p>
-        <p className=" text-sm">IFSC Code : UCBA0000871</p>
-        <p className=" text-sm">Branch : Moonidih | Branch Code - 0871</p>
-      </div>
+      <div className="mt-4 border rounded-md p-3">
+      <h2 className="font-semibold mb-2">
+       Terms &amp; Conditions
+      </h2>
+      <p className="text-sm whitespace-pre-line">
+       {invoice.Terms || "No terms and conditions specified."}
+       </p>
+       </div>
     </div>
   );
 }
