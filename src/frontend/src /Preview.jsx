@@ -30,7 +30,45 @@ export default function Preview() {
 
     pdf.addImage(imgData, "PNG", 0, 0, width, 0);
     pdf.save("invoice.pdf");
+
+    await saveInvoiceToDB();
   }
+
+  async function saveInvoiceToDB() {
+  const payload = {
+    InvoiceNo: invoice.InvoiceNo,
+    InvoiceDate: invoice.InvoiceDate,
+    GSTIN: invoice.GSTIN,
+    party_id: invoice.party_id || null,   // IMPORTANT
+    transaction_type: invoice.transaction_type || "SALE",
+    subtotal: subtotalAmount,
+    cgst,
+    sgst,
+    Terms: invoice.Terms,
+  };
+
+  try {
+    const res = await fetch("http://localhost:5000/createInvoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Given payload:",payload);
+      console.error("DB error:", data);
+      alert("Invoice saved partially (PDF ok, DB failed)");
+      return;
+    }
+
+    console.log("Invoice saved:", data);
+  } catch (err) {
+    console.error("Save invoice error:", err);
+  }
+}
+
 
   return (
     <div>

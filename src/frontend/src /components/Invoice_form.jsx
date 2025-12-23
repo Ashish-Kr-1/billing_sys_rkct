@@ -30,6 +30,8 @@ export default function InvoiceForm({ initialData }) {
       IFSCcode: "UCBA0000871",
       Branch: "Moonidih | Branch Code - 0871",
     items: [{ description: "", HSNCode: "" ,  quantity:'', price: "" }],
+    transaction_type:"",
+    party_id:""
   });
 
   const navigate = useNavigate();
@@ -60,6 +62,7 @@ export default function InvoiceForm({ initialData }) {
 
       setInvoice(prev => ({
         ...prev,
+        party_id: partyId,
         clientName: p.party_name,
         clientName2: p.party_name,
         clientAddress: p.billing_address,
@@ -115,7 +118,6 @@ const [cgst, setCgst] = useState(initialData?.cgst || 0);
 
   
   const totalAmount = subtotalAmount + (subtotalAmount * sgst) /100 + (subtotalAmount * cgst)/100;
-   
 
 
 
