@@ -1,6 +1,4 @@
-import React from 'react'
 import logo from '../assets/logo.png'
-import { ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 function Navbar() {
@@ -10,9 +8,7 @@ function Navbar() {
       <div className='logo ps-8 md:ps-0.5'> <img className="w-24"src={logo} alt="Logo" /></div>
        <div className='flex text-sm justify-end items-center '>
         <button onClick ={() => navigate("/")} className='cursor-pointer text-sm text-white font-bold ml-2 mr-2'> Home </button>
-        {["Services", "About Us", "Contact Us"].map((item,index) => (
-          <button key={index} className={`mx-1 rounded-md cursor-pointer font-semibold text-sm hover:bg-amber-400`}>{item}</button>
-        ))}
+        <button onClick ={() => navigate("/Ledger")} className='cursor-pointer text-sm text-white font-bold ml-2 mr-2'> Ledger </button>
        </div> 
     </div>
   )

@@ -190,7 +190,7 @@ const [cgst, setCgst] = useState(initialData?.cgst || 0);
         />
         <input
           type="text"
-          name="VenderCode"
+          name="VendorCode"
           placeholder="Vendor Code"
           className="border p-2 rounded"
           value={invoice.VendorCode}
