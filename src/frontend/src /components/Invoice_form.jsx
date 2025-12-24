@@ -44,6 +44,18 @@ export default function InvoiceForm({ initialData }) {
     .then(data => setParties(data))
     .catch(err => console.error(err));
 }, []);
+
+useEffect(() => {
+  fetch("http://localhost:5000/createInvoice/invoiceNo")
+    .then(res => res.json())
+    .then(data => {
+      setInvoice(prev => ({
+        ...prev,
+        InvoiceNo: data.InvoiceNo
+      }))
+    })
+    .catch(err => console.error(err));
+}, []);
     
 
 
@@ -134,6 +146,7 @@ const [cgst, setCgst] = useState(initialData?.cgst || 0);
           className="border p-2 rounded"
           value={invoice.InvoiceNo}
           onChange={handleChange}
+          readOnly
         />
         <input
           type="text"
