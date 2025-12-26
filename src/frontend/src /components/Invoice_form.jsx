@@ -36,6 +36,7 @@ export default function InvoiceForm({ initialData }) {
 
   const navigate = useNavigate();
   const [parties, setParties] = useState([]);
+  const [itemsList, setItemsList] = useState([]);
   const [selectedPartyId, setSelectedPartyId] = useState("");
 
  useEffect(() => {
@@ -44,6 +45,14 @@ export default function InvoiceForm({ initialData }) {
     .then(data => setParties(data))
     .catch(err => console.error(err));
 }, []);
+
+useEffect(() => {
+  fetch("http://localhost:5000/itemNames")
+    .then(res => res.json())
+    .then(data => setItemsList(data))
+    .catch(err => console.error(err));
+}, []);
+
 
 useEffect(() => {
   fetch("http://localhost:5000/createInvoice/invoiceNo")
@@ -87,6 +96,30 @@ useEffect(() => {
 }
 
 
+function handleItemSelect(index, itemId) {
+  fetch(`http://localhost:5000/item_id/${itemId}`)
+    .then(res => res.json())
+    .then(data => {
+      const item = data.item;
+      if (!item) return;
+
+      const updatedItems = [...invoice.items];
+
+      updatedItems[index] = {
+        ...updatedItems[index],
+        item_id: item.item_id,
+        description: item.item_name,
+        HSNCode: item.hsn_code,
+        price: item.rate || 0 // if you have rate column
+      };
+
+      setInvoice(prev => ({
+        ...prev,
+        items: updatedItems
+      }));
+    })
+    .catch(err => console.error(err));
+}
 
 
   // HANDLE BASIC INPUTS
@@ -327,22 +360,27 @@ const [cgst, setCgst] = useState(initialData?.cgst || 0);
 
       {invoice.items.map((item, index) => (
         <div key={index} className="grid grid-cols-5 gap-4 mb-3">
-          <input
-            placeholder="Name"
-            className="border p-2 px-3.5 rounded "
-            value={item.description}
-            onChange={(e) =>
-              handleItemChange(index, "description", e.target.value)
-            }
-            />
+           <select
+            className="border p-2 rounded"
+            value={item.item_id || ""}
+            onChange={(e) => handleItemSelect(index, e.target.value)}
+          >
+            <option value="">-- Select Item --</option>
+            {itemsList.map(it => (
+              <option key={it.item_id} value={it.item_id}>
+                {it.item_name}
+                </option>
+              ))}
+              </select>
+
             <input
             placeholder="HSN Code"
             className="border p-2 px-3.5 rounded"
             value={item.HSNCode}
             onChange={(e) =>
               handleItemChange(index, "HSNCode", e.target.value)
-}
-          />
+            }
+            />
           <input
             type="number"
             className="border p-2 rounded"
