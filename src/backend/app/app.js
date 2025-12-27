@@ -13,7 +13,7 @@ const router = express.Router()
 const routerB = express.Router()
 const routerParty = express.Router()
 const routerItems = express.Router()
-
+const routerLedger = express.Router()
 const routerTransaction = express.Router()
 
 
@@ -329,125 +329,41 @@ async function createPartyHandler(req, res) {
   }
 }
 
-// async function createTransactionHandler(req, res) {
-//   const {
-//     transaction_date,
-//     invoice_no,
-//     transaction_type,          // sale | purchase
-//     party_id,
-//     debit_amount,
-//     credit_amount,
-//     taxable_amount,
-//     gst_percentage,
-//     gst_type,                // IGST | CGST_SGST
+async function ledgerData(req, res){
+  const client = await pool.connect();
+  try{
+    console.log("Working");
+    const { rows } = await client.query(`
+    SELECT
+      t.transaction_date,
+      t.invoice_no,
+      p.party_name,
+      t.debit_amount,
+      t.credit_amount
+    FROM transactions t
+    JOIN parties p ON p.party_id = t.party_id
+    ORDER BY t.transaction_date ASC, t.transaction_id ASC
+  `);
 
-//         igst_amount,
-//         cgst_amount,
-//         sgst_amount,
-//         round_off,
-//     gst_number = null,
-//     narration = null,
-//     pdf_reference = null,
-//   } = req.body;
+  const ledgerDataRows = rows.map(row => {
+    return {
+      date: row.transaction_date,     // format later if needed
+      invoice: row.invoice_no,
+      client: row.party_name,
+      debit: row.debit_amount,
+      credit: row.credit_amount
+    };
+  });
 
-//   // Basic validation
-//   if (!invoice_no || !transaction_type || !party_id || !taxable_amount || !gst_percentage || !gst_type) {
-//     return res.status(400).json({
-//       error: 'invoice_no, transaction_type, party_id, taxable_amount, gst_percentage and gst_type are required'
-//     });
-//   }
-
-//   const client = await pool.connect();
-
-//   try {
-//     await client.query('BEGIN');
-
-//     // Optional: prevent duplicate invoice numbers
-//     const dup = await client.query(
-//       'SELECT transaction_id FROM transactions WHERE invoice_no = $1',
-//       [invoice_no]
-//     );
-
-//     if (dup.rowCount > 0) {
-//       await client.query('ROLLBACK');
-//       return res.status(409).json({
-//         error: 'Transaction with this invoice_no already exists',
-//         transaction_id: dup.rows[0].transaction_id
-//       });
-//     }
-
-//     debit_amount =
-//       transaction_type === 'sale' ? total_amount + round_off : 0;
-
-//     credit_amount =
-//       transaction_type === 'purchase' ? total_amount + round_off : 0;
-
-//     const insertSql = `
-//       INSERT INTO transactions (
-//         transaction_date,
-//         invoice_no,
-//         transaction_type,
-//         party_id,
-//         debit_amount,
-//         credit_amount,
-//         taxable_amount,
-//         igst_amount,
-//         cgst_amount,
-//         sgst_amount,
-//         round_off,
-//         gst_percentage,
-//         gst_number,
-//         pdf_reference,
-//         narration
-//       )
-//       VALUES (
-//         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
-//       )
-//       RETURNING *
-//     `;
-
-//     const values = [
-//       transaction_date || new Date(),
-//       invoice_no,
-//       transaction_type,
-//       party_id,
-//       debit_amount,
-//       credit_amount,
-//       taxable_amount,
-//       igst_amount,
-//       cgst_amount,
-//       sgst_amount,
-//       round_off,
-//       gst_percentage,
-//       gst_number,
-//       pdf_reference,
-//       narration
-//     ];
-
-//     const { rows } = await client.query(insertSql, values);
-
-//     await client.query('COMMIT');
-
-//     return res.status(201).json({ transaction: rows[0] });
-
-//   } catch (err) {
-//     await client.query('ROLLBACK').catch(() => {});
-//     console.error('createTransaction error', err);
-
-//     if (err.code === '23503') {
-//       return res.status(400).json({ error: 'Invalid party_id (FK violation)' });
-//     }
-
-//     if (err.code === '23505') {
-//       return res.status(409).json({ error: 'Duplicate key violation' });
-//     }
-
-//     return res.status(500).json({ error: 'Internal server error' });
-
-//   } finally {
-//     client.release();
-//   }
-// }
+  res.json({ ledgerDataRows });
+  }catch(err){
+    await client.query('ROLLBACK').catch(() => { });
+    console.log("Ledger error ".err);
+    return res.status(500).json({error: "Internal server error"});
+  }finally{
+    client.release();
+  }
+}
 
 async function createTransactionHandler(req, res) {
   const {
@@ -585,7 +501,10 @@ routerParty.get('/:id', partyDetails);
 
 routerItems.get('/:id', itemDetails);
 
+routerLedger.get('/', ledgerData);
+
 app.use('/parties',routerParty);
+app.use('/ledger', routerLedger);
 app.use('/item_id',routerItems);
 app.use('/createParty', router);
 app.use('/createItem', routerB);
