@@ -54,17 +54,17 @@ useEffect(() => {
 }, []);
 
 
-useEffect(() => {
-  fetch("http://localhost:5000/createInvoice/invoiceNo")
-    .then(res => res.json())
-    .then(data => {
-      setInvoice(prev => ({
-        ...prev,
-        InvoiceNo: data.InvoiceNo
-      }))
-    })
-    .catch(err => console.error(err));
-}, []);
+// useEffect(() => {
+//   fetch("http://localhost:5000/createInvoice/invoiceNo")
+//     .then(res => res.json())
+//     .then(data => {
+//       setInvoice(prev => ({
+//         ...prev,
+//         InvoiceNo: data.InvoiceNo
+//       }))
+//     })
+//     .catch(err => console.error(err));
+// }, []);
     
 
 
