@@ -19,9 +19,11 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
+        working-directory: src/frontend
         run: npm install
 
       - name: Build project
+        working-directory: src/frontend
         run: npm run build
 
       - name: Upload to Hostinger via FTP
@@ -31,5 +33,5 @@ jobs:
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
           port: ${{ secrets.FTP_PORT }}
-          local-dir: dist/
+          local-dir: src/frontend/dist/
           server-dir: /public_html/billing/
