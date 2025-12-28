@@ -17,7 +17,7 @@ function item_form() {
   const navigate = useNavigate();
 
   return (
-    <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md'>
+    <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md mt-28'>
       <h1 className="text-2xl font-bold mb-6">Create Item</h1>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <input
