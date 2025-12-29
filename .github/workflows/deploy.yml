@@ -34,4 +34,4 @@ jobs:
           password: ${{ secrets.FTP_PASS }}
           port: ${{ secrets.FTP_PORT }}
           local-dir: src/frontend/dist/
-          server-dir: /public_html/billing/
+          server-dir: public_html/billing/
