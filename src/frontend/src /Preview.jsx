@@ -23,6 +23,7 @@ export default function Preview() {
       useCORS: true,
       backgroundColor: "#ffffff"
     });
+    //
 
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
