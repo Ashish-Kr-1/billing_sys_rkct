@@ -8,7 +8,7 @@ function LandingPage() {
     <Navbar/>
     <div className='w-full min-h-screen bg-amber-50 pt-3'>
         <div className='bg-[#004D43] rounded-b-xl mt-32 px-20'>
-            {["R.K Casting & " ," Engineering Works"].map((item,index) => {
+            {["R.K Casting " ," Engineering Works"].map((item,index) => {
                 return (
                     <h1 key={index} className={`textfont-[Rubik] text-white py-1 text-4xl md:text-6xl lg:text-8xl font-bold cursor-pointer ${index===0 ? 'text-left' : 'text-right'}`}>{item}</h1>
                 );
