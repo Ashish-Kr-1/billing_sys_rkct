@@ -26,7 +26,7 @@ pool.on("error", () => {
 }
 );
 
-console.log("Base : ",process.env.DATABASE_URL);
+console.log("Base : ",new URL(process.env.DATABASE_URL).hostname);
 
 export default pool;
 export async function query (text, params){
