@@ -1,3 +1,5 @@
+import { API_BASE } from "./config/api.js";
+
 //import createParty from "../link"
 //createParty(data)
 
@@ -17,7 +19,7 @@
 export default async function createInvoice(data) {
 
     try {
-        const res = await fetch("http://localhost:5000/createInvoice", {
+        const res = await fetch(`${API_BASE}/createInvoice`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

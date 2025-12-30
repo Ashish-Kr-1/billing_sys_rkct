@@ -1,3 +1,4 @@
+import { API_BASE } from "./config/api.js";
 //import createItem from "../link"
 //createItem(data)
 
@@ -10,7 +11,7 @@
 
 export default async function createItem(data) {
     try {
-        const res = await fetch("http://localhost:5000/createItem", {
+        const res = await fetch(`${API_BASE}/createItem`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

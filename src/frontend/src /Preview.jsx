@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { API_BASE } from "./config/api.js";
 import InvoiceTemplate from "./components/InvoiceTemplate";
 
 
@@ -49,7 +50,7 @@ export default function Preview() {
   };
 
   try {
-    const res = await fetch("http://localhost:5000/createInvoice", {
+    const res = await fetch(`${API_BASE}/createInvoice`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

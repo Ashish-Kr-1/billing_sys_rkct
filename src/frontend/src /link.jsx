@@ -1,3 +1,4 @@
+import { API_BASE } from "./config/api.js";
 //import createParty from "../link"
 //createParty(data)
 
@@ -17,7 +18,7 @@
 export default async function createParty(data) {
 
     try {
-        const res = await fetch("http://localhost:5000/createParty", {
+        const res = await fetch(`${API_BASE}/createParty`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
