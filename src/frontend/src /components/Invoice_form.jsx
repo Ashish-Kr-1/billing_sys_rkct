@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Button from './Button.jsx';
 import Invoice_header from './Invoice_header.jsx';
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../config/api.js";
 
 
 export default function InvoiceForm({ initialData }) {
@@ -38,16 +39,16 @@ export default function InvoiceForm({ initialData }) {
   const [parties, setParties] = useState([]);
   const [itemsList, setItemsList] = useState([]);
   const [selectedPartyId, setSelectedPartyId] = useState("");
-
+//`${API_BASE}/parties`
  useEffect(() => {
-  fetch("http://localhost:5000/parties")
+  fetch(`${API_BASE}/parties`)
     .then(res => res.json())
     .then(data => setParties(data))
     .catch(err => console.error(err));
 }, []);
 
 useEffect(() => {
-  fetch("http://localhost:5000/itemNames")
+  fetch(`${API_BASE}/itemNames`)
     .then(res => res.json())
     .then(data => setItemsList(data))
     .catch(err => console.error(err));
@@ -76,7 +77,7 @@ useEffect(() => {
   if (!party) return;
 
   // Fetch full details
-  fetch(`http://localhost:5000/parties/${partyId}`)
+  fetch(`${API_BASE}/parties/${partyId}`)
     .then(res => res.json())
     .then(data => {
       const p = data.party;
@@ -97,7 +98,7 @@ useEffect(() => {
 
 
 function handleItemSelect(index, itemId) {
-  fetch(`http://localhost:5000/item_id/${itemId}`)
+  fetch(`${API_BASE}/item_id/${itemId}`)
     .then(res => res.json())
     .then(data => {
       const item = data.item;

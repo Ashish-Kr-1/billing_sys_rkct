@@ -1,3 +1,4 @@
+import { API_BASE } from "./config/api.js";
 /** sample data
  * 
  [
@@ -59,12 +60,11 @@
 
 export default async function getPartyList(){
     try{
-        const res = await fetch("http://localhost:5000/parties");
+        const res = await fetch(`${API_BASE}/parties`);
         const data = await res.json();
         console.log(data);
         party_name = []
         party_id = []
-        
         return data;
     }catch(err){
         console.error("Network error:", err);

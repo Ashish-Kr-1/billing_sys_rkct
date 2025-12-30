@@ -29,6 +29,25 @@ const r = express.Router()
 //   body('vendor_code').optional({ checkFalsy: true }).isLength({ max: 50 })
 // ];
 
+const allowedOrigins = [
+  "http://localhost:5173",        // local dev (Vite)
+  "http://localhost:5000",        // if used
+  "https://billing.rkcasting.in",
+  "https://billing-sys-rkct.onrender.com"  // production frontend
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Postman, curl
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("CORS not allowed"));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json())
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(helmet())
