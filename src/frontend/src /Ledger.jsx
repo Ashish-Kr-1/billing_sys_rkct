@@ -361,8 +361,8 @@ Output requirements:
                   <th className="py-5 px-12">Date</th>
                   <th className="px-4">Invoice No.</th>
                   <th className="px-9">Client</th>
-                  <th className="text-right px-5.5">Debit</th>
-                  <th className="text-right px-4 ">Credit</th>
+                  <th className="text-right px-5.5">Sale</th>
+                  <th className="text-right px-4 ">Reciept</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
