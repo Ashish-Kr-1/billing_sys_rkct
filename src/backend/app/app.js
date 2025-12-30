@@ -36,6 +36,8 @@ const allowedOrigins = [
   "https://billing-sys-rkct.onrender.com"  // production frontend
 ];
 
+app.use(express.json())
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // Postman, curl
@@ -48,8 +50,6 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json())
-app.use(cors({ origin: "http://localhost:5173" }));
 app.use(helmet())
 
 //endpoint for api status
