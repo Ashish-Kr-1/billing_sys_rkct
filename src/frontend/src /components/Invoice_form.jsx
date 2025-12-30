@@ -4,7 +4,6 @@ import Invoice_header from './Invoice_header.jsx';
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from "../config/api.js";
 
-
 export default function InvoiceForm({ initialData }) {
   const [invoice, setInvoice] = useState(
     initialData?.invoice ||{
@@ -39,6 +38,8 @@ export default function InvoiceForm({ initialData }) {
   const [parties, setParties] = useState([]);
   const [itemsList, setItemsList] = useState([]);
   const [selectedPartyId, setSelectedPartyId] = useState("");
+
+
 //`${API_BASE}/parties`
  useEffect(() => {
   fetch(`${API_BASE}/parties`)
@@ -55,17 +56,18 @@ useEffect(() => {
 }, []);
 
 
-// useEffect(() => {
-//   fetch("http://localhost:5000/createInvoice/invoiceNo")
-//     .then(res => res.json())
-//     .then(data => {
-//       setInvoice(prev => ({
-//         ...prev,
-//         InvoiceNo: data.InvoiceNo
-//       }))
-//     })
-//     .catch(err => console.error(err));
-// }, []);
+useEffect(() => {
+  console.log(import.meta.env.VITE_API_BASE_URL);
+  fetch(`${API_BASE}/createInvoice/invoiceNo`)
+    .then(res => res.json())
+    .then(data => {
+      setInvoice(prev => ({
+        ...prev,
+        InvoiceNo: data.InvoiceNo
+      }))
+    })
+    .catch(err => console.error(err));
+}, []);
     
 
 
