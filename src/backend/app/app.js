@@ -207,7 +207,7 @@ async function getNextInvoiceNumber(req, res){
   const client = await pool.connect();
   try{
     await client.query("BEGIN");
-    const prefix = 'RK'; 
+    const prefix = 'RKCT/2025-26'; 
 
   const result = await pool.query(`
     SELECT invoice_no
@@ -220,8 +220,8 @@ async function getNextInvoiceNumber(req, res){
   let nextNumber = 1;
 
   if (result.rows.length > 0) {
-    const lastInvoiceNo = result.rows[0].invoice_no; // RK/012
-    const lastNumber = parseInt(lastInvoiceNo.split('/')[1], 10);
+    const lastInvoiceNo = result.rows[0].invoice_no; // RKCT/2025-26/012
+    const lastNumber = parseInt(lastInvoiceNo.split('/')[2], 10);
     nextNumber = lastNumber + 1;
   }
 
