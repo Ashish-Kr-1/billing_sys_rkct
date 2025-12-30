@@ -38,16 +38,49 @@ export default function Preview() {
 
   async function saveInvoiceToDB() {
   const payload = {
-    InvoiceNo: invoice.InvoiceNo,
-    InvoiceDate: invoice.InvoiceDate,
-    GSTIN: invoice.GSTIN,
-    party_id: invoice.party_id || null,   // IMPORTANT
-    transaction_type: invoice.transaction_type || "SALE",
-    subtotal: subtotalAmount,
-    cgst,
-    sgst,
-    Terms: invoice.Terms,
+    invoice: {
+      InvoiceNo: invoice.InvoiceNo,
+      InvoiceDate: invoice.InvoiceDate,
+      GSTIN: invoice.GSTIN,
+      party_id: invoice.party_id || null,
+      transaction_type: invoice.transaction_type || "SALE",
+      subtotal: subtotalAmount,
+      cgst,
+      sgst,
+      Terms: invoice.Terms,
+    },
+
+    invoice_details: {
+      transported_by: invoice.TrasnportBy,
+      place_of_supply: invoice.PlaceofSupply,
+      vehicle_no: invoice.VehicleNo,
+      eway_bill_no: invoice.EwayBillNo,
+      vendor_code: invoice.VendorCode,
+      po_date: invoice.PODate,
+      challan_no: invoice.ChallanNo,
+      challan_date: invoice.ChallanDate,
+      client_name:invoice.clientName,
+      client_address:invoice.clientAddress,
+      gstIn:invoice.GSTIN,
+      client_name2: invoice.clientName2,
+      client_address2:invoice.clientAddress2,
+      gstIn2:invoice.GSTIN2,
+      account_name: invoice.AccountName,
+      account_no: invoice.CurrentACCno,
+      ifsc_code: invoice.IFSCcode,
+      branch: invoice.Branch,
+      terms_conditions: invoice.Terms,
+    },
+
+    items: invoice.items,
+
+    totals: {
+      subtotal: subtotalAmount,
+      cgst,
+      sgst,
+    }
   };
+  
 
   try {
     const res = await fetch(`${API_BASE}/createInvoice`, {

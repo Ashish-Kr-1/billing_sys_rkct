@@ -349,33 +349,47 @@ async function createPartyHandler(req, res) {
   }
 }
 
+function formatLedgerDate(dateValue) {
+  if (!dateValue) return "";
+
+  const d = new Date(dateValue);
+
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 async function ledgerData(req, res){
   const client = await pool.connect();
   try{
     console.log("Working");
-    const { rows } = await client.query(`
-    SELECT
-      t.transaction_date,
-      t.invoice_no,
-      p.party_name,
-      t.debit_amount,
-      t.credit_amount
-    FROM transactions t
-    JOIN parties p ON p.party_id = t.party_id
-    ORDER BY t.transaction_date ASC, t.transaction_id ASC
-  `);
+    const { rows } = await pool.query(`
+      SELECT
+        t.transaction_id,
+        t.transaction_date,
+        t.invoice_no,
+        t.transaction_type,
+        p.party_name,
+        COALESCE(t.sell_amount, 0)   AS debit,
+        COALESCE(t.credit_amount, 0) AS credit
+      FROM transactions t
+      JOIN parties p ON p.party_id = t.party_id
+      ORDER BY t.transaction_date ASC, t.transaction_id ASC
+    `);
 
-  const ledgerDataRows = rows.map(row => {
-    return {
-      date: row.transaction_date,     // format later if needed
-      invoice: row.invoice_no,
-      client: row.party_name,
-      debit: row.debit_amount,
-      credit: row.credit_amount
-    };
-  });
+  const ledger = rows.map(r => ({
+      date: formatLedgerDate(r.transaction_date),          
+      invoice: r.invoice_no,
+      client: r.party_name,
+      debit: Number(r.debit),
+      credit: Number(r.credit),
+      transaction_type: r.transaction_type,
+      transaction_id: r.transaction_id
+    }));
 
-  res.json({ ledgerDataRows });
+    res.json({ ledger });
   }catch(err){
     await client.query('ROLLBACK').catch(() => { });
     console.log("Ledger error ".err);
@@ -386,6 +400,8 @@ async function ledgerData(req, res){
 }
 
 async function createTransactionHandler(req, res) {
+  const { invoice, invoice_details, items, totals } = req.body;
+
   const {
     InvoiceNo,
     InvoiceDate,
@@ -396,7 +412,7 @@ async function createTransactionHandler(req, res) {
     sgst,
     GSTIN,
     Terms
-  } = req.body;
+  } = invoice;
 
   // ✅ Validation (corrected)
   if (!InvoiceNo || !party_id || subtotal == null) {
@@ -441,10 +457,10 @@ async function createTransactionHandler(req, res) {
     const round_off = Math.round(total_amount) - total_amount;
 
     const debit_amount =
-      transaction_type === "sale" ? total_amount + round_off : 0;
+      transaction_type === "SALE" ? total_amount + round_off : 0;
 
     const credit_amount =
-      transaction_type === "purchase" ? total_amount + round_off : 0;
+      transaction_type === "PURCHASE" ? total_amount + round_off : 0;
 
     // ✅ Insert
 
@@ -469,7 +485,7 @@ async function createTransactionHandler(req, res) {
       VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
       )
-      RETURNING *
+      RETURNING transaction_id
     `;
 
     const values = [
@@ -489,11 +505,99 @@ async function createTransactionHandler(req, res) {
       Terms || `Invoice ${InvoiceNo}`
     ];
 
-    const { rows } = await client.query(insertSql, values);
+    const txResult = await client.query(insertSql, values);
+
+    const transaction_id = txResult.transaction_id;
+
+    const invoiceDetailsSql = `
+  INSERT INTO invoice_details (
+    invoice_no,
+    invoice_date,
+    transported_by,
+    place_of_supply,
+    vehical_no,
+    eway_bill_no,
+    vendore_code,
+    po_no,
+    po_date,
+    challan_no,
+    challan_date,
+    account_name,
+    account_no,
+    ifsc_code,
+    branch,
+    terms_conditions,
+    client_name,
+    client_address,
+    gstin,
+    client_name2,
+    client_address2,
+    gstin2
+  )
+  VALUES (
+    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
+    $12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22
+  )
+`;
+
+const invoiceDetailsValues = [
+  InvoiceNo,
+    InvoiceDate || new Date(),
+
+    invoice_details.transported_by || null,
+    invoice_details.place_of_supply || null,
+    invoice_details.vehicle_no || null,
+    invoice_details.eway_bill_no || null,
+    invoice_details.vendor_code || null,
+
+    invoice_details.po_no || null,
+    invoice_details.po_date || null,
+    invoice_details.challan_no || null,
+    invoice_details.challan_date || null,
+
+    invoice_details.account_name || null,
+    invoice_details.account_no || null,
+    invoice_details.ifsc_code || null,
+    invoice_details.branch || null,
+    invoice_details.terms_conditions || null,
+
+    invoice_details.client_name || null,
+    invoice_details.client_address || null,
+    invoice_details.gstin || null,
+    invoice_details.client_name2 || null,
+    invoice_details.client_address2 || null,
+    invoice_details.gstin2 || null
+];
+
+await client.query(invoiceDetailsSql, invoiceDetailsValues);
+
+for (const item of items) {
+      if (!item.item_id ) {
+        throw new Error(
+          `Item must have item_id or HSNCode (invoice ${InvoiceNo})`
+        );
+      }
+
+      await client.query(
+        `
+        INSERT INTO sell_summary (
+          invoice_no,
+          item_id,
+          units_sold
+        )
+        VALUES ($1,$2,$3)
+        `,
+        [
+          InvoiceNo,
+          item.item_id || null, // preferred FK
+          Number(item.quantity) || 0
+        ]
+      );
+    }
 
     await client.query("COMMIT");
 
-    return res.status(201).json({ transaction: rows[0] });
+    return res.status(201).json({ success: true, transaction_id });
 
   } catch (err) {
     await client.query("ROLLBACK");

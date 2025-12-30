@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Navbar from "./components/Navbarr";
+import { API_BASE } from "./config/api.js";
 import Footer from "./components/Footer";
 
 // --- Gemini API Configuration ---
@@ -34,7 +35,7 @@ const callGemini = async (prompt) => {
 
 export default function App() {
   // 🔹 INITIAL DATA (Fallback if no local storage)
-  const initialData = [
+  const fallbackData = [
   { "date": "21 Nov 2025", "invoice": "INV-090", "client": "ACC Limited", "debit": 0, "credit": 20000 },
 
   { "date": "10 May 2025", "invoice": "INV-091", "client": "Aditya Birla Traders", "debit": 17100, "credit": 0 },
@@ -138,12 +139,50 @@ export default function App() {
   { "date": "24 Oct 2025", "invoice": "INV-180", "client": "Spencers Retail Chain", "debit": 0, "credit": 13900 }
 ];
 
+const [ledgerData, setLedgerData] = useState(() => {
+  const saved = localStorage.getItem("client_ledger_data_visual");
+  return saved ? JSON.parse(saved) : fallbackData;
+});
 
-  // 🔹 STATE
-  const [ledgerData] = useState(() => {
-    const saved = localStorage.getItem("client_ledger_data_visual");
-    return saved ? JSON.parse(saved) : initialData;
-  });
+  console.log("Before ", ledgerData)
+
+
+
+
+
+  
+useEffect(() => {
+  fetch(`${API_BASE}/ledger`)
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to fetch ledger");
+      return res.json();
+    })
+    .then(data => {
+      if (Array.isArray(data.ledger)) {
+        setLedgerData(data.ledger); 
+        localStorage.setItem(
+          "client_ledger_data_visual",
+          JSON.stringify(data.ledger)
+        );
+      }
+    })
+    .catch(err => {
+      console.error("Ledger API error:", err);
+    });
+}, []);
+
+
+
+//Use this to use old Data and comment useEffect() function above
+//useEffect(() => {setLedgerData(fallbackData);},[]);
+  
+
+
+
+console.log("After ",ledgerData)
+  console.log(fallbackData)
+
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const [fromMonth, setFromMonth] = useState("All");
