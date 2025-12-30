@@ -455,7 +455,7 @@ async function createTransactionHandler(req, res) {
         invoice_no,
         transaction_type,
         party_id,
-        debit_amount,
+        sell_amount,
         credit_amount,
         taxable_amount,
         igst_amount,
