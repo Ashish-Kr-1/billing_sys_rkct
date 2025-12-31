@@ -12,7 +12,7 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
       <div> <p className="text-center underline font-serif "style={{ fontSize: "32px", color: "#0A4350", fontWeight: "600" , }}>INVOICE</p></div>
       <div className="flex justify-center items-center gap-0 pb-2 border-b-4 " style={{ borderColor: "#0A4350" }}>
           <div className=''>
-            <p className=""style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600" , }}>GSTIN :20DAMPK8203A1ZB</p>
+            <p className=""style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600" , }}>GSTIN :{invoice.GSTIN0}</p>
             <img 
                   src={Logo}
                   alt="Company Logo"

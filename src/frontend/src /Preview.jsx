@@ -118,18 +118,18 @@ export default function Preview() {
       <button onClick={downloadPDF} className="mt-6 px-6 py-3 bg-blue-600 hover:bg-[#3d8ecb] text-white rounded">
         Download PDF
       </button>
-      <button
+       <button
           className="mt-6 px-6 py-3 bg-[#1F5E6C] hover:bg-[#1f6c53] text-white rounded"
            onClick={() => navigate("/Invoice",{ state: { invoice, subtotalAmount, totalAmount, sgst, cgst,} })}
-        >
+         >
           Edit
         </button>
         <button
-  className="mt-6 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded"
-  onClick={() => navigate("/Invoice")}
->
-  New Invoice
-</button>
+         className="mt-6 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded"
+         onClick={() => navigate("/Invoice")}
+          >
+           New Invoice
+         </button>
 
       </div>
     </div>

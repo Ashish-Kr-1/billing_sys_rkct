@@ -35,6 +35,12 @@ function Navbar() {
             Ledger
           </button>
           <button
+            onClick={() => navigate('/Outstanding')}
+            className="font-bold mx-3  hover:text-emerald-400 transition cursor-pointer"
+          >
+            Create Outstanding
+          </button>
+          <button
             onClick={() => navigate('/Create_Party')}
             className="  font-semibold py-3.5 hover:text-emerald-400 cursor-pointer"
           > 
@@ -103,9 +109,18 @@ function Navbar() {
               navigate('/Create_Party')
               setOpen(false)
             }}
-            className="block w-full font-semibold py-3  hover:text-emerald-400"
+            className="block w-full text-left font-semibold py-3  hover:text-emerald-400"
           >
             Create Party & Item
+          </button>
+          <button
+            onClick={() => {
+              navigate('/Outstanding')
+              setOpen(false)
+            }}
+            className="block w-full text-left font-semibold py-3  hover:text-emerald-400"
+          >
+            Create Outstanding
           </button>
         </div>
       )}
