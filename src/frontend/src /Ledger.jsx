@@ -3,6 +3,35 @@ import Navbar from "./components/Navbarr";
 import { API_BASE } from "./config/api.js";
 import { Navigate, useNavigate } from "react-router-dom";
 
+
+const createPayment = async ({ invoice_no, party_id, amount, date, remarks }) => {
+  const res = await fetch(`${API_BASE}/payments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      invoice_no,
+      party_id,
+      amount,
+      date,
+      remarks,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to save payment");
+  }
+
+  return res.json();
+};
+
+const fetchPaymentHistory = async (invoiceNo) => {
+  const res = await fetch(`${API_BASE}/ledger/${invoiceNo}/payments`);
+  if (!res.ok) throw new Error("Failed to fetch payment history");
+  const data = await res.json();
+  return data.payments || [];
+};
+
 const apiKey = "AIzaSyAUPpi_33zKIS9ADNyN8nOA3i-jDskHTJ0";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
@@ -140,11 +169,40 @@ export default function App() {
       .catch(err => console.error("Ledger API error:", err));
   }, []);
 
-  const getInvoiceHistory = (invoiceNo) => {
-    return ledgerData
-      .filter(row => row.invoice === invoiceNo)
-      .sort((a, b) => getSortableDate(a.date).localeCompare(getSortableDate(b.date)));
-  };
+
+  const openInvoicePopup = async (row) => {
+  try {
+    // SALE row (constant, from ledger)
+    const saleRow = {
+      date: row.date,
+      debit: Number(row.debit),
+      credit: 0,
+      remarks: "Invoice generated",
+    };
+
+    // Fetch payments from backend
+    const payments = await fetchPaymentHistory(row.invoice);
+
+    const paymentRows = payments.map(p => ({
+      date: new Date(p.date).toISOString().split("T")[0],
+      debit: 0,
+      credit: Number(p.amount),
+      remarks: p.remarks || "",
+    }));
+
+    setInvoicePopup({
+      invoice: row.invoice,
+      client: row.client,
+      party_id: row.party_id,
+      history: [saleRow, ...paymentRows],
+    });
+
+  } catch (err) {
+    alert("Failed to load invoice history");
+    console.error(err);
+  }
+};
+
 
   const [invoicePopup, setInvoicePopup] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -237,27 +295,66 @@ export default function App() {
   const calculateTotalReceived = () => invoicePopup ? invoicePopup.history.reduce((sum, row) => sum + Number(row.credit || 0), 0) : 0;
   const calculateTotalDue = () => calculateTotalSale() - calculateTotalReceived();
 
-  const handleAddReceipt = () => {
-    if (!newReceipt.date || !newReceipt.amount) return;
-    const payment = { 
-      date: newReceipt.date, 
-      debit: 0, 
-      credit: Number(newReceipt.amount), 
-      remarks: newReceipt.remark 
-    };
+  // const handleAddReceipt = () => {
+  //   if (!newReceipt.date || !newReceipt.amount) return;
+  //   const payment = { 
+  //     date: newReceipt.date, 
+  //     debit: 0, 
+  //     credit: Number(newReceipt.amount), 
+  //     remarks: newReceipt.remark 
+  //   };
     
-    setInvoicePopup(prev => ({
-      ...prev,
-      history: [...prev.history, payment],
+  //   setInvoicePopup(prev => ({
+  //     ...prev,
+  //     history: [...prev.history, payment],
+  //   }));
+
+  //   setLedgerData(prev => [
+  //     ...prev,
+  //     { ...payment, invoice: invoicePopup.invoice, client: invoicePopup.client }
+  //   ]);
+
+  //   setNewReceipt({ date: "", amount: "", remark: "" });
+  // };
+
+  const handleAddReceipt = async () => {
+  if (!newReceipt.amount || !newReceipt.date) return;
+
+  try {
+    await createPayment({
+      invoice_no: invoicePopup.invoice,
+      party_id: invoicePopup.party_id,
+      amount: Number(newReceipt.amount),
+      date: newReceipt.date,
+      remarks: newReceipt.remark,
+    });
+
+    // Reload payment history from DB
+    const payments = await fetchPaymentHistory(invoicePopup.invoice);
+
+    const paymentRows = payments.map(p => ({
+      date: new Date(p.date).toISOString().split("T")[0],
+      debit: 0,
+      credit: Number(p.amount),
+      remarks: p.remarks || "",
     }));
 
-    setLedgerData(prev => [
+    // Keep SALE row fixed
+    const saleRow = invoicePopup.history.find(r => r.debit > 0);
+
+    setInvoicePopup(prev => ({
       ...prev,
-      { ...payment, invoice: invoicePopup.invoice, client: invoicePopup.client }
-    ]);
+      history: [saleRow, ...paymentRows],
+    }));
 
     setNewReceipt({ date: "", amount: "", remark: "" });
-  };
+
+  } catch (err) {
+    alert(err.message);
+    console.error(err);
+  }
+};
+
 
   return (
     <>
@@ -359,7 +456,7 @@ export default function App() {
                       <tr key={index} className="hover:bg-slate-50">
                         <td className="py-5 px-6 text-slate-500">{row.date}</td>
                         <td className="px-4">
-                          <button onClick={() => setInvoicePopup({ invoice: row.invoice, client: row.client, history: getInvoiceHistory(row.invoice) })} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-mono text-xs border font-bold">
+                          <button onClick={() => openInvoicePopup(row)} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-mono text-xs border font-bold">
                             {row.invoice}
                           </button>
                         </td>
@@ -368,7 +465,7 @@ export default function App() {
                         <td className="text-right px-4 text-emerald-600">{row.credit > 0 ? `₹${row.credit.toLocaleString()}` : "—"}</td>
                         <td className="text-right px-4 font-bold">{due > 0 ? `₹${due.toLocaleString()}` : "—"}</td>
                         <td className="text-right px-6">
-                          <button onClick={() => setInvoicePopup({ invoice: row.invoice, client: row.client, history: getInvoiceHistory(row.invoice) })}>
+                          <button onClick={() => openInvoicePopup(row)}>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}>
                               {status.label}
                             </span>

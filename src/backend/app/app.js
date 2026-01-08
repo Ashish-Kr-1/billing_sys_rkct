@@ -240,6 +240,68 @@ async function getNextInvoiceNumber(req, res){
   }
 }
 
+async function createPaymentHandler(req, res) {
+  const { invoice_no, party_id, amount, date, remarks } = req.body;
+
+  if (!invoice_no || !party_id || !amount) {
+    return res.status(400).json({ error: "invoice_no, party_id, amount required" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Ensure invoice exists
+    const invoiceCheck = await client.query(
+      `SELECT transaction_id FROM transactions
+       WHERE invoice_no = $1 AND transaction_type = 'SALE'`,
+      [invoice_no]
+    );
+
+    if (invoiceCheck.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // Insert payment
+    const insertPayment = `
+      INSERT INTO transactions (
+        transaction_date,
+        invoice_no,
+        transaction_type,
+        party_id,
+        sell_amount,
+        credit_amount,
+        narration
+      )
+      VALUES ($1, $2, 'RECEIPT', $3, 0, $4, $5)
+      RETURNING *
+    `;
+
+    const values = [
+      date || new Date(),
+      invoice_no,
+      party_id,
+      amount,
+      remarks || `Payment against ${invoice_no}`
+    ];
+
+    const { rows } = await client.query(insertPayment, values);
+
+    await client.query("COMMIT");
+
+    res.status(201).json({ payment: rows[0] });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Payment error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+}
+
 app.get('/number', getNextInvoiceNumber);
 
 async function createItemHandler(req, res) {
@@ -376,6 +438,7 @@ async function ledgerData(req, res){
         COALESCE(t.credit_amount, 0) AS credit
       FROM transactions t
       JOIN parties p ON p.party_id = t.party_id
+      WHERE t.transaction_type = 'SALE'
       ORDER BY t.transaction_date ASC, t.transaction_id ASC
     `);
 
