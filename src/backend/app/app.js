@@ -59,8 +59,8 @@ app.get('/health', async (req, res) => res.json({ status: 'ok' }));
 //endpoint to test database
 app.get('/test-db', async (req, res) => {
   try {
-    const result = await pool.query("SELECT NOW()");
-    res.json(result.rows[0]);
+    const [rows] = await pool.query("SELECT NOW()");
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -68,8 +68,8 @@ app.get('/test-db', async (req, res) => {
 
 app.get('/parties', async (req, res) => {
   try {
-    const result = await pool.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
-    res.json(result.rows);
+    const [rows] = await pool.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -78,8 +78,8 @@ app.get('/parties', async (req, res) => {
 
 app.get('/itemNames', async (req, res) => {
   try {
-    const result = await pool.query("SELECT item_id, item_name FROM items ORDER BY item_name");
-    res.json(result.rows);
+    const [rows] = await pool.query("SELECT item_id, item_name FROM items ORDER BY item_name");
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -87,8 +87,8 @@ app.get('/itemNames', async (req, res) => {
 
 app.get('/transactions', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM transactions");
-    res.json(result.rows);
+    const [rows] = await pool.query("SELECT * FROM transactions");
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -96,43 +96,45 @@ app.get('/transactions', async (req, res) => {
 
 app.get('/items', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * from items");
-    res.json(result);
-    console.log(result);
+    const [rows] = await pool.query("SELECT * from items");
+    res.json({ rows }); // Frontend might expect { rows: [] } structure based on previous code or just array? 
+    // Previous code: res.json(result); which sends the whole PG object { command, rowCount, rows: [] }.
+    // Frontend likely uses data.rows.
+    console.log(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 })
 
-async function partyList(req, res){
-  const client = await pool.connect();
-  try{
-    await client.query("BEGIN");
-    const result = await pool.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
-    res.json(result.rows);
-  }catch(err){
-    await client.query('ROLLBACK').catch(() => { });
-    console.log("Party list error ".err);
-    if(err.code=='23505')
-      return res.status(409).json({error: "Duplicate key"});
-    return res.status(500).json({error: "Internal server error"});
-  }finally{
+async function partyList(req, res) {
+  const client = await pool.getConnection(); // MySQL
+  try {
+    await client.beginTransaction();
+    const [rows] = await client.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    res.json(rows);
+    await client.commit();
+  } catch (err) {
+    await client.rollback();
+    console.log("Party list error ", err);
+    return res.status(500).json({ error: "Internal server error" });
+  } finally {
     client.release();
   }
 }
 
-async function partyDetails(req, res){
-  const client = await pool.connect();
+async function partyDetails(req, res) {
+  const client = await pool.getConnection();
   const partyId = parseInt(req.params.id, 10);
 
   if (!Number.isInteger(partyId)) {
+    client.release();
     return res.status(400).json({ error: 'Invalid party id' });
   }
 
-  try{
-    await client.query("BEGIN");
+  try {
+    await client.beginTransaction();
 
-    const { rows } = await pool.query(
+    const [rows] = await client.query(
       `
       SELECT
         party_id,
@@ -141,39 +143,40 @@ async function partyDetails(req, res){
         billing_address,
         shipping_address
       FROM parties
-      WHERE party_id = $1
+      WHERE party_id = ?
       `,
       [partyId]
     );
 
     if (rows.length === 0) {
+      await client.rollback();
       return res.status(404).json({ error: 'Party not found' });
     }
 
+    await client.commit();
     return res.json({ party: rows[0] });
-  }catch(err){
-    await client.query('ROLLBACK').catch(() => { });
-    console.log("Party list error ".err);
-    if(err.code=='23505')
-      return res.status(409).json({error: "Duplicate key"});
-    return res.status(500).json({error: "Internal server error"});
-  }finally{
+  } catch (err) {
+    await client.rollback();
+    console.log("Party list error ", err);
+    return res.status(500).json({ error: "Internal server error" });
+  } finally {
     client.release();
   }
 }
 
-async function itemDetails(req, res){
-  const client = await pool.connect();
+async function itemDetails(req, res) {
+  const client = await pool.getConnection();
   const itemId = parseInt(req.params.id, 10);
 
   if (!Number.isInteger(itemId)) {
+    client.release();
     return res.status(400).json({ error: 'Invalid item id' });
   }
 
-  try{
-    await client.query("BEGIN");
+  try {
+    await client.beginTransaction();
 
-    const { rows } = await pool.query(
+    const [rows] = await client.query(
       `
       SELECT
         item_id,
@@ -182,60 +185,62 @@ async function itemDetails(req, res){
         unit,
         rate
       FROM items
-      WHERE item_id = $1
+      WHERE item_id = ?
       `,
       [itemId]
     );
 
     if (rows.length === 0) {
+      await client.rollback();
       return res.status(404).json({ error: 'Item not found' });
     }
 
+    await client.commit();
     return res.json({ item: rows[0] });
-  }catch(err){
-    await client.query('ROLLBACK').catch(() => { });
-    console.log("Item list error ".err);
-    if(err.code=='23505')
-      return res.status(409).json({error: "Duplicate key"});
-    return res.status(500).json({error: "Internal server error"});
-  }finally{
+  } catch (err) {
+    await client.rollback();
+    console.log("Item list error ", err);
+    return res.status(500).json({ error: "Internal server error" });
+  } finally {
     client.release();
   }
 }
 
-async function getNextInvoiceNumber(req, res){
-  const client = await pool.connect();
-  try{
-    await client.query("BEGIN");
-    const prefix = 'RKCT/2025-26'; 
+async function getNextInvoiceNumber(req, res) {
+  const client = await pool.getConnection(); // MySQL
+  try {
+    await client.beginTransaction();
+    const prefix = 'RKCT/2025-26';
 
-  const result = await pool.query(`
+    const [rows] = await client.query(`
     SELECT invoice_no
     FROM transactions
-    WHERE invoice_no LIKE $1
+    WHERE invoice_no LIKE ?
     ORDER BY created_at DESC
     LIMIT 1
   `, [`${prefix}/%`]);
 
-  let nextNumber = 1;
+    let nextNumber = 1;
 
-  if (result.rows.length > 0) {
-    const lastInvoiceNo = result.rows[0].invoice_no; // RKCT/2025-26/012
-    const lastNumber = parseInt(lastInvoiceNo.split('/')[2], 10);
-    nextNumber = lastNumber + 1;
-  }
+    if (rows.length > 0) {
+      const lastInvoiceNo = rows[0].invoice_no; // RKCT/2025-26/012
+      const lastNumber = parseInt(lastInvoiceNo.split('/')[2], 10);
+      nextNumber = lastNumber + 1;
+    }
 
-  const formatted = `${prefix}/${String(nextNumber).padStart(3, '0')}`;
+    const formatted = `${prefix}/${String(nextNumber).padStart(3, '0')}`;
 
-  return res.json({ InvoiceNo: formatted });
-  }catch(err){
-    await client.query('ROLLBACK').catch(() => { });
+    await client.commit();
+    return res.json({ InvoiceNo: formatted });
+  } catch (err) {
+    await client.rollback();
     console.error('invoice number error', err);
-    if (err.code === '23505') {
+    // err.code '23505' is PG specific duplicate key. MySQL uses 1062
+    if (err.errno === 1062) {
       return res.status(409).json({ error: 'Duplicate key' });
     }
     return res.status(500).json({ error: 'Internal server error' });
-  }finally{
+  } finally {
     client.release();
   }
 }
@@ -244,28 +249,34 @@ async function createPaymentHandler(req, res) {
   const { invoice_no, party_id, amount, date, remarks } = req.body;
 
   if (!invoice_no || !party_id || !amount) {
-    return res.status(400).json({ error: "invoice_no, party_id, amount required" });
+    return res.status(400).json({
+      error: "invoice_no, party_id and amount are required"
+    });
   }
 
-  const client = await pool.connect();
+  const client = await pool.getConnection();
 
   try {
-    await client.query("BEGIN");
+    await client.beginTransaction();
 
-    // Ensure invoice exists
-    const invoiceCheck = await client.query(
-      `SELECT transaction_id FROM transactions
-       WHERE invoice_no = $1 AND transaction_type = 'SALE'`,
+    // 🔎 Ensure invoice exists (SALE entry)
+    const [invoice] = await client.query(
+      `
+      SELECT sell_amount
+      FROM transactions
+      WHERE invoice_no = ?
+        AND transaction_type = 'SALE'
+      `,
       [invoice_no]
     );
 
-    if (invoiceCheck.rowCount === 0) {
-      await client.query("ROLLBACK");
+    if (invoice.length === 0) {
+      await client.rollback();
       return res.status(404).json({ error: "Invoice not found" });
     }
 
-    // Insert payment
-    const insertPayment = `
+    // ➕ Insert RECEIPT
+    const insertSql = `
       INSERT INTO transactions (
         transaction_date,
         invoice_no,
@@ -273,10 +284,22 @@ async function createPaymentHandler(req, res) {
         party_id,
         sell_amount,
         credit_amount,
+        taxable_amount,
+        igst_amount,
+        cgst_amount,
+        sgst_amount,
+        round_off,
+        gst_percentage,
+        gst_number,
         narration
       )
-      VALUES ($1, $2, 'RECEIPT', $3, 0, $4, $5)
-      RETURNING *
+      VALUES (
+        ?, ?, 'RECEIPT', ?,
+        0, ?,
+        0, 0, 0, 0, 0, 0,
+        NULL,
+        ?
+      )
     `;
 
     const values = [
@@ -284,23 +307,61 @@ async function createPaymentHandler(req, res) {
       invoice_no,
       party_id,
       amount,
-      remarks || `Payment against ${invoice_no}`
+      remarks || `Payment against invoice ${invoice_no}`
     ];
 
-    const { rows } = await client.query(insertPayment, values);
+    const [resHeader] = await client.query(insertSql, values);
+    const paymentId = resHeader.insertId;
 
-    await client.query("COMMIT");
+    const [rows] = await client.query("SELECT * FROM transactions WHERE transaction_id = ?", [paymentId]);
 
+    await client.commit();
     res.status(201).json({ payment: rows[0] });
 
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Payment error:", err);
+    await client.rollback();
+    console.error("createPayment error:", err);
     res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
 }
+
+async function getInvoiceHistoryHandler(req, res) {
+  const invoiceNo = req.query.invoice_no;
+
+  if (!invoiceNo) {
+    return res.status(400).json({ error: "Invoice number required" });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT
+        transaction_date,
+        credit_amount,
+        narration
+      FROM transactions
+      WHERE invoice_no = ?
+        AND credit_amount > 0
+      ORDER BY transaction_date ASC
+      `,
+      [invoiceNo]
+    );
+
+    const payments = rows.map(r => ({
+      date: r.transaction_date,
+      amount: Number(r.credit_amount),
+      remarks: r.narration || ""
+    }));
+
+    return res.json({ payments });
+  } catch (err) {
+    console.error("Payment history error:", err);
+    return res.status(500).json({ error: "Failed to fetch payment history" });
+  }
+}
+
 
 app.get('/number', getNextInvoiceNumber);
 
@@ -312,34 +373,34 @@ async function createItemHandler(req, res) {
 
   //if (!hsn_code) return res.status(400).json({ error: 'All fields are required' })
 
-  const client = await pool.connect();
+  const client = await pool.getConnection();
 
   try {
-    await client.query('BEGIN');
+    await client.beginTransaction();
 
-    const dup = await client.query("SELECT item_id from items WHERE hsn_code = $1", [hsn_code]);
-    if (dup.rowCount > 0) {
-      await client.query("ROLLBACK")
-      return res.status(409).json({ error: 'Item with this hsn code already exists', item_id: dup.rows[0].item_id });
+    const [dup] = await client.query("SELECT item_id from items WHERE hsn_code = ?", [hsn_code]);
+    if (dup.length > 0) {
+      await client.rollback()
+      return res.status(409).json({ error: 'Item with this hsn code already exists', item_id: dup[0].item_id });
     }
 
     const INSERT_SQL = `INSERT INTO items
       (item_name, hsn_code, unit, rate)
-      VALUES ($1,$2,$3,$4)
-      RETURNING item_name, hsn_code, unit, rate`;
+      VALUES (?,?,?,?)`;
 
     const vals = [item_name, hsn_code, unit, rate]
-    const { rows } = await client.query(INSERT_SQL, vals);
+    const [resHeader] = await client.query(INSERT_SQL, vals);
 
-    const result = { party: rows[0] };
+    // Manual result construction since we know input
+    const result = { party: { item_name, hsn_code, unit, rate } };
 
-    await client.query('COMMIT');
+    await client.commit();
 
     const status = res.status(201).json(result);
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => { });
+    await client.rollback();
     console.error('create item error', err);
-    if (err.code === '23505') {
+    if (err.errno === 1062) {
       return res.status(409).json({ error: 'Duplicate key' });
     }
     return res.status(500).json({ error: 'Internal server error' });
@@ -365,44 +426,47 @@ async function createPartyHandler(req, res) {
 
   //const idempotencyKey = req.headers['idempotency-key']?.trim() || null;
 
-  const client = await pool.connect();
+  const client = await pool.getConnection();
   try {
-    await client.query('BEGIN');
+    await client.beginTransaction();
 
     // If you want to prevent duplicates by GSTIN:
     if (gstin_no) {
-      const dup = await client.query('SELECT party_id FROM parties WHERE gstin_no = $1', [gstin_no]);
-      if (dup.rowCount > 0) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({ error: 'Party with this GSTIN already exists', party_id: dup.rows[0].party_id });
+      const [dup] = await client.query('SELECT party_id FROM parties WHERE gstin_no = ?', [gstin_no]);
+      if (dup.length > 0) {
+        await client.rollback();
+        return res.status(409).json({ error: 'Party with this GSTIN already exists', party_id: dup[0].party_id });
       }
     }
 
     const insertSql = `INSERT INTO parties
       (party_name, gstin_no, type, billing_address, shipping_address, supply_state_code, vendore_code, pin_code, contact_person, mobile_no)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      RETURNING party_name, gstin_no, type, billing_address, shipping_address, supply_state_code, vendore_code, pin_code, contact_person, mobile_no`;
+      VALUES (?,?,?,?,?,?,?,?,?,?)`;
 
     const vals = [party_name, gstin_no, type, billing_address, shipping_address, supply_state_code, vendore_code, pin_code, contact_person, mobile_no]
-    const { rows } = await client.query(insertSql, vals);
+    const [resHeader] = await client.query(insertSql, vals);
 
-    const result = { party: rows[0] };
+    const result = {
+      party: {
+        party_name, gstin_no, type, billing_address, shipping_address, supply_state_code, vendore_code, pin_code, contact_person, mobile_no
+      }
+    };
 
     // store idempotency result (optional)
     // if (idempotencyKey) {
     //   await client.query(
-    //     `INSERT INTO idempotency_store (key, response_body) VALUES ($1, $2)`,
+    //     `INSERT INTO idempotency_store (key, response_body) VALUES (?, ?)`,
     //     [idempotencyKey, JSON.stringify(result)]
     //   );
     // }
 
-    await client.query('COMMIT');
+    await client.commit();
 
     const status = res.status(201).json(result);
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => { });
+    await client.rollback();
     console.error('createParty error', err);
-    if (err.code === '23505') {
+    if (err.errno === 1062) {
       return res.status(409).json({ error: 'Duplicate key' });
     }
     return res.status(500).json({ error: 'Internal server error' });
@@ -423,11 +487,11 @@ function formatLedgerDate(dateValue) {
   });
 }
 
-async function ledgerData(req, res){
-  const client = await pool.connect();
-  try{
+async function ledgerData(req, res) {
+  const client = await pool.getConnection();
+  try {
     console.log("Working");
-    const { rows } = await pool.query(`
+    const [rows] = await client.query(`
       SELECT
         t.transaction_id,
         t.transaction_date,
@@ -442,8 +506,8 @@ async function ledgerData(req, res){
       ORDER BY t.transaction_date ASC, t.transaction_id ASC
     `);
 
-  const ledger = rows.map(r => ({
-      date: formatLedgerDate(r.transaction_date),          
+    const ledger = rows.map(r => ({
+      date: formatLedgerDate(r.transaction_date),
       invoice: r.invoice_no,
       client: r.party_name,
       debit: Number(r.debit),
@@ -453,11 +517,10 @@ async function ledgerData(req, res){
     }));
 
     res.json({ ledger });
-  }catch(err){
-    await client.query('ROLLBACK').catch(() => { });
-    console.log("Ledger error ".err);
-    return res.status(500).json({error: "Internal server error"});
-  }finally{
+  } catch (err) {
+    console.log("Ledger error ", err);
+    return res.status(500).json({ error: "Internal server error" });
+  } finally {
     client.release();
   }
 }
@@ -484,25 +547,25 @@ async function createTransactionHandler(req, res) {
     });
   }
 
-  const client = await pool.connect();
+  const client = await pool.getConnection();
 
   try {
 
-    await client.query("BEGIN");
+    await client.beginTransaction();
     console.log("Tried");
 
 
     // ✅ Prevent duplicate invoice numbers
-    const dup = await client.query(
-      "SELECT transaction_id FROM transactions WHERE invoice_no = $1",
+    const [dup] = await client.query(
+      "SELECT transaction_id FROM transactions WHERE invoice_no = ?",
       [InvoiceNo]
     );
 
-    if (dup.rowCount > 0) {
-      await client.query("ROLLBACK");
+    if (dup.length > 0) {
+      await client.rollback();
       return res.status(409).json({
         error: "Transaction with this invoice no already exists",
-        transaction_id: dup.rows[0].transaction_id
+        transaction_id: dup[0].transaction_id
       });
     }
 
@@ -546,9 +609,8 @@ async function createTransactionHandler(req, res) {
         narration
       )
       VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
+        ?,?,?,?,?,?,?,?,?,?,?,?,?,?
       )
-      RETURNING transaction_id
     `;
 
     const values = [
@@ -568,9 +630,9 @@ async function createTransactionHandler(req, res) {
       Terms || `Invoice ${InvoiceNo}`
     ];
 
-    const txResult = await client.query(insertSql, values);
+    const [txResult] = await client.query(insertSql, values);
 
-    const transaction_id = txResult.transaction_id;
+    const transaction_id = txResult.insertId;
 
     const invoiceDetailsSql = `
   INSERT INTO invoice_details (
@@ -598,44 +660,43 @@ async function createTransactionHandler(req, res) {
     gstin2
   )
   VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
-    $12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22
+    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
   )
 `;
 
-const invoiceDetailsValues = [
-  InvoiceNo,
-    InvoiceDate || new Date(),
+    const invoiceDetailsValues = [
+      InvoiceNo,
+      InvoiceDate || new Date(),
 
-    invoice_details.transported_by || null,
-    invoice_details.place_of_supply || null,
-    invoice_details.vehicle_no || null,
-    invoice_details.eway_bill_no || null,
-    invoice_details.vendor_code || null,
+      invoice_details.transported_by || null,
+      invoice_details.place_of_supply || null,
+      invoice_details.vehicle_no || null,
+      invoice_details.eway_bill_no || null,
+      invoice_details.vendor_code || null,
 
-    invoice_details.po_no || null,
-    invoice_details.po_date || null,
-    invoice_details.challan_no || null,
-    invoice_details.challan_date || null,
+      invoice_details.po_no || null,
+      invoice_details.po_date || null,
+      invoice_details.challan_no || null,
+      invoice_details.challan_date || null,
 
-    invoice_details.account_name || null,
-    invoice_details.account_no || null,
-    invoice_details.ifsc_code || null,
-    invoice_details.branch || null,
-    invoice_details.terms_conditions || null,
+      invoice_details.account_name || null,
+      invoice_details.account_no || null,
+      invoice_details.ifsc_code || null,
+      invoice_details.branch || null,
+      invoice_details.terms_conditions || null,
 
-    invoice_details.client_name || null,
-    invoice_details.client_address || null,
-    invoice_details.gstin || null,
-    invoice_details.client_name2 || null,
-    invoice_details.client_address2 || null,
-    invoice_details.gstin2 || null
-];
+      invoice_details.client_name || null,
+      invoice_details.client_address || null,
+      invoice_details.gstin || null,
+      invoice_details.client_name2 || null,
+      invoice_details.client_address2 || null,
+      invoice_details.gstin2 || null
+    ];
 
-await client.query(invoiceDetailsSql, invoiceDetailsValues);
+    await client.query(invoiceDetailsSql, invoiceDetailsValues);
 
-for (const item of items) {
-      if (!item.item_id ) {
+    for (const item of items) {
+      if (!item.item_id) {
         throw new Error(
           `Item must have item_id or HSNCode (invoice ${InvoiceNo})`
         );
@@ -648,7 +709,7 @@ for (const item of items) {
           item_id,
           units_sold
         )
-        VALUES ($1,$2,$3)
+        VALUES (?,?,?)
         `,
         [
           InvoiceNo,
@@ -658,12 +719,12 @@ for (const item of items) {
       );
     }
 
-    await client.query("COMMIT");
+    await client.commit();
 
     return res.status(201).json({ success: true, transaction_id });
 
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.rollback();
     console.error("createTransaction error:", err);
     return res.status(500).json({ error: "Internal server error" });
   } finally {
@@ -691,10 +752,13 @@ routerParty.get('/:id', partyDetails);
 routerItems.get('/:id', itemDetails);
 
 routerLedger.get('/', ledgerData);
+routerLedger.post('/payment', createPaymentHandler);
 
-app.use('/parties',routerParty);
+routerLedger.get("/payments", getInvoiceHistoryHandler);
+
+app.use('/parties', routerParty);
 app.use('/ledger', routerLedger);
-app.use('/item_id',routerItems);
+app.use('/item_id', routerItems);
 app.use('/createParty', router);
 app.use('/createItem', routerB);
 app.use('/createInvoice', routerTransaction);

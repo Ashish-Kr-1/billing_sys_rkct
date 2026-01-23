@@ -1,32 +1,32 @@
-import pg from 'pg';
+import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
-dotenv.config({path:"./.env"})
+dotenv.config({ path: "./.env" })
 
-const { Pool } = pg;
+const pool = mysql.createPool({
+    host: process.env.DB_HOST, // Hostinger DB Host
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    rowsAsRows: true, // Optimizes return
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error('DATABASE_URL not set in environment');
-}
-
-const pool = new Pool(
-    {
-        connectionString,
-        ssl: {rejectUnauthorized:false},
-        max:10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000
-    }
-);
-
-pool.on("error", () => {
-    console.error("Unexpected pg error",err);
-}
-);
+// Test connection
+pool.getConnection()
+    .then(conn => {
+        console.log("Database connected successfully");
+        conn.release();
+    })
+    .catch(err => {
+        console.error("Database connection failed:", err);
+    });
 
 export default pool;
-export async function query (text, params){
-    return pool.query(text, params);
+
+export async function query(text, params) {
+    const [rows, fields] = await pool.query(text, params);
+    return { rows };
 };
