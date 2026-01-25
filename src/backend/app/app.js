@@ -246,9 +246,9 @@ async function getNextInvoiceNumber(req, res) {
 }
 
 async function createPaymentHandler(req, res) {
-  const { invoice_no, party_id, amount, date, remarks } = req.body;
+  const { invoice_no, amount, date, remarks } = req.body;
 
-  if (!invoice_no || !party_id || !amount) {
+  if (!invoice_no || !amount) {
     return res.status(400).json({
       error: "invoice_no, party_id and amount are required"
     });
@@ -262,7 +262,7 @@ async function createPaymentHandler(req, res) {
     // 🔎 Ensure invoice exists (SALE entry)
     const [invoice] = await client.query(
       `
-      SELECT sell_amount
+      SELECT party_id
       FROM transactions
       WHERE invoice_no = ?
         AND transaction_type = 'SALE'
@@ -274,6 +274,8 @@ async function createPaymentHandler(req, res) {
       await client.rollback();
       return res.status(404).json({ error: "Invoice not found" });
     }
+
+
 
     // ➕ Insert RECEIPT
     const insertSql = `
@@ -305,7 +307,7 @@ async function createPaymentHandler(req, res) {
     const values = [
       date || new Date(),
       invoice_no,
-      party_id,
+      invoice[0].party_id,
       amount,
       remarks || `Payment against invoice ${invoice_no}`
     ];
@@ -499,7 +501,12 @@ async function ledgerData(req, res) {
         t.transaction_type,
         p.party_name,
         COALESCE(t.sell_amount, 0)   AS debit,
-        COALESCE(t.credit_amount, 0) AS credit
+        (
+           SELECT COALESCE(SUM(credit_amount), 0)
+           FROM transactions t2
+           WHERE t2.invoice_no = t.invoice_no
+           AND t2.transaction_type = 'RECEIPT'
+        ) AS credit
       FROM transactions t
       JOIN parties p ON p.party_id = t.party_id
       WHERE t.transaction_type = 'SALE'

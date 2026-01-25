@@ -5,12 +5,12 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 
 const createPayment = async ({ invoice_no, party_id, amount, date, remarks }) => {
-  const res = await fetch(`${API_BASE}/payments`, {
+  console.log(invoice_no, party_id, amount);
+  const res = await fetch(`${API_BASE}/ledger/payment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       invoice_no,
-      party_id,
       amount,
       date,
       remarks,
@@ -26,8 +26,12 @@ const createPayment = async ({ invoice_no, party_id, amount, date, remarks }) =>
 };
 
 const fetchPaymentHistory = async (invoiceNo) => {
-  const res = await fetch(`${API_BASE}/ledger/${invoiceNo}/payments`);
+  const res = await fetch(
+    `${API_BASE}/ledger/payments?invoice_no=${encodeURIComponent(invoiceNo)}`
+  );
+
   if (!res.ok) throw new Error("Failed to fetch payment history");
+
   const data = await res.json();
   return data.payments || [];
 };
@@ -37,7 +41,7 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 
 const callGemini = async (prompt) => {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const payload = { contents: [{ parts: [{ text: prompt }] }] };  
+  const payload = { contents: [{ parts: [{ text: prompt }] }] };
   let delay = 1000;
   for (let i = 0; i < 5; i++) {
     try {
@@ -157,7 +161,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : fallbackData;
   });
 
-  useEffect(() => {
+  const fetchLedgerData = () => {
     fetch(`${API_BASE}/ledger`)
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => {
@@ -167,41 +171,46 @@ export default function App() {
         }
       })
       .catch(err => console.error("Ledger API error:", err));
+  };
+
+  useEffect(() => {
+    fetchLedgerData();
   }, []);
 
 
   const openInvoicePopup = async (row) => {
-  try {
-    // SALE row (constant, from ledger)
-    const saleRow = {
-      date: row.date,
-      debit: Number(row.debit),
-      credit: 0,
-      remarks: "Invoice generated",
-    };
+    try {
+      // SALE row (constant, from ledger)
+      const saleRow = {
+        date: row.date,
+        debit: Number(row.debit),
+        credit: 0,
+        remarks: "Invoice generated",
+      };
 
-    // Fetch payments from backend
-    const payments = await fetchPaymentHistory(row.invoice);
+      // Fetch payments from backend
+      const payments = await fetchPaymentHistory(row.invoice);
 
-    const paymentRows = payments.map(p => ({
-      date: new Date(p.date).toISOString().split("T")[0],
-      debit: 0,
-      credit: Number(p.amount),
-      remarks: p.remarks || "",
-    }));
+      const paymentRows = payments.map(p => ({
+        date: new Date(p.date).toISOString().split("T")[0],
+        debit: 0,
+        credit: Number(p.amount),
+        remarks: p.remarks || "",
+      }));
 
-    setInvoicePopup({
-      invoice: row.invoice,
-      client: row.client,
-      party_id: row.party_id,
-      history: [saleRow, ...paymentRows],
-    });
+      setInvoicePopup({
+        invoice: row.invoice,
+        client: row.client,
+        party_id: row.party_id,
+        history: [saleRow, ...paymentRows],
+      });
 
-  } catch (err) {
-    alert("Failed to load invoice history");
-    console.error(err);
-  }
-};
+
+    } catch (err) {
+      alert("Failed to load invoice history");
+      console.error(err);
+    }
+  };
 
 
   const [invoicePopup, setInvoicePopup] = useState(null);
@@ -237,8 +246,8 @@ export default function App() {
         const rowMonth = parseMonth(row.date);
         const matchesMonthRange = (fromMonth === "All" || rowMonth >= fromMonth) && (toMonth === "All" || rowMonth <= toMonth);
         const matchesClient = selectedClient === "All" || row.client === selectedClient;
-        const matchesSearch = row.client.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             row.invoice.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = row.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          row.invoice.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesMonthRange && matchesClient && matchesSearch;
       })
       .sort((a, b) => getSortableDate(b.date).localeCompare(getSortableDate(a.date)));
@@ -263,8 +272,8 @@ export default function App() {
     const summary = filteredData.slice(0, 100).map(d => `${d.client}: Billed ₹${d.debit}, Paid ₹${d.credit}`).join(", ");
     if (!summary) { setAiInsight("No transactions found."); setIsGeneratingInsight(false); return; }
     const prompt = `Senior accounts analyst. Analyze: [${summary}]. Total Billed: ₹${stats.totalDebit}. Total Outstanding: ₹${stats.outstanding}. Identify top 3 clients needing follow up. STRICTLY 1-2 sentences.`;
-    try { const result = await callGemini(prompt); setAiInsight(result); } 
-    catch (e) { setAiInsight("Error connecting to AI."); } 
+    try { const result = await callGemini(prompt); setAiInsight(result); }
+    catch (e) { setAiInsight("Error connecting to AI."); }
     finally { setIsGeneratingInsight(false); }
   };
 
@@ -272,7 +281,7 @@ export default function App() {
     if (selectedClient === "All" || !clientSummaryStats) return;
     setDraftEmail({ loading: true, client: selectedClient, tone });
     const prompt = `Write a ${tone} reminder to ${selectedClient} from R.K Casting. Total Outstanding: ₹${clientSummaryStats.outstanding}.`;
-    try { const result = await callGemini(prompt); setDraftEmail({ loading: false, client: selectedClient, tone, text: result, amount: clientSummaryStats.outstanding }); } 
+    try { const result = await callGemini(prompt); setDraftEmail({ loading: false, client: selectedClient, tone, text: result, amount: clientSummaryStats.outstanding }); }
     catch (e) { setDraftEmail(null); }
   };
 
@@ -303,7 +312,7 @@ export default function App() {
   //     credit: Number(newReceipt.amount), 
   //     remarks: newReceipt.remark 
   //   };
-    
+
   //   setInvoicePopup(prev => ({
   //     ...prev,
   //     history: [...prev.history, payment],
@@ -318,42 +327,45 @@ export default function App() {
   // };
 
   const handleAddReceipt = async () => {
-  if (!newReceipt.amount || !newReceipt.date) return;
+    if (!newReceipt.amount || !newReceipt.date) return;
 
-  try {
-    await createPayment({
-      invoice_no: invoicePopup.invoice,
-      party_id: invoicePopup.party_id,
-      amount: Number(newReceipt.amount),
-      date: newReceipt.date,
-      remarks: newReceipt.remark,
-    });
+    try {
+      await createPayment({
+        invoice_no: invoicePopup.invoice,
+        party_id: invoicePopup.party_id,
+        amount: Number(newReceipt.amount),
+        date: newReceipt.date,
+        remarks: newReceipt.remark,
+      });
 
-    // Reload payment history from DB
-    const payments = await fetchPaymentHistory(invoicePopup.invoice);
+      // Reload payment history from DB
+      const payments = await fetchPaymentHistory(invoicePopup.invoice);
 
-    const paymentRows = payments.map(p => ({
-      date: new Date(p.date).toISOString().split("T")[0],
-      debit: 0,
-      credit: Number(p.amount),
-      remarks: p.remarks || "",
-    }));
+      const paymentRows = payments.map(p => ({
+        date: new Date(p.date).toISOString().split("T")[0],
+        debit: 0,
+        credit: Number(p.amount),
+        remarks: p.remarks || "",
+      }));
 
-    // Keep SALE row fixed
-    const saleRow = invoicePopup.history.find(r => r.debit > 0);
+      // Keep SALE row fixed
+      const saleRow = invoicePopup.history.find(r => r.debit > 0);
 
-    setInvoicePopup(prev => ({
-      ...prev,
-      history: [saleRow, ...paymentRows],
-    }));
+      setInvoicePopup(prev => ({
+        ...prev,
+        history: [saleRow, ...paymentRows],
+      }));
 
-    setNewReceipt({ date: "", amount: "", remark: "" });
+      setNewReceipt({ date: "", amount: "", remark: "" });
 
-  } catch (err) {
-    alert(err.message);
-    console.error(err);
-  }
-};
+      // Refresh the main background table
+      fetchLedgerData();
+
+    } catch (err) {
+      alert(err.message);
+      console.error(err);
+    }
+  };
 
 
   return (
@@ -368,7 +380,7 @@ export default function App() {
               <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">AI powered analysis</p>
             </div>
             {selectedClient === "All" && (
-              <button 
+              <button
                 onClick={generateAIInsight}
                 disabled={isGeneratingInsight}
                 className="bg-[#004f43cc] hover:bg-emerald-900 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg active:scale-95"
@@ -380,14 +392,14 @@ export default function App() {
 
           {aiInsight && (
             <div className="mb-8 bg-white border border-indigo-100 p-6 rounded-2xl relative shadow-xl">
-               <button onClick={() => setAiInsight("")} className="absolute top-4 right-5 text-slate-400 text-2xl font-bold">&times;</button>
-               <div className="flex gap-5 items-start">
-                  <div className="p-3 bg-indigo-50 rounded-xl text-[#004f43cc] text-2xl border border-indigo-100">🔍</div>
-                  <div>
-                     <h3 className="font-bold text-[#004f43cc] text-[10px] uppercase tracking-widest mb-2">Critical Analysis</h3>
-                     <p className="text-lg text-slate-700 font-medium">"{aiInsight}"</p>
-                  </div>
-               </div>
+              <button onClick={() => setAiInsight("")} className="absolute top-4 right-5 text-slate-400 text-2xl font-bold">&times;</button>
+              <div className="flex gap-5 items-start">
+                <div className="p-3 bg-indigo-50 rounded-xl text-[#004f43cc] text-2xl border border-indigo-100">🔍</div>
+                <div>
+                  <h3 className="font-bold text-[#004f43cc] text-[10px] uppercase tracking-widest mb-2">Critical Analysis</h3>
+                  <p className="text-lg text-slate-700 font-medium">"{aiInsight}"</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -410,29 +422,29 @@ export default function App() {
           {/* LEDGER TABLE */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden mb-8">
             <div className="p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-4">
-               <div className="relative flex-1">
-                  <input 
-                    type="text" 
-                    placeholder="Filter by invoice or client..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-               </div>
-               <div className="flex flex-wrap gap-2">
-                  <select onChange={(e) => setFromMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
-                    <option value="All">From: Start</option>
-                    {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  <select onChange={(e) => setToMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
-                    <option value="All">To: End</option>
-                    {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold min-w-[160px]">
-                    <option value="All">View All Clients</option>
-                    {clientOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-               </div>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Filter by invoice or client..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select onChange={(e) => setFromMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
+                  <option value="All">From: Start</option>
+                  {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <select onChange={(e) => setToMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
+                  <option value="All">To: End</option>
+                  {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold min-w-[160px]">
+                  <option value="All">View All Clients</option>
+                  {clientOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -480,20 +492,20 @@ export default function App() {
 
             {selectedClient !== "All" && clientSummaryStats && (
               <div className="bg-slate-50 p-8 border-t border-slate-200">
-                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                       <h3 className="text-lg font-bold">Selected Party: {selectedClient}</h3>
-                       <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
-                          Outstanding: <span className={clientSummaryStats.outstanding > 0 ? 'text-orange-500' : 'text-emerald-600'}>₹{clientSummaryStats.outstanding.toLocaleString()}</span>
-                       </p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div>
+                    <h3 className="text-lg font-bold">Selected Party: {selectedClient}</h3>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                      Outstanding: <span className={clientSummaryStats.outstanding > 0 ? 'text-orange-500' : 'text-emerald-600'}>₹{clientSummaryStats.outstanding.toLocaleString()}</span>
+                    </p>
+                  </div>
+                  {clientSummaryStats.outstanding > 0 && (
+                    <div className="flex gap-2">
+                      <button onClick={() => draftReminderEmail("Gentle")} className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-bold border border-emerald-200">Gentle</button>
+                      <button onClick={() => draftReminderEmail("Urgent")} className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold border border-red-200">Urgent</button>
                     </div>
-                    {clientSummaryStats.outstanding > 0 && (
-                      <div className="flex gap-2">
-                         <button onClick={() => draftReminderEmail("Gentle")} className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-bold border border-emerald-200">Gentle</button>
-                         <button onClick={() => draftReminderEmail("Urgent")} className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold border border-red-200">Urgent</button>
-                      </div>
-                    )}
-                 </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -502,21 +514,21 @@ export default function App() {
         {/* EMAIL DRAFT MODAL */}
         {draftEmail && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-             <div className="bg-white w-full max-w-lg rounded-2xl p-8 shadow-2xl relative">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">{draftEmail.tone} Draft</h2>
-                  <button onClick={() => setDraftEmail(null)} className="text-3xl">&times;</button>
-                </div>
-                {draftEmail.loading ? <div className="py-10 text-center animate-pulse">Crafting message...</div> : (
-                  <div className="space-y-6">
-                    <div className="bg-slate-50 border p-5 rounded-xl text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto">{draftEmail.text}</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => { navigator.clipboard.writeText(draftEmail.text) }} className="bg-indigo-600 text-white py-4 rounded-xl font-bold">Copy</button>
-                      <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(draftEmail.text)}`, '_blank') }} className="bg-emerald-600 text-white py-4 rounded-xl font-bold">WhatsApp</button>
-                    </div>
+            <div className="bg-white w-full max-w-lg rounded-2xl p-8 shadow-2xl relative">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">{draftEmail.tone} Draft</h2>
+                <button onClick={() => setDraftEmail(null)} className="text-3xl">&times;</button>
+              </div>
+              {draftEmail.loading ? <div className="py-10 text-center animate-pulse">Crafting message...</div> : (
+                <div className="space-y-6">
+                  <div className="bg-slate-50 border p-5 rounded-xl text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto">{draftEmail.text}</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => { navigator.clipboard.writeText(draftEmail.text) }} className="bg-indigo-600 text-white py-4 rounded-xl font-bold">Copy</button>
+                    <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(draftEmail.text)}`, '_blank') }} className="bg-emerald-600 text-white py-4 rounded-xl font-bold">WhatsApp</button>
                   </div>
-                )}
-             </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -527,32 +539,63 @@ export default function App() {
               <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-black text-slate-800">Invoice #{invoicePopup.invoice}</h2>
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${calculateTotalDue() <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {calculateTotalDue() <= 0 ? 'Fully Paid' : 'Balance Pending'}
+                    <h2 className="text-xl font-black text-slate-800">
+                      Invoice #{invoicePopup.invoice}
+                    </h2>
+                    <span
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${calculateTotalDue() <= 0
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                        }`}
+                    >
+                      {calculateTotalDue() <= 0 ? "Fully Paid" : "Balance Pending"}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Client: <span className="text-slate-900">{invoicePopup.client}</span></p>
+                  <p className="text-sm font-medium text-slate-500 mt-1">
+                    Client: <span className="text-slate-900">{invoicePopup.client}</span>
+                  </p>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => navigate("/Preview", { state: { ...invoicePopup } })} className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white">EDIT</button>
-                  <button onClick={() => setInvoicePopup(null)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl">&times;</button>
+                  <button
+                    onClick={() => navigate("/Preview", { state: { ...invoicePopup } })}
+                    className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
+                  >
+                    EDIT
+                  </button>
+                  <button
+                    onClick={() => setInvoicePopup(null)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
+                  >
+                    &times;
+                  </button>
                 </div>
               </div>
 
               <div className="p-8 max-h-[80vh] overflow-y-auto">
                 <div className="grid grid-cols-3 gap-4 mb-8">
                   <div className="p-4 bg-slate-50 rounded-2xl border">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Total Sale</p>
-                    <p className="text-lg font-bold">₹{calculateTotalSale().toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">
+                      Total Sale
+                    </p>
+                    <p className="text-lg font-bold">
+                      ₹{calculateTotalSale().toLocaleString()}
+                    </p>
                   </div>
                   <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase">Received</p>
-                    <p className="text-lg font-bold text-emerald-700">₹{calculateTotalReceived().toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase">
+                      Received
+                    </p>
+                    <p className="text-lg font-bold text-emerald-700">
+                      ₹{calculateTotalReceived().toLocaleString()}
+                    </p>
                   </div>
                   <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase">Due</p>
-                    <p className="text-lg font-bold text-indigo-700">₹{calculateTotalDue().toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase">
+                      Due
+                    </p>
+                    <p className="text-lg font-bold text-indigo-700">
+                      ₹{calculateTotalDue().toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
@@ -568,31 +611,293 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {invoicePopup.history.map((row, i) => (
-                        <tr key={i} className="hover:bg-slate-50">
-                          <td className="px-4 py-4 text-xs whitespace-nowrap">{row.date}</td>
-                          <td className="px-4 py-4 text-right font-semibold">{row.debit > 0 ? `₹${row.debit.toLocaleString()}` : "—"}</td>
-                          <td className="px-4 py-4 text-right font-semibold text-emerald-600">{row.credit > 0 ? `₹${row.credit.toLocaleString()}` : "—"}</td>
-                          <td className="px-4 py-4 text-right font-bold text-slate-900">₹{calculateRunningBalance(i).toLocaleString()}</td>
-                          <td className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate" title={row.remarks}>{row.remarks || "—"}</td>
-                        </tr>
-                      ))}
+                      {[...invoicePopup.history]
+                        .sort((a, b) =>
+                          getSortableDate(a.date).localeCompare(
+                            getSortableDate(b.date)
+                          )
+                        )
+                        .map((row, i) => (
+                          <tr key={i} className="hover:bg-slate-50">
+                            <td className="px-4 py-4 text-xs whitespace-nowrap">
+                              {row.date}
+                            </td>
+                            <td className="px-4 py-4 text-right font-semibold">
+                              {row.debit > 0
+                                ? `₹${row.debit.toLocaleString()}`
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-4 text-right font-semibold text-emerald-600">
+                              {row.credit > 0
+                                ? `₹${row.credit.toLocaleString()}`
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-4 text-right font-bold text-slate-900">
+                              ₹{calculateRunningBalance(i).toLocaleString()}
+                            </td>
+                            <td
+                              className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate"
+                              title={row.remarks}
+                            >
+                              {row.remarks || "—"}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">General Notes</label>
-                    <textarea rows={6} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Overall invoice notes..." className="w-full px-4 py-3 rounded-2xl border text-sm outline-none bg-slate-50/50" />
+                    <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">
+                      General Notes
+                    </label>
+                    <textarea
+                      rows={6}
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl border text-sm outline-none bg-slate-50/50"
+                    />
                   </div>
+
                   <div className="bg-slate-50 p-6 rounded-2xl border">
-                    <h4 className="text-xs font-black uppercase text-slate-600 mb-4">Quick Payment Record</h4>
+                    <h4 className="text-xs font-black uppercase text-slate-600 mb-4">
+                      Quick Payment Record
+                    </h4>
+
                     <div className="space-y-3">
-                      <input type="date" value={newReceipt.date} onChange={(e) => setNewReceipt({ ...newReceipt, date: e.target.value })} className="w-full border rounded-xl px-4 py-2.5 text-sm" />
-                      <input type="number" placeholder="Amount (₹)" value={newReceipt.amount} onChange={(e) => setNewReceipt({ ...newReceipt, amount: e.target.value })} className="w-full border rounded-xl px-4 py-2.5 text-sm" />
-                      <input type="text" placeholder="Remark for this payment" value={newReceipt.remark} onChange={(e) => setNewReceipt({ ...newReceipt, remark: e.target.value })} className="w-full border rounded-xl px-4 py-2.5 text-sm" />
-                      <button onClick={handleAddReceipt} disabled={!newReceipt.amount || !newReceipt.date} className="w-full bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg">Save Payment</button>
+                      <input
+                        type="date"
+                        value={newReceipt.date}
+                        disabled={calculateTotalDue() <= 0}
+                        onChange={(e) =>
+                          setNewReceipt({ ...newReceipt, date: e.target.value })
+                        }
+                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                      />
+
+                      <input
+                        type="number"
+                        placeholder="Amount (₹)"
+                        value={newReceipt.amount}
+                        disabled={calculateTotalDue() <= 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (val <= calculateTotalDue()) {
+                            setNewReceipt({ ...newReceipt, amount: e.target.value });
+                          }
+                        }}
+                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Remark for this payment"
+                        value={newReceipt.remark}
+                        disabled={calculateTotalDue() <= 0}
+                        onChange={(e) =>
+                          setNewReceipt({ ...newReceipt, remark: e.target.value })
+                        }
+                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                      />
+
+                      <button
+                        onClick={handleAddReceipt}
+                        disabled={
+                          !newReceipt.amount ||
+                          !newReceipt.date ||
+                          calculateTotalDue() <= 0
+                        }
+                        className="w-full bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg"
+                      >
+                        Save Payment
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}{/* INVOICE POPUP */}
+        {invoicePopup && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-xl font-black text-slate-800">
+                      Invoice #{invoicePopup.invoice}
+                    </h2>
+                    <span
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${calculateTotalDue() <= 0
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                        }`}
+                    >
+                      {calculateTotalDue() <= 0 ? "Fully Paid" : "Balance Pending"}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-slate-500 mt-1">
+                    Client: <span className="text-slate-900">{invoicePopup.client}</span>
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate("/Preview", { state: { ...invoicePopup } })}
+                    className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
+                  >
+                    EDIT
+                  </button>
+                  <button
+                    onClick={() => setInvoicePopup(null)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 max-h-[80vh] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  <div className="p-4 bg-slate-50 rounded-2xl border">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">
+                      Total Sale
+                    </p>
+                    <p className="text-lg font-bold">
+                      ₹{calculateTotalSale().toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase">
+                      Received
+                    </p>
+                    <p className="text-lg font-bold text-emerald-700">
+                      ₹{calculateTotalReceived().toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase">
+                      Due
+                    </p>
+                    <p className="text-lg font-bold text-indigo-700">
+                      ₹{calculateTotalDue().toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border rounded-2xl overflow-hidden shadow-sm mb-8">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-800 text-white text-[10px] uppercase tracking-widest">
+                      <tr>
+                        <th className="px-4 py-4 text-left">Date</th>
+                        <th className="px-4 py-4 text-right">Sale</th>
+                        <th className="px-4 py-4 text-right">Receipt</th>
+                        <th className="px-4 py-4 text-right">Balance</th>
+                        <th className="px-4 py-4 text-left">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {[...invoicePopup.history]
+                        .sort((a, b) =>
+                          getSortableDate(a.date).localeCompare(
+                            getSortableDate(b.date)
+                          )
+                        )
+                        .map((row, i) => (
+                          <tr key={i} className="hover:bg-slate-50">
+                            <td className="px-4 py-4 text-xs whitespace-nowrap">
+                              {row.date}
+                            </td>
+                            <td className="px-4 py-4 text-right font-semibold">
+                              {row.debit > 0
+                                ? `₹${row.debit.toLocaleString()}`
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-4 text-right font-semibold text-emerald-600">
+                              {row.credit > 0
+                                ? `₹${row.credit.toLocaleString()}`
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-4 text-right font-bold text-slate-900">
+                              ₹{calculateRunningBalance(i).toLocaleString()}
+                            </td>
+                            <td
+                              className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate"
+                              title={row.remarks}
+                            >
+                              {row.remarks || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">
+                      General Notes
+                    </label>
+                    <textarea
+                      rows={6}
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl border text-sm outline-none bg-slate-50/50"
+                    />
+                  </div>
+
+                  <div className="bg-slate-50 p-6 rounded-2xl border">
+                    <h4 className="text-xs font-black uppercase text-slate-600 mb-4">
+                      Quick Payment Record
+                    </h4>
+
+                    <div className="space-y-3">
+                      <input
+                        type="date"
+                        value={newReceipt.date}
+                        disabled={calculateTotalDue() <= 0}
+                        onChange={(e) =>
+                          setNewReceipt({ ...newReceipt, date: e.target.value })
+                        }
+                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                      />
+
+                      <input
+                        type="number"
+                        placeholder="Amount (₹)"
+                        value={newReceipt.amount}
+                        disabled={calculateTotalDue() <= 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (val <= calculateTotalDue()) {
+                            setNewReceipt({ ...newReceipt, amount: e.target.value });
+                          }
+                        }}
+                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Remark for this payment"
+                        value={newReceipt.remark}
+                        disabled={calculateTotalDue() <= 0}
+                        onChange={(e) =>
+                          setNewReceipt({ ...newReceipt, remark: e.target.value })
+                        }
+                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                      />
+
+                      <button
+                        onClick={handleAddReceipt}
+                        disabled={
+                          !newReceipt.amount ||
+                          !newReceipt.date ||
+                          calculateTotalDue() <= 0
+                        }
+                        className="w-full bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg"
+                      >
+                        Save Payment
+                      </button>
                     </div>
                   </div>
                 </div>
