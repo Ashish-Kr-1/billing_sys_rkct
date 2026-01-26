@@ -56,6 +56,7 @@ app.use(helmet())
 //endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));
 
+//Check
 
 //endpoint to test database
 app.get('/test-db', async (req, res) => {
