@@ -7,7 +7,7 @@ const App = () => {
     <div className="relative min-h-screen w-full bg-[#01040a] text-white font-sans overflow-hidden flex items-center justify-center p-4 md:p-12">
       
       {/* Cinematic Background Lighting - Deeper & Richer */}
-      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-700/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-black rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-cyan-600/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-indigo-900/10 rounded-full blur-[180px] pointer-events-none" />
 
@@ -16,7 +16,7 @@ const App = () => {
         {[...Array(50)].map((_, i) => (
           <div 
             key={i} 
-            className="absolute w-0.5 h-0.5 bg-cyan-300 rounded-full opacity-30 animate-pulse"
+            className="absolute w-0.5 h-0.5 bg-white rounded-full opacity-30 animate-pulse"
             style={{
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
