@@ -34,14 +34,15 @@ const allowedOrigins = [
   "http://localhost:5000",        // local/VPS backend
   "https://billing.rkcasting.in", // Production Frontend
   "https://www.billing.rkcasting.in",
-  process.env.FRONTEND_URL        // Dynamic from .env
+  process.env.FRONTEND_URL,       // Dynamic from .env
+  "*"                             // Allow all for testing
 ];
 
 app.use(express.json())
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman, curl
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
