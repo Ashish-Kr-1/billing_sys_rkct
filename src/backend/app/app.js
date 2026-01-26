@@ -29,12 +29,11 @@ const r = express.Router()
 //   body('vendor_code').optional({ checkFalsy: true }).isLength({ max: 50 })
 // ];
 
-const allowedOrigins = [
-  "http://localhost:5173",        // local dev (Vite)
-  "http://localhost:5000",        // if used
-  "https://billing.rkcasting.in",
-  "https://billing-sys-rkct.onrender.com"  // production frontend
-];
+"http://localhost:5173",        // local dev (Vite)
+  "http://localhost:5000",        // local/VPS backend
+  "https://billing.rkcasting.in", // Production Frontend
+  "https://www.billing.rkcasting.in",
+  process.env.FRONTEND_URL        // Dynamic from .env
 
 app.use(express.json())
 
