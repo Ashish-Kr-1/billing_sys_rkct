@@ -62,11 +62,11 @@ const App = () => {
                 className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
               />
               <div className="text-right pt-2">
-                <button type="button" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium">Forgot Password?</button>
+                <button type="button" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium hover:cursor-pointer">Forgot Password?</button>
               </div>
             </div>
 
-            <button className="w-full  lg:w-md mx-auto bg-[#7febc7] hover:text-cyan-50 text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+            <button className="w-full  lg:w-md mx-auto cursor-pointer bg-[#7febc7] hover:text-cyan-50 text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
               onClick={() => navigate('/Invoice')}>
               Sign in 
             </button>
