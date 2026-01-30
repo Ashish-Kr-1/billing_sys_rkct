@@ -5,23 +5,10 @@ import pool from "../db.js";
 import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
-import bcrypt from "bcrypt";
-import {
-  initAuthTable,
-  createUser,
-  findUserByIdentifier,
-  updatePassword
-} from "./auth.db.js";
-
 
 dotenv.config()
 
 const app = express()
-
-// ✅ INIT AUTH TABLE ON STARTUP
-await initAuthTable();
-console.log("✅ Auth table initialized");
-
 const router = express.Router()
 const routerB = express.Router()
 const routerParty = express.Router()
@@ -785,83 +772,3 @@ app.use('/item_id', routerItems);
 app.use('/createParty', router);
 app.use('/createItem', routerB);
 app.use('/createInvoice', routerTransaction);
-// ==========================
-// AUTH ROUTES
-// ==========================
-
-// SIGNUP
-app.post("/auth/signup", async (req, res) => {
-  const { username, email, password } = req.body;
-
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: "All fields required" });
-  }
-
-  try {
-    const hash = await bcrypt.hash(password, 10);
-    await createUser(username, email, hash);
-    res.json({ message: "Account created" });
-  } catch (err) {
-    if (err.errno === 1062) {
-      return res.status(409).json({ message: "User already exists" });
-    }
-    console.error("Signup error", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// LOGIN
-app.post("/auth/login", async (req, res) => {
-  const { identifier, password } = req.body;
-
-  if (!identifier || !password) {
-    return res.status(400).json({ message: "Missing credentials" });
-  }
-
-  try {
-    const user = await findUserByIdentifier(identifier);
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) {
-      return res.status(400).json({ message: "Invalid password" });
-    }
-
-    res.json({
-      message: "Login successful",
-      user: {
-        user_id: user.user_id,
-        username: user.username,
-        email: user.email
-      }
-    });
-  } catch (err) {
-    console.error("Login error", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// RESET PASSWORD
-app.post("/auth/reset-password", async (req, res) => {
-  const { email, newPassword } = req.body;
-
-  if (!email || !newPassword) {
-    return res.status(400).json({ message: "Missing fields" });
-  }
-
-  try {
-    const hash = await bcrypt.hash(newPassword, 10);
-    const updated = await updatePassword(email, hash);
-
-    if (!updated) {
-      return res.status(404).json({ message: "Email not found" });
-    }
-
-    res.json({ message: "Password updated" });
-  } catch (err) {
-    console.error("Reset password error", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});

@@ -1,43 +1,72 @@
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// src/utils/authStore.js
+const STORAGE_KEY = "invoice_users";
 
-// SIGNUP
-export async function signupUser(data) {
-  const res = await fetch(`${API}/auth/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+/* =========================
+   INTERNAL HELPERS
+========================= */
+const getUsers = () => {
+  const users = localStorage.getItem(STORAGE_KEY);
+  return users ? JSON.parse(users) : [];
+};
+
+const saveUsers = (users) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+};
+
+/* =========================
+   PUBLIC API (FAKE DB)
+========================= */
+
+export const signupUser = ({ username, email, password }) => {
+  const users = getUsers();
+
+  const exists = users.find(
+    (u) => u.username === username || u.email === email
+  );
+  if (exists) {
+    throw new Error("Username or email already exists");
+  }
+
+  users.push({
+    id: Date.now(),
+    username,
+    email,
+    password,
+    createdAt: new Date().toISOString(),
   });
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message);
-  return json;
-}
+  saveUsers(users);
+};
 
-// LOGIN
-export async function loginUser(data) {
-  const res = await fetch(`${API}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+export const loginUser = ({ identifier, password }) => {
+  const users = getUsers();
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message);
+  const user = users.find(
+    (u) =>
+      (u.username === identifier || u.email === identifier) &&
+      u.password === password
+  );
 
-  // optional: store user
-  localStorage.setItem("user", JSON.stringify(json.user));
-  return json;
-}
+  if (!user) {
+    throw new Error("Invalid username or password");
+  }
 
-// RESET PASSWORD
-export async function resetPassword(data) {
-  const res = await fetch(`${API}/auth/reset-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+  localStorage.setItem("currentUser", JSON.stringify(user));
+  return user;
+};
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message);
-  return json;
-}
+export const resetPassword = ({ email, newPassword }) => {
+  const users = getUsers();
+  const index = users.findIndex((u) => u.email === email);
+
+  if (index === -1) {
+    throw new Error("No account found with this email");
+  }
+
+  users[index].password = newPassword;
+  saveUsers(users);
+};
+
+export const logoutUser = () => {
+  localStorage.removeItem("currentUser");
+};
