@@ -41,4 +41,3 @@ export async function resetPassword(data) {
   if (!res.ok) throw new Error(json.message);
   return json;
 }
-// LOGOUT
