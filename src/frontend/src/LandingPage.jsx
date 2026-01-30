@@ -206,7 +206,7 @@ const Landing_page = () => {
               </div>
             </div>
 
-            <button className="w-full  lg:w-md mx-auto cursor-pointer bg-[#7febc7] hover:text-cyan-50 text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+            <button className="w-full  lg:w-md mx-auto bg-[#7febc7] hover:text-cyan-50 text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
               onClick={() => navigate('/Invoice')}>
               Sign in 
             </button>
