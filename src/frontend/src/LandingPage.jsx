@@ -194,224 +194,27 @@ const Landing_page = () => {
                   />
                 </div>
 
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Enter your password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                  <div className="text-right pt-2">
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setView("forgot");
-                        setError("");
-                        setSuccess("");
-                      }}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium hover:cursor-pointer"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full lg:w-md mx-auto cursor-pointer bg-[#7febc7] hover:bg-[#6dd9b5] text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
-                >
-                  Sign in 
-                </button>
-              </form>
-
-              <div className="mt-6">
-                <p className="text-gray-500 text-md font-bold uppercase tracking-widest mb-1">No Account?</p>
-                <button 
-                  onClick={() => {
-                    setView("signup");
-                    setError("");
-                    setSuccess("");
-                  }}
-                  className="text-cyan-400 text-sm font-bold hover:text-cyan-50 transition-colors hover:cursor-pointer underline-offset-4"
-                >
-                  Sign up
-                </button>
+            <div className="space-y-2 w-full  lg:w-md mx-auto">
+              <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
+              <input 
+                type="password" 
+                placeholder="Enter your password"
+                className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
+              />
+              <div className="text-right pt-2">
+                <button type="button" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium">Forgot Password?</button>
               </div>
-            </>
-          )}
+            </div>
 
-          {/* SIGNUP VIEW */}
-          {view === "signup" && (
-            <>
-              <div className="flex justify-between items-start mb-10">
-                <div>
-                  <p className="px-auto text-gray-400 text-sm font-medium tracking-wide">Create Your Invoice Manager Account</p>
-                  <h1 className="text-3xl font-bold tracking-tight mt-2 text-[#006b47]">Sign up</h1>
-                </div>
-              </div>
-
-              {error && (
-                <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="mb-6 bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm">
-                  {success}
-                </div>
-              )}
-
-              <form className="space-y-6" onSubmit={handleSignup}>
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Username</label>
-                  <input 
-                    type="text" 
-                    placeholder="Choose a username"
-                    value={signupData.username}
-                    onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
-                  <input 
-                    type="email" 
-                    placeholder="Enter your email"
-                    value={signupData.email}
-                    onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Create a password (min 6 characters)"
-                    value={signupData.password}
-                    onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Confirm Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Re-enter your password"
-                    value={signupData.confirmPassword}
-                    onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full lg:w-md mx-auto cursor-pointer bg-[#7febc7] hover:bg-[#6dd9b5] text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
-                >
-                  Create Account
-                </button>
-              </form>
-
-              <div className="mt-6">
-                <p className="text-gray-500 text-md font-bold uppercase tracking-widest mb-1">Already have an account?</p>
-                <button 
-                  onClick={() => {
-                    setView("login");
-                    setError("");
-                    setSuccess("");
-                  }}
-                  className="text-cyan-400 text-sm font-bold hover:text-cyan-50 transition-colors hover:cursor-pointer underline-offset-4"
-                >
-                  Sign in
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* FORGOT PASSWORD VIEW */}
-          {view === "forgot" && (
-            <>
-              <div className="flex justify-between items-start mb-10">
-                <div>
-                  <p className="px-auto text-gray-400 text-sm font-medium tracking-wide">Reset Your Password</p>
-                  <h1 className="text-3xl font-bold tracking-tight mt-2 text-[#006b47]">Forgot Password</h1>
-                </div>
-              </div>
-
-              {error && (
-                <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="mb-6 bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm">
-                  {success}
-                </div>
-              )}
-
-              <form className="space-y-6" onSubmit={handleForgotPassword}>
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
-                  <input 
-                    type="email" 
-                    placeholder="Enter your registered email"
-                    value={forgotData.email}
-                    onChange={(e) => setForgotData({ ...forgotData, email: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">New Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Enter new password (min 6 characters)"
-                    value={forgotData.newPassword}
-                    onChange={(e) => setForgotData({ ...forgotData, newPassword: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Confirm New Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Re-enter new password"
-                    value={forgotData.confirmPassword}
-                    onChange={(e) => setForgotData({ ...forgotData, confirmPassword: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full lg:w-md mx-auto cursor-pointer bg-[#7febc7] hover:bg-[#6dd9b5] text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
-                >
-                  Reset Password
-                </button>
-              </form>
-
-              <div className="mt-6">
-                <p className="text-gray-500 text-md font-bold uppercase tracking-widest mb-1">Remember your password?</p>
-                <button 
-                  onClick={() => {
-                    setView("login");
-                    setError("");
-                    setSuccess("");
-                  }}
-                  className="text-cyan-400 text-sm font-bold hover:text-cyan-50 transition-colors hover:cursor-pointer underline-offset-4"
-                >
-                  Sign in
-                </button>
-              </div>
-            </>
-          )}
+            <button className="w-full  lg:w-md mx-auto cursor-pointer bg-[#7febc7] hover:text-cyan-50 text-gray-950 font-black py-4 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all mt-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+              onClick={() => navigate('/Invoice')}>
+              Sign in 
+            </button>
+          </form>
+          <div className="mt-3">
+              <p className="text-gray-500 text-md font-bold uppercase tracking-widest mb-1">No Account?</p>
+              <button className="text-cyan-400 text-sm font-bold hover:text-cyan-50  transition-colors hover:cursor-pointer underline-offset-4">Sign up</button>
+            </div>
         </div>
 
         {/* Right Side: Exact Graphic Recreation */}
