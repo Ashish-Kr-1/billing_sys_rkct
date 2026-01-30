@@ -1,4 +1,3 @@
-
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // SIGNUP
@@ -42,3 +41,4 @@ export async function resetPassword(data) {
   if (!res.ok) throw new Error(json.message);
   return json;
 }
+// LOGOUT
