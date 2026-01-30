@@ -1,5 +1,6 @@
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://billing.rkcasting.in/api";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
 // SIGNUP
 export async function signupUser(data) {
   const res = await fetch(`${API}/auth/signup`, {
