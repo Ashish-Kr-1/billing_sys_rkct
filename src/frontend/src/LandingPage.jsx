@@ -1,133 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { signupUser, loginUser, resetPassword } from "./config/authStore";
-
-const Landing_page = () => {
-  const navigate = useNavigate();
-  const [view, setView] = useState("login"); // 'login', 'signup', 'forgot'
-  
-  // Form states
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  const [signupData, setSignupData] = useState({ 
-    username: "", 
-    email: "", 
-    password: "", 
-    confirmPassword: "" 
-  });
-  const [forgotData, setForgotData] = useState({ 
-    email: "", 
-    newPassword: "", 
-    confirmPassword: "" 
-  });
-  
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  // Login Handler
-  const handleLogin = (e) => {
-  e.preventDefault();
-  setError("");
-  setSuccess("");
-
-  if (!loginData.username || !loginData.password) {
-    setError("Please fill in all fields");
-    return;
-  }
-
-  try {
-    loginUser({
-      identifier: loginData.username,
-      password: loginData.password,
-    });
-
-    setSuccess("Login successful! Redirecting...");
-    setTimeout(() => {
-      navigate("/Invoice");
-    }, 1000);
-  } catch (err) {
-    setError(err.message);
-  }
-};
-
-
-  // Signup Handler
-  const handleSignup = (e) => {
-  e.preventDefault();
-  setError("");
-  setSuccess("");
-
-  if (!signupData.username || !signupData.email || !signupData.password || !signupData.confirmPassword) {
-    setError("Please fill in all fields");
-    return;
-  }
-
-  if (signupData.password !== signupData.confirmPassword) {
-    setError("Passwords do not match");
-    return;
-  }
-
-  if (signupData.password.length < 6) {
-    setError("Password must be at least 6 characters long");
-    return;
-  }
-
-  try {
-    signupUser({
-      username: signupData.username,
-      email: signupData.email,
-      password: signupData.password,
-    });
-
-    setSuccess("Account created successfully! Please sign in.");
-    setTimeout(() => {
-      setView("login");
-      setSignupData({ username: "", email: "", password: "", confirmPassword: "" });
-      setSuccess("");
-    }, 2000);
-  } catch (err) {
-    setError(err.message);
-  }
-};
-
-  // Forgot Password Handler
-  const handleForgotPassword = (e) => {
-  e.preventDefault();
-  setError("");
-  setSuccess("");
-
-  if (!forgotData.email || !forgotData.newPassword || !forgotData.confirmPassword) {
-    setError("Please fill in all fields");
-    return;
-  }
-
-  if (forgotData.newPassword !== forgotData.confirmPassword) {
-    setError("Passwords do not match");
-    return;
-  }
-
-  if (forgotData.newPassword.length < 6) {
-    setError("Password must be at least 6 characters long");
-    return;
-  }
-
-  try {
-    resetPassword({
-      email: forgotData.email,
-      newPassword: forgotData.newPassword,
-    });
-
-    setSuccess("Password reset successful! Please sign in.");
-    setTimeout(() => {
-      setView("login");
-      setForgotData({ email: "", newPassword: "", confirmPassword: "" });
-      setSuccess("");
-    }, 2000);
-  } catch (err) {
-    setError(err.message);
-  }
-};
-
-
+import React from 'react'
+import Navbar from './components/Navbarr.jsx';
+import { useNavigate } from 'react-router-dom';
+import Footer from './components/Footer.jsx';
+function LandingPage() {
   return (
     <div className="relative min-h-screen w-full bg-[#01040a] text-white font-sans overflow-hidden flex items-center justify-center p-4 md:p-12">
       
@@ -154,45 +29,30 @@ const Landing_page = () => {
 
       <div className="container max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center z-10">
         
-        {/* Left Side: Premium Glass Card */}
+        {/* Left Side: Premium Glass Login Card */}
         <div className="lg:col-span-7 xl:col-span-7 bg-white/8 border border-white/20 p-10 rounded-4xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] backdrop-blur-2xl relative overflow-hidden group">
           
           {/* Subtle Top Shine */}
           <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-cyan-400/20 to-transparent" />
           
-          {/* LOGIN VIEW */}
-          {view === "login" && (
-            <>
-              <div className="flex justify-between items-start mb-10">
-                <div>
-                  <p className="px-auto text-gray-400 text-sm font-medium tracking-wide">Welcome Back to Invoice Manager Your's Personal Billing System</p>
-                  <h1 className="text-3xl font-bold tracking-tight mt-2 text-[#006b47]">Sign in</h1>
-                </div>
-              </div>
-
-              {error && (
-                <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="mb-6 bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm">
-                  {success}
-                </div>
-              )}
-
-              <form className="space-y-6" onSubmit={handleLogin}>
-                <div className="space-y-2 w-full lg:w-md mx-auto">
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Username or email address</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter your username or email"
-                    value={loginData.username}
-                    onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                    className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
-                  />
-                </div>
+          {/* Header Row */}
+          <div className="flex justify-between items-start mb-10">
+            <div>
+              <p className="px-auto text-gray-400 text-sm font-medium tracking-wide">Welcome Back to Invoice Manager Your's Personal Billing System</p>
+              <h1 className="text-3xl font-bold tracking-tight mt-2 text-[#006b47]">Sign in</h1>
+            </div>
+            
+          </div>
+          {/* Login Form */}
+          <form className="space-y-6 " onSubmit={(e) => e.preventDefault()}>
+            <div className="space-y-2 w-full  lg:w-md mx-auto">
+              <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Username or email address</label>
+              <input 
+                type="text" 
+                placeholder="Enter your username"
+                className="w-full bg-white text-gray-900 rounded-xl py-4 px-6 outline-none text-sm font-medium placeholder:text-gray-400 border-none focus:ring-2 focus:ring-cyan-400/50 transition-all shadow-inner"
+              />
+            </div>
 
             <div className="space-y-2 w-full  lg:w-md mx-auto">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
@@ -288,19 +148,12 @@ const Landing_page = () => {
               <line x1="340" y1="250" x2="380" y2="240" stroke="#22d3ee" strokeWidth="0.5" opacity="0.3" />
             </svg>
             
+            {/* Overlay to ensure text readability if needed, though graphic is main focus */}
           </div>
         </div>
-
-      </div>
-
-      <style>{`
-        input::placeholder {
-          font-weight: 500;
-          color: #9ca3af; 
-        }
-      `}</style>
+         <Footer></Footer>
     </div>
   );
 };
 
-export default Landing_page;
+export default App;
