@@ -4,7 +4,7 @@ import Create_Party from "./Create_Party.jsx";
 import Invoice from "./Invoice.jsx";
 import Preview from "./Preview.jsx";
 import Ledger from "./Ledger.jsx";
-import Outstanding from "./Outstanding.jsx";
+import Analytics from "./Analytics.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 function App() {
@@ -17,7 +17,7 @@ function App() {
           <Route path='/Invoice' element={<Invoice/>}/>
           <Route path='/Preview' element={<Preview/>}/>
           <Route path='/Ledger' element={<Ledger/>}/>
-          <Route path='/Outstanding' element={<Outstanding/>}/>
+          <Route path='/Analytics' element={<Analytics/>}/>
         </Routes>      
       </BrowserRouter>
     </div>

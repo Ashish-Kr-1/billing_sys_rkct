@@ -1,6 +1,5 @@
 import React from 'react'
 import Navbar from './components/Navbarr.jsx';
-import { useNavigate } from 'react-router-dom';
 import Footer from './components/Footer.jsx';
 function LandingPage() {
   return (

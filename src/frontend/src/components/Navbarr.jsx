@@ -29,16 +29,16 @@ function Navbar() {
             New Invoice
           </button>
           <button
+            onClick={() => navigate('/Analytics')}
+            className=" font-bold  hover:text-emerald-400 cursor-pointer"
+          >
+          Analytics
+          </button>
+          <button
             onClick={() => navigate('/Ledger')}
             className="font-bold mx-3  hover:text-emerald-400 transition cursor-pointer"
           >
             Ledger
-          </button>
-          <button
-            onClick={() => navigate('/Outstanding')}
-            className="font-bold mx-3  hover:text-emerald-400 transition cursor-pointer"
-          >
-            Create Outstanding
           </button>
           <button
             onClick={() => navigate('/Create_Party')}

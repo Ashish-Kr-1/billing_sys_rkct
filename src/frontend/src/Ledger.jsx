@@ -31,7 +31,6 @@ const fetchPaymentHistory = async (invoiceNo) => {
   );
 
   if (!res.ok) throw new Error("Failed to fetch payment history");
-
   const data = await res.json();
   return data.payments || [];
 };
