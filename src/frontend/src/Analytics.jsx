@@ -336,6 +336,42 @@ function computeKPIs() {
     return { company: c.name.split(" ").slice(0, 2).join(" "), ...cats };
   });
 
+  // KPI — Company-wise top selling items (units sold per item, per company)
+  // Step 1: for every company, aggregate units sold per item via sell_summary
+  const companyItemUnits = {};
+  COMPANIES.forEach(c => { companyItemUnits[c.company_id] = {}; });
+  RAW_TRANSACTIONS.forEach(tx => {
+    SELL_SUMMARY.filter(s => s.invoice_no === tx.invoice_no).forEach(s => {
+      companyItemUnits[tx.company_id][s.item_name] =
+        (companyItemUnits[tx.company_id][s.item_name] || 0) + s.units_sold;
+    });
+  });
+  // Step 2: find the global top 5 items by total units across all companies
+  const globalItemTotals = {};
+  Object.values(companyItemUnits).forEach(itemMap => {
+    Object.entries(itemMap).forEach(([name, units]) => {
+      globalItemTotals[name] = (globalItemTotals[name] || 0) + units;
+    });
+  });
+  const top5ItemNames = Object.entries(globalItemTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name]) => name);
+  // Step 3: build the chart-ready rows — one per company, keyed by short item labels
+  const companyWiseTopItems = COMPANIES.map(c => {
+    const row = { company: c.name.split(" ").slice(0, 2).join(" ") };
+    top5ItemNames.forEach(name => {
+      // shorten label: first two words
+      const label = name.split(" ").slice(0, 2).join(" ");
+      row[label] = companyItemUnits[c.company_id][name] || 0;
+    });
+    return row;
+  });
+  // Step 4: the short legend keys in order (deduplicated, preserving top-5 order)
+  const companyWiseItemKeys = [...new Set(
+    top5ItemNames.map(name => name.split(" ").slice(0, 2).join(" "))
+  )];
+
   // GST rate distribution for pie
   const gstPieData = Object.entries(gstRateDist).map(([rate, count]) => ({
     name: `${rate}%`, value: count
@@ -365,7 +401,7 @@ function computeKPIs() {
     topParties, topItems, stateData,
     interstateTotal, intrastate,
     totalQuotations, convertedQuotations, quotationConversionRate,
-    companyStats, companyProductBreakdown,
+    companyStats, companyProductBreakdown, companyWiseTopItems, companyWiseItemKeys,
     monthlyData, monthlyStatus, gstPieData, quotationMonthly, recentTransactions
   };
 }
@@ -777,8 +813,11 @@ const PartiesTab = () => (
   </div>
 );
 
+const COMPANY_ITEM_COLORS = ["#0f2f3f", "#1a4d5c", "#3b82f6", "#10b981", "#f59e0b"];
+
 const ProductsTab = () => (
   <div>
+    {/* KPI Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Items" value={ITEMS.length} icon={Package} color={COLORS.blue} subtitle="Active products" />
       <MetricCard title="Top Item Units" value={KPIs.topItems[0]?.units.toLocaleString() || 0} icon={Package} color={COLORS.emerald} subtitle={KPIs.topItems[0]?.name.split(" ").slice(0,2).join(" ") || ""} />
@@ -786,6 +825,7 @@ const ProductsTab = () => (
       <MetricCard title="Avg Items/Invoice" value={((SELL_SUMMARY.length / RAW_TRANSACTIONS.length)).toFixed(1)} icon={FileText} color={COLORS.purple} subtitle="Line items per invoice" />
     </div>
 
+    {/* Row 1: Top Items bar + Item Revenue progress bars */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
       <CardShell>
         <SectionTitle icon={Package}>Top Items by Units Sold</SectionTitle>
@@ -796,7 +836,7 @@ const ProductsTab = () => (
               <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis dataKey="name" type="category" width={105} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#374151" }} />
               <Tooltip formatter={(v) => [v.toLocaleString(), "Units"]} contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
-              <Bar dataKey="units" radius={[0,4,4,0]} fill="url(#itemGrad)">
+              <Bar dataKey="units" radius={[0,4,4,0]}>
                 {KPIs.topItems.map((_, i) => <Cell key={i} fill={ITEM_GRADIENT[i % ITEM_GRADIENT.length]} />)}
               </Bar>
             </BarChart>
@@ -825,6 +865,42 @@ const ProductsTab = () => (
         </div>
       </CardShell>
     </div>
+
+    {/* Row 2: Company-wise Top Selling Items — full width stacked horizontal bar */}
+    <CardShell>
+      <SectionTitle icon={Briefcase}>Performance by Company — Top Selling Items</SectionTitle>
+      <div style={{ height: 300 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={KPIs.companyWiseTopItems} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" />
+            <XAxis type="number" hide />
+            <YAxis
+              dataKey="company"
+              type="category"
+              stroke="#64748b"
+              fontSize={11}
+              width={100}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip
+              contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+              formatter={(value, name) => [value.toLocaleString() + " units", name]}
+            />
+            <Legend wrapperStyle={{ paddingTop: 16, fontSize: 11 }} iconType="circle" />
+            {KPIs.companyWiseItemKeys.map((key, i) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                stackId="a"
+                fill={COMPANY_ITEM_COLORS[i % COMPANY_ITEM_COLORS.length]}
+                radius={i === KPIs.companyWiseItemKeys.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </CardShell>
   </div>
 );
 
