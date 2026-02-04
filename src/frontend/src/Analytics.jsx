@@ -40,7 +40,7 @@ function computeKPIs(data = null) {
   // Create lookup maps for efficient joins
   const partiesMap = {};
   PARTIES.forEach(p => { partiesMap[p.party_id] = p; });
-  
+
   const itemsMap = {};
   ITEMS.forEach(i => { itemsMap[i.item_id] = i; });
 
@@ -49,14 +49,14 @@ function computeKPIs(data = null) {
     const party = partiesMap[t.party_id] || {};
     const txDate = new Date(t.transaction_date);
     const month = txDate.getMonth(); // 0-11
-    
+
     // Determine status from credit_amount
     const creditAmt = parseFloat(t.credit_amount || 0);
     const sellAmt = parseFloat(t.sell_amount || 0);
     let status = "Pending";
     if (creditAmt >= sellAmt * 0.95) status = "Received"; // Allow 5% tolerance
     else if (creditAmt === 0) status = "Pending";
-    
+
     return {
       ...t,
       party_name: party.party_name || "Unknown Party",
@@ -79,7 +79,7 @@ function computeKPIs(data = null) {
     const unitsSold = parseFloat(s.units_sold || 0);
     const unitPrice = parseFloat(item.rate || 0);
     const lineTotal = unitsSold * unitPrice;
-    
+
     return {
       ...s,
       item_name: item.item_name || "Unknown Item",
@@ -101,9 +101,9 @@ function computeKPIs(data = null) {
   const totalIGST = enrichedTransactions.reduce((s, t) => s + t.igst_amount, 0);
   const totalCGST_SGST = enrichedTransactions.reduce((s, t) => s + t.cgst_amount + t.sgst_amount, 0);
   const gstRateDist = {};
-  enrichedTransactions.forEach(t => { 
+  enrichedTransactions.forEach(t => {
     const rate = t.gst_percentage;
-    gstRateDist[rate] = (gstRateDist[rate] || 0) + 1; 
+    gstRateDist[rate] = (gstRateDist[rate] || 0) + 1;
   });
 
   // KPI-08–10: Invoice Pipeline
@@ -118,9 +118,9 @@ function computeKPIs(data = null) {
   const topParties = Object.entries(partyRevenue)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([name, val]) => ({ 
-      name, 
-      value: val, 
+    .map(([name, val]) => ({
+      name,
+      value: val,
       pct: totalRevenue > 0 ? ((val / totalRevenue) * 100).toFixed(1) : "0.0"
     }));
 
@@ -145,7 +145,7 @@ function computeKPIs(data = null) {
   const stateData = Object.entries(stateRevenue)
     .sort((a, b) => b[1] - a[1])
     .map(([state, val]) => ({ state, value: val }));
-  
+
   // IGST indicates interstate
   const interstateTotal = enrichedTransactions.filter(t => t.igst_amount > 0).reduce((s, t) => s + t.sell_amount, 0);
   const intrastate = totalRevenue - interstateTotal;
