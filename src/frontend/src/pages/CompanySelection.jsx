@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE } from '../config/api';
+import { api, handleApiResponse } from '../config/apiClient';
 import { Building2, Factory, Globe, ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 const COMPANY_ICONS = {
@@ -32,13 +32,13 @@ export default function CompanySelection() {
 
     const fetchCompanies = async () => {
         try {
-            const res = await fetch(`${API_BASE}/companies`);
-            if (!res.ok) throw new Error('Failed to fetch companies');
-
-            const data = await res.json();
+            const data = await handleApiResponse(api.get('/companies'));
             setCompanies(data.companies || []);
         } catch (err) {
             setError(err.message);
+            if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+                logout(); // Logout if token is invalid
+            }
         } finally {
             setLoading(false);
         }

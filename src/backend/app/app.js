@@ -796,12 +796,11 @@ routerItems.get('/:id', itemDetails);
 
 routerLedger.get('/', ledgerData);
 routerLedger.post('/payment', createPaymentHandler);
-
 routerLedger.get("/payments", getInvoiceHistoryHandler);
 
 app.use('/parties', routerParty);
 app.use('/ledger', routerLedger);
 app.use('/item_id', routerItems);
 app.use('/createParty', router);
-app.use('/createItem', routerB);
 app.use('/createInvoice', routerTransaction);
+app.use('/createItem', routerB);
