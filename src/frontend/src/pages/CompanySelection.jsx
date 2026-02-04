@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE } from '../config/api';
-import { Building2, Factory, Globe, ChevronRight, LogOut } from 'lucide-react';
+import { Building2, Factory, Globe, ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 const COMPANY_ICONS = {
     1: Factory,
@@ -98,44 +98,101 @@ export default function CompanySelection() {
                 {companies.map((company) => {
                     const Icon = COMPANY_ICONS[company.id] || Building2;
                     const colors = COMPANY_COLORS[company.id] || COMPANY_COLORS[1];
+                    const isConnected = company.connectionStatus === 'connected';
+                    const hasError = company.connectionStatus === 'error';
+
+                    // Connection status icon and color
+                    const StatusIcon = isConnected ? CheckCircle : hasError ? XCircle : AlertCircle;
+                    const statusColor = isConnected ? 'text-green-500' : hasError ? 'text-red-500' : 'text-yellow-500';
+                    const statusBg = isConnected ? 'bg-green-50' : hasError ? 'bg-red-50' : 'bg-yellow-50';
+                    const statusText = isConnected ? 'Connected' : hasError ? 'Error' : 'Disconnected';
 
                     return (
                         <button
                             key={company.id}
-                            onClick={() => handleSelectCompany(company)}
-                            className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
+                            onClick={() => isConnected && handleSelectCompany(company)}
+                            disabled={!isConnected}
+                            className={`group relative bg-white rounded-2xl shadow-lg transition-all duration-300 overflow-hidden ${isConnected
+                                ? 'hover:shadow-2xl transform hover:scale-105 cursor-pointer'
+                                : 'opacity-60 cursor-not-allowed'
+                                }`}
                         >
                             {/* Gradient Header */}
-                            <div className={`h-32 bg-gradient-to-br ${colors.bg} ${colors.hover} transition-all duration-300 flex items-center justify-center`}>
+                            <div className={`h-32 bg-gradient-to-br ${colors.bg} ${isConnected ? colors.hover : ''} transition-all duration-300 flex items-center justify-center relative`}>
                                 <Icon className="w-16 h-16 text-white opacity-90" />
+
+                                {/* Connection Status Badge */}
+                                <div className={`absolute top-3 right-3 ${statusBg} rounded-full px-3 py-1 flex items-center gap-1.5`}>
+                                    <StatusIcon className={`w-4 h-4 ${statusColor}`} />
+                                    <span className={`text-xs font-semibold ${statusColor}`}>{statusText}</span>
+                                </div>
                             </div>
 
                             {/* Content */}
                             <div className="p-6 space-y-4">
-                                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                <h3 className={`text-xl font-bold transition-colors ${isConnected ? 'text-gray-900 group-hover:text-blue-600' : 'text-gray-500'
+                                    }`}>
                                     {company.name}
                                 </h3>
 
                                 <div className="flex items-center justify-between text-sm text-gray-600">
                                     <span className="font-medium">{company.shortName}</span>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                                    {isConnected && (
+                                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                                    )}
                                 </div>
+
+                                {/* Error Message */}
+                                {hasError && company.errorMessage && (
+                                    <div className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg p-2">
+                                        {company.errorMessage}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Hover Effect */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                            {/* Hover Effect (only for connected) */}
+                            {isConnected && (
+                                <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                            )}
                         </button>
                     );
                 })}
             </div>
 
             {/* Info Section */}
-            <div className="max-w-6xl mx-auto mt-12 text-center">
+            <div className="max-w-6xl mx-auto mt-12 space-y-4">
                 <div className="bg-white rounded-xl shadow-md p-6">
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 text-center">
                         Select a company to access its invoicing, analytics, and financial data.
                     </p>
                 </div>
+
+                {/* Connection Status Summary */}
+                {companies.some(c => c.connectionStatus !== 'connected') && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-amber-900 mb-3 flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5" />
+                            Database Connection Issues Detected
+                        </h3>
+                        <div className="space-y-2 text-sm text-amber-800">
+                            <p>
+                                <strong>Problem:</strong> Some company databases are not accessible from your current IP address.
+                            </p>
+                            <p>
+                                <strong>Solution:</strong> To access all companies, you need to whitelist your IP address in Hostinger:
+                            </p>
+                            <ol className="list-decimal list-inside ml-4 space-y-1">
+                                <li>Log in to <a href="https://hpanel.hostinger.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">hpanel.hostinger.com</a></li>
+                                <li>Go to <strong>Databases → Remote MySQL</strong></li>
+                                <li>Add your current IP address: <code className="bg-amber-100 px-2 py-0.5 rounded font-mono text-xs">Check error message above</code></li>
+                                <li>Click "Create" and refresh this page</li>
+                            </ol>
+                            <p className="mt-3 text-xs text-amber-700">
+                                💡 Tip: You can still use Company 1 (RK Casting) which is currently connected.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

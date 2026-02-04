@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -8,8 +8,10 @@ import {
   TrendingUp, TrendingDown, DollarSign, Clock, AlertCircle,
   FileText, Briefcase, BarChart2, PieChart as PieIcon,
   Activity, Users, Package, ArrowUpRight, ArrowDownRight,
-  ChevronDown, Search, Bell, Filter, Calendar, MapPin, Target, Layers
+  ChevronDown, Search, Bell, Filter, Calendar, MapPin, Target, Layers, RefreshCw
 } from "lucide-react";
+import { api, handleApiResponse } from "./config/apiClient.js";
+import { useCompany } from "./context/CompanyContext.jsx";
 
 // ============================================================
 // DATABASE SCHEMA ANALYSIS → KPI DEFINITION
@@ -224,14 +226,41 @@ function generateSalesRegister() {
   return register;
 }
 
+// ============================================================
+// FAKE DATASET (COMMENTED OUT - NOW USING REAL API DATA)
+// This fake data is kept for reference and testing purposes
+// ============================================================
+
+/*
 const RAW_TRANSACTIONS = generateTransactions();
 const SELL_SUMMARY = generateSellSummary(RAW_TRANSACTIONS);
 const SALES_REGISTER = generateSalesRegister();
+*/
+
 
 // ============================================================
 // DERIVED KPI COMPUTATIONS
 // ============================================================
-function computeKPIs() {
+function computeKPIs(data = null) {
+  // Use provided data or fall back to fake data for testing
+  const RAW_TRANSACTIONS = data?.transactions || [];
+  const SELL_SUMMARY = data?.sellSummary || [];
+  const SALES_REGISTER = data?.salesRegister || [];
+
+  // Return empty KPIs if no data
+  if (!data || !RAW_TRANSACTIONS.length) {
+    return {
+      totalRevenue: 0, totalCredited: 0, collectionRate: 0, pendingAmount: 0, blockedAmount: 0,
+      totalGST: 0, totalIGST: 0, totalCGST_SGST: 0, gstRateDist: {},
+      totalInvoices: 0, avgInvoiceValue: 0,
+      topParties: [], topItems: [], stateData: [],
+      interstateTotal: 0, intrastate: 0,
+      totalQuotations: 0, convertedQuotations: 0, quotationConversionRate: 0,
+      companyStats: {}, companyProductBreakdown: [], companyWiseTopItems: [], companyWiseItemKeys: [],
+      monthlyData: [], monthlyStatus: [], gstPieData: [], quotationMonthly: [], recentTransactions: []
+    };
+  }
+
   // KPI-01–04: Revenue & Collections
   const totalRevenue = RAW_TRANSACTIONS.reduce((s, t) => s + t.sell_amount, 0);
   const totalCredited = RAW_TRANSACTIONS.reduce((s, t) => s + t.credit_amount, 0);
@@ -272,37 +301,39 @@ function computeKPIs() {
     .slice(0, 7)
     .map(([name, d]) => ({ name, units: d.units, revenue: d.revenue }));
 
-  // KPI-17–18: Geographic
+  // KPI-17–18: Geographic (simplified - real data doesn't have state info in transactions)
   const stateRevenue = {};
-  RAW_TRANSACTIONS.forEach(t => {
-    stateRevenue[t.party_state] = (stateRevenue[t.party_state] || 0) + t.sell_amount;
-  });
-  const stateData = Object.entries(stateRevenue)
-    .sort((a, b) => b[1] - a[1])
-    .map(([state, val]) => ({ state, value: val }));
-  const interstateTotal = RAW_TRANSACTIONS.filter(t => t.is_interstate).reduce((s, t) => s + t.sell_amount, 0);
-  const intrastate = totalRevenue - interstateTotal;
+  // We would need to join with parties table to get state data
+  // For now, return empty
+  const stateData = [];
+  const interstateTotal = 0;
+  const intrastate = totalRevenue;
 
-  // KPI-19–20: Sales Register
+  // KPI-19–20: Sales Register (not available in current schema)
   const totalQuotations = SALES_REGISTER.length;
   const convertedQuotations = SALES_REGISTER.filter(r => r.converted).length;
-  const quotationConversionRate = ((convertedQuotations / totalQuotations) * 100).toFixed(1);
+  const quotationConversionRate = totalQuotations > 0 ? ((convertedQuotations / totalQuotations) * 100).toFixed(1) : '0.0';
 
-  // KPI-21–22: Company Performance
+  // KPI-21–22: Company Performance (simplified for single company)
   const companyStats = {};
-  RAW_TRANSACTIONS.forEach(t => {
-    if (!companyStats[t.company_name]) companyStats[t.company_name] = { revenue: 0, collected: 0, count: 0 };
-    companyStats[t.company_name].revenue += t.sell_amount;
-    companyStats[t.company_name].collected += t.credit_amount;
-    companyStats[t.company_name].count += 1;
-  });
+  if (RAW_TRANSACTIONS.length > 0) {
+    const companyName = "Current Company";
+    companyStats[companyName] = {
+      revenue: totalRevenue,
+      collected: totalCredited,
+      count: RAW_TRANSACTIONS.length
+    };
+  }
 
-  // Monthly trends
+  // Monthly trends - extract month from transaction_date
   const monthlyData = Array.from({ length: 12 }, (_, m) => {
-    const monthTx = RAW_TRANSACTIONS.filter(t => t.month === m);
-    const rev = monthTx.reduce((s, t) => s + t.sell_amount, 0);
-    const col = monthTx.reduce((s, t) => s + t.credit_amount, 0);
-    const gst = monthTx.reduce((s, t) => s + t.igst_amount + t.cgst_amount + t.sgst_amount, 0);
+    const monthTx = RAW_TRANSACTIONS.filter(t => {
+      const date = new Date(t.transaction_date);
+      return date.getMonth() === m;
+    });
+    const rev = monthTx.reduce((s, t) => s + parseFloat(t.sell_amount || 0), 0);
+    const col = monthTx.reduce((s, t) => s + parseFloat(t.credit_amount || 0), 0);
+    const gst = monthTx.reduce((s, t) => s + parseFloat(t.igst_amount || 0) + parseFloat(t.cgst_amount || 0) + parseFloat(t.sgst_amount || 0), 0);
     const txCount = monthTx.length;
     return {
       month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
@@ -313,79 +344,39 @@ function computeKPIs() {
     };
   });
 
-  // Monthly status breakdown
+  // Monthly status breakdown - determine status from credit_amount
   const monthlyStatus = Array.from({ length: 12 }, (_, m) => {
-    const monthTx = RAW_TRANSACTIONS.filter(t => t.month === m);
+    const monthTx = RAW_TRANSACTIONS.filter(t => {
+      const date = new Date(t.transaction_date);
+      return date.getMonth() === m;
+    });
     return {
       month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
-      Received: monthTx.filter(t => t.status === "Received").reduce((s, t) => s + t.sell_amount, 0) / 1000,
-      Pending: monthTx.filter(t => t.status === "Pending").reduce((s, t) => s + t.sell_amount, 0) / 1000,
-      Blocked: monthTx.filter(t => t.status === "Blocked").reduce((s, t) => s + t.sell_amount, 0) / 1000,
+      Received: monthTx.filter(t => parseFloat(t.credit_amount || 0) > 0).reduce((s, t) => s + parseFloat(t.sell_amount || 0), 0) / 1000,
+      Pending: monthTx.filter(t => parseFloat(t.credit_amount || 0) === 0).reduce((s, t) => s + parseFloat(t.sell_amount || 0), 0) / 1000,
+      Blocked: 0,
     };
   });
 
-  // Company-wise product category breakdown (for radar / grouped)
-  const companyProductBreakdown = COMPANIES.map(c => {
-    const cTx = RAW_TRANSACTIONS.filter(t => t.company_id === c.company_id);
-    const cSummary = [];
-    cTx.forEach(tx => {
-      SELL_SUMMARY.filter(s => s.invoice_no === tx.invoice_no).forEach(s => cSummary.push(s));
-    });
-    const cats = {};
-    cSummary.forEach(s => { cats[s.item_name] = (cats[s.item_name] || 0) + s.line_total; });
-    return { company: c.name.split(" ").slice(0, 2).join(" "), ...cats };
-  });
+  // Company-wise product category breakdown (simplified for single company)
+  const companyProductBreakdown = [];
 
-  // KPI — Company-wise top selling items (units sold per item, per company)
-  // Step 1: for every company, aggregate units sold per item via sell_summary
-  const companyItemUnits = {};
-  COMPANIES.forEach(c => { companyItemUnits[c.company_id] = {}; });
-  RAW_TRANSACTIONS.forEach(tx => {
-    SELL_SUMMARY.filter(s => s.invoice_no === tx.invoice_no).forEach(s => {
-      companyItemUnits[tx.company_id][s.item_name] =
-        (companyItemUnits[tx.company_id][s.item_name] || 0) + s.units_sold;
-    });
-  });
-  // Step 2: find the global top 5 items by total units across all companies
-  const globalItemTotals = {};
-  Object.values(companyItemUnits).forEach(itemMap => {
-    Object.entries(itemMap).forEach(([name, units]) => {
-      globalItemTotals[name] = (globalItemTotals[name] || 0) + units;
-    });
-  });
-  const top5ItemNames = Object.entries(globalItemTotals)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name]) => name);
-  // Step 3: build the chart-ready rows — one per company, keyed by short item labels
-  const companyWiseTopItems = COMPANIES.map(c => {
-    const row = { company: c.name.split(" ").slice(0, 2).join(" ") };
-    top5ItemNames.forEach(name => {
-      // shorten label: first two words
-      const label = name.split(" ").slice(0, 2).join(" ");
-      row[label] = companyItemUnits[c.company_id][name] || 0;
-    });
-    return row;
-  });
-  // Step 4: the short legend keys in order (deduplicated, preserving top-5 order)
-  const companyWiseItemKeys = [...new Set(
-    top5ItemNames.map(name => name.split(" ").slice(0, 2).join(" "))
-  )];
+  // Company-wise top items (simplified for single company)
+  const companyWiseTopItems = [];
+  const companyWiseItemKeys = [];
 
   // GST rate distribution for pie
   const gstPieData = Object.entries(gstRateDist).map(([rate, count]) => ({
     name: `${rate}%`, value: count
   }));
 
-  // Quotation monthly conversion
+  // Quotation monthly conversion (not available in current schema)
   const quotationMonthly = Array.from({ length: 12 }, (_, m) => {
-    const mReg = SALES_REGISTER.filter(r => r.month === m);
-    const conv = mReg.filter(r => r.converted).length;
     return {
       month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
-      total: mReg.length,
-      converted: conv,
-      rate: mReg.length ? Math.round((conv / mReg.length) * 100) : 0
+      total: 0,
+      converted: 0,
+      rate: 0
     };
   });
 
@@ -406,7 +397,9 @@ function computeKPIs() {
   };
 }
 
-const KPIs = computeKPIs();
+// Static KPIs commented out - now computed dynamically from API data
+// const KPIs = computeKPIs();
+
 
 // ============================================================
 // STYLE CONSTANTS
@@ -513,7 +506,7 @@ const tabs = [
 // PAGE SECTIONS
 // ============================================================
 
-const OverviewTab = () => (
+const OverviewTab = ({ KPIs }) => (
   <div>
     {/* Top KPI Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -672,7 +665,7 @@ const OverviewTab = () => (
   </div>
 );
 
-const GSTTab = () => (
+const GSTTab = ({ KPIs, RAW_TRANSACTIONS }) => (
   <div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total GST" value={fmt(KPIs.totalGST)} icon={Layers} color={COLORS.purple} subtitle="All components" />
@@ -755,7 +748,7 @@ const GSTTab = () => (
   </div>
 );
 
-const PartiesTab = () => (
+const PartiesTab = ({ KPIs, PARTIES }) => (
   <div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Parties" value={PARTIES.length} icon={Users} color={COLORS.blue} subtitle="Active customers" />
@@ -815,7 +808,7 @@ const PartiesTab = () => (
 
 const COMPANY_ITEM_COLORS = ["#0f2f3f", "#1a4d5c", "#3b82f6", "#10b981", "#f59e0b"];
 
-const ProductsTab = () => (
+const ProductsTab = ({ KPIs }) => (
   <div>
     {/* KPI Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -904,7 +897,7 @@ const ProductsTab = () => (
   </div>
 );
 
-const GeographyTab = () => (
+const GeographyTab = ({ KPIs }) => (
   <div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="States Served" value={KPIs.stateData.length} icon={MapPin} color={COLORS.blue} subtitle="Geographic spread" />
@@ -962,7 +955,7 @@ const GeographyTab = () => (
   </div>
 );
 
-const QuotationsTab = () => (
+const QuotationsTab = ({ KPIs }) => (
   <div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Quotations" value={KPIs.totalQuotations} icon={FileText} color={COLORS.blue} subtitle="This year" />
@@ -1017,39 +1010,158 @@ const QuotationsTab = () => (
 // MAIN APP
 // ============================================================
 export default function App() {
+  const { selectedCompany } = useCompany();
   const [activeTab, setActiveTab] = useState("overview");
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch analytics data when company changes
+  useEffect(() => {
+    if (selectedCompany) {
+      fetchAnalytics();
+    }
+  }, [selectedCompany]);
+
+  async function fetchAnalytics() {
+    if (!selectedCompany) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await handleApiResponse(
+        api.get(`/analytics/${selectedCompany.id}/data`)
+      );
+
+      setAnalyticsData(response.data);
+    } catch (err) {
+      console.error('Analytics fetch error:', err);
+      setError(err.message || 'Failed to fetch analytics data');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchAnalytics();
+    setRefreshing(false);
+  }
+
+  // Compute KPIs from real data
+  const KPIs = useMemo(() => {
+    return analyticsData ? computeKPIs(analyticsData) : null;
+  }, [analyticsData]);
 
   const tabContent = {
-    overview: <OverviewTab />,
-    gst: <GSTTab />,
-    parties: <PartiesTab />,
-    products: <ProductsTab />,
-    geography: <GeographyTab />,
-    quotations: <QuotationsTab />
+    overview: KPIs ? <OverviewTab KPIs={KPIs} /> : null,
+    gst: KPIs ? <GSTTab KPIs={KPIs} RAW_TRANSACTIONS={analyticsData?.transactions || []} /> : null,
+    parties: KPIs ? <PartiesTab KPIs={KPIs} PARTIES={analyticsData?.parties || []} /> : null,
+    products: KPIs ? <ProductsTab KPIs={KPIs} /> : null,
+    geography: KPIs ? <GeographyTab KPIs={KPIs} /> : null,
+    quotations: KPIs ? <QuotationsTab KPIs={KPIs} /> : null
   };
+
+  // Loading state
+  if (!selectedCompany) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f0f4f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="text-center">
+          <AlertCircle size={48} color="#f59e0b" />
+          <h2 className="text-xl font-bold mt-4" style={{ color: "#0f2f3f" }}>No Company Selected</h2>
+          <p className="text-sm mt-2" style={{ color: "#64748b" }}>Please select a company to view analytics</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f0f4f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <h2 className="text-xl font-bold mt-4" style={{ color: "#0f2f3f" }}>Loading Analytics...</h2>
+          <p className="text-sm mt-2" style={{ color: "#64748b" }}>Fetching data for {selectedCompany.name}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f0f4f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="text-center max-w-md">
+          <AlertCircle size={48} color="#ef4444" />
+          <h2 className="text-xl font-bold mt-4" style={{ color: "#0f2f3f" }}>Error Loading Analytics</h2>
+          <p className="text-sm mt-2" style={{ color: "#64748b" }}>{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!KPIs) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f0f4f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="text-center">
+          <FileText size={48} color="#94a3b8" />
+          <h2 className="text-xl font-bold mt-4" style={{ color: "#0f2f3f" }}>No Data Available</h2>
+          <p className="text-sm mt-2" style={{ color: "#64748b" }}>No analytics data found for {selectedCompany.name}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f5", fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* TOP HEADER */}
       <header style={{ background: "linear-gradient(135deg, #0f2f3f 0%, #1a4d5c 50%, #1e6b7a 100%)", color: "#fff" }}>
-        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
-              <BarChart2 size={20} color="#14b8a6" />
-            </div>
-            <div>
-              <h1 className="text-[15px] font-black tracking-tight">Invoice Analytics</h1>
-              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>RK Casting Group · FY 2024</p>
+        <div className="max-w-7xl mx-auto px-5 py-4">
+          {/* Company Indicator Banner */}
+          <div className="mb-3 p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(4px)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-semibold opacity-75">Viewing Analytics For</p>
+                <p className="text-lg font-bold">{selectedCompany.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs opacity-60">Company ID: {selectedCompany.id}</p>
+                <p className="text-xs opacity-60">{selectedCompany.shortName}</p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
-              <Briefcase size={13} color="#14b8a6" />
-              <span className="text-[11px] font-semibold">All Companies</span>
-              <ChevronDown size={12} color="rgba(255,255,255,0.5)" />
+
+          {/* Main Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
+                <BarChart2 size={20} color="#14b8a6" />
+              </div>
+              <div>
+                <h1 className="text-[15px] font-black tracking-tight">Invoice Analytics</h1>
+                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>{selectedCompany.shortName} · FY 2024</p>
+              </div>
             </div>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
-              <Bell size={15} color="rgba(255,255,255,0.7)" />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: "rgba(255,255,255,0.1)", opacity: refreshing ? 0.5 : 1 }}
+              >
+                <RefreshCw size={13} color="#14b8a6" className={refreshing ? "animate-spin" : ""} />
+                <span className="text-[11px] font-semibold">{refreshing ? "Refreshing..." : "Refresh"}</span>
+              </button>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <Bell size={15} color="rgba(255,255,255,0.7)" />
+              </div>
             </div>
           </div>
         </div>

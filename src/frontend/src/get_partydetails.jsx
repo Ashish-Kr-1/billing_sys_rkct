@@ -1,3 +1,5 @@
+import api from './config/apiClient';
+
 /** Sample data
 {
   "party": {
@@ -12,12 +14,13 @@
 
 export default async function getPartyDetails(id) {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parties/${id}`);
-    const data = await res.json();
+    // API client automatically includes x-company-id header from selected company
+    const data = await api.get(`/parties/${id}`);
     console.log(data);
     return data;
   } catch (err) {
     console.error("Network error:", err);
     alert("Network error: " + err.message);
+    throw err;
   }
 }

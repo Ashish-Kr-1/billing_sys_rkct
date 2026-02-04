@@ -2,9 +2,14 @@ import { useState, useEffect } from "react";
 import Button from './Button.jsx';
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from "../config/api.js";
+import { api, handleApiResponse } from "../config/apiClient.js";
+import { useCompany } from "../context/CompanyContext.jsx";
 import Logo from '../assets/logo.png';
 
 export default function InvoiceForm({ initialData }) {
+  const { selectedCompany } = useCompany();
+  const navigate = useNavigate();
+
   const [invoice, setInvoice] = useState(
     initialData?.invoice || {
       clientName: "",
@@ -35,7 +40,6 @@ export default function InvoiceForm({ initialData }) {
       party_id: ""
     });
 
-  const navigate = useNavigate();
   const [parties, setParties] = useState([]);
   const [itemsList, setItemsList] = useState([]);
   const [selectedPartyId, setSelectedPartyId] = useState("");
@@ -43,32 +47,29 @@ export default function InvoiceForm({ initialData }) {
 
   //`${API_BASE}/parties`
   useEffect(() => {
-    fetch(`${API_BASE}/parties`)
-      .then(res => res.json())
+    handleApiResponse(api.get('/parties'))
       .then(data => setParties(data))
-      .catch(err => console.error(err));
-  }, []);
+      .catch(err => console.error('Error fetching parties:', err));
+  }, [selectedCompany]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/itemNames`)
-      .then(res => res.json())
+    handleApiResponse(api.get('/itemNames'))
       .then(data => setItemsList(data))
-      .catch(err => console.error(err));
-  }, []);
+      .catch(err => console.error('Error fetching items:', err));
+  }, [selectedCompany]);
 
 
   useEffect(() => {
     console.log(import.meta.env.VITE_API_BASE_URL);
-    fetch(`${API_BASE}/createInvoice/invoiceNo`)
-      .then(res => res.json())
+    handleApiResponse(api.get('/createInvoice/invoiceNo'))
       .then(data => {
         setInvoice(prev => ({
           ...prev,
           InvoiceNo: data.InvoiceNo
         }))
       })
-      .catch(err => console.error(err));
-  }, []);
+      .catch(err => console.error('Error fetching invoice number:', err));
+  }, [selectedCompany]);
 
 
 
@@ -80,8 +81,7 @@ export default function InvoiceForm({ initialData }) {
     if (!party) return;
 
     // Fetch full details
-    fetch(`${API_BASE}/parties/${partyId}`)
-      .then(res => res.json())
+    handleApiResponse(api.get(`/parties/${partyId}`))
       .then(data => {
         const p = data.party;
 
@@ -96,13 +96,12 @@ export default function InvoiceForm({ initialData }) {
           GSTIN2: p.gstin_no,
         }));
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error('Error fetching party details:', err));
   }
 
 
   function handleItemSelect(index, itemId) {
-    fetch(`${API_BASE}/item_id/${itemId}`)
-      .then(res => res.json())
+    handleApiResponse(api.get(`/item_id/${itemId}`))
       .then(data => {
         const item = data.item;
         if (!item) return;
@@ -122,7 +121,7 @@ export default function InvoiceForm({ initialData }) {
           items: updatedItems
         }));
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error('Error fetching item details:', err));
   }
 
 
@@ -174,6 +173,22 @@ export default function InvoiceForm({ initialData }) {
 
     <div className=" flex justify-center items-center">
       <div className="max-w-6xl p-6 bg-white rounded-xl shadow-md">
+        {/* Company Indicator */}
+        {selectedCompany && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold opacity-90">Currently Managing</p>
+                <p className="text-lg font-bold">{selectedCompany.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs opacity-75">Company ID: {selectedCompany.id}</p>
+                <p className="text-xs opacity-75">{selectedCompany.shortName}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div>
           {/* ================= Invoice Header Section ================= */}
           <div className="border-b-3 pb-4 mb-6">

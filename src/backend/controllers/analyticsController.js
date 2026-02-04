@@ -105,7 +105,7 @@ async function fetchAnalyticsData(companyId) {
       ss.invoice_no,
       ss.item_id,
       ss.units_sold,
-      ss.unit_price,
+      i.rate as unit_price,
       i.item_name,
       i.hsn_code
     FROM sell_summary ss

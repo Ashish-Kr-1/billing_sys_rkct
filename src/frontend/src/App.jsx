@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CompanyProvider } from "./context/CompanyContext.jsx";
+import { ProtectedRoute, PublicRoute } from "./components/ProtectedRoute.jsx";
 
 // Auth Pages
 import Login from "./pages/Login.jsx";
+import Signup from "./pages/Signup.jsx";
 import CompanySelection from "./pages/CompanySelection.jsx";
 import SectionSelection from "./pages/SectionSelection.jsx";
 
@@ -22,19 +24,97 @@ function App() {
       <CompanyProvider>
         <BrowserRouter>
           <Routes>
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/select-company" element={<CompanySelection />} />
-            <Route path="/select-section" element={<SectionSelection />} />
+            {/* Public Routes - Redirect to company selection if already logged in */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              }
+            />
 
-            {/* Existing Routes - TODO: Add protection later */}
-            <Route path='/' element={<Landing_page />} />
-            <Route path='/Quotation' element={<Quotation />} />
-            <Route path='/Create_Party' element={<Create_Party />} />
-            <Route path='/Invoice' element={<Invoice />} />
-            <Route path='/Preview' element={<Preview />} />
-            <Route path='/Ledger' element={<Ledger />} />
-            <Route path='/Analytics' element={<Analytics />} />
+            {/* Protected Auth Flow Routes */}
+            <Route
+              path="/select-company"
+              element={
+                <ProtectedRoute>
+                  <CompanySelection />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/select-section"
+              element={
+                <ProtectedRoute>
+                  <SectionSelection />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected Application Routes */}
+            <Route
+              path='/Invoice'
+              element={
+                <ProtectedRoute>
+                  <Invoice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/Analytics'
+              element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/Quotation'
+              element={
+                <ProtectedRoute>
+                  <Quotation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/Create_Party'
+              element={
+                <ProtectedRoute>
+                  <Create_Party />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/Preview'
+              element={
+                <ProtectedRoute>
+                  <Preview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/Ledger'
+              element={
+                <ProtectedRoute>
+                  <Ledger />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Root redirect */}
+            <Route path='/' element={<Navigate to="/login" replace />} />
+
+            {/* Catch all - redirect to login */}
+            <Route path='*' element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
       </CompanyProvider>

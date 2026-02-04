@@ -1,15 +1,43 @@
 import { dbManager } from '../db.js';
 
 /**
- * Get all available companies
+ * Get all available companies with connection status
  */
 export async function getAllCompanies(req, res) {
     try {
         const companies = dbManager.getAllCompanies();
 
+        // Test connection for each company
+        const companiesWithStatus = await Promise.all(
+            companies.map(async (company) => {
+                let connectionStatus = 'disconnected';
+                let errorMessage = null;
+
+                try {
+                    const pool = dbManager.getPool(company.id);
+                    await pool.query('SELECT 1');
+                    connectionStatus = 'connected';
+                } catch (error) {
+                    connectionStatus = 'error';
+                    errorMessage = error.message;
+
+                    // Check if it's an IP whitelist issue
+                    if (error.message.includes('Access denied')) {
+                        errorMessage = 'Database access denied - IP not whitelisted';
+                    }
+                }
+
+                return {
+                    ...company,
+                    connectionStatus,
+                    errorMessage
+                };
+            })
+        );
+
         return res.status(200).json({
             success: true,
-            companies
+            companies: companiesWithStatus
         });
     } catch (error) {
         console.error('Get companies error:', error);

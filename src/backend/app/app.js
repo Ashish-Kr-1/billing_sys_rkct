@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import pool from "../db.js";
+import { dbManager } from "../db.js";
 import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
@@ -33,7 +33,7 @@ const r = express.Router()
 // ];
 
 const allowedOrigins = [
-  "http://localhost:5173",        // local dev (Vite)
+  "http://localhost:5174",        // local dev (Vite)
   "http://localhost:5000",        // local/VPS backend
   "https://billing.rkcasting.in", // Production Frontend
   "https://www.billing.rkcasting.in",
@@ -62,6 +62,27 @@ app.use('/auth', authRouter);
 app.use('/companies', companyRouter);
 app.use('/analytics', analyticsRouter);
 
+// Middleware to select database pool based on Company ID
+app.use((req, res, next) => {
+  const companyId = req.headers['x-company-id'] || req.query.companyId;
+
+  if (companyId) {
+    try {
+      req.db = dbManager.getPool(companyId);
+      req.companyId = companyId;
+    } catch (err) {
+      console.warn(`Invalid Company ID requested: ${companyId}. Falling back to default.`);
+      req.db = dbManager.getPool(1);
+      req.companyId = 1;
+    }
+  } else {
+    // Default to Company 1 (RK Casting) for backward compatibility
+    req.db = dbManager.getPool(1);
+    req.companyId = 1;
+  }
+  next();
+});
+
 //endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));
 
@@ -70,7 +91,7 @@ app.get('/health', async (req, res) => res.json({ status: 'ok' }));
 //endpoint to test database
 app.get('/test-db', async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT NOW()");
+    const [rows] = await req.db.query("SELECT NOW()");
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -79,7 +100,7 @@ app.get('/test-db', async (req, res) => {
 
 app.get('/parties', async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    const [rows] = await req.db.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -89,7 +110,7 @@ app.get('/parties', async (req, res) => {
 
 app.get('/itemNames', async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT item_id, item_name FROM items ORDER BY item_name");
+    const [rows] = await req.db.query("SELECT item_id, item_name FROM items ORDER BY item_name");
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -98,7 +119,7 @@ app.get('/itemNames', async (req, res) => {
 
 app.get('/transactions', async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM transactions");
+    const [rows] = await req.db.query("SELECT * FROM transactions");
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -107,7 +128,7 @@ app.get('/transactions', async (req, res) => {
 
 app.get('/items', async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * from items");
+    const [rows] = await req.db.query("SELECT * from items");
     res.json({ rows }); // Frontend might expect { rows: [] } structure based on previous code or just array? 
     // Previous code: res.json(result); which sends the whole PG object { command, rowCount, rows: [] }.
     // Frontend likely uses data.rows.
@@ -118,7 +139,7 @@ app.get('/items', async (req, res) => {
 })
 
 async function partyList(req, res) {
-  const client = await pool.getConnection(); // MySQL
+  const client = await req.db.getConnection(); // MySQL
   try {
     await client.beginTransaction();
     const [rows] = await client.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
@@ -134,7 +155,7 @@ async function partyList(req, res) {
 }
 
 async function partyDetails(req, res) {
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
   const partyId = parseInt(req.params.id, 10);
 
   if (!Number.isInteger(partyId)) {
@@ -176,7 +197,7 @@ async function partyDetails(req, res) {
 }
 
 async function itemDetails(req, res) {
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
   const itemId = parseInt(req.params.id, 10);
 
   if (!Number.isInteger(itemId)) {
@@ -218,7 +239,7 @@ async function itemDetails(req, res) {
 }
 
 async function getNextInvoiceNumber(req, res) {
-  const client = await pool.getConnection(); // MySQL
+  const client = await req.db.getConnection(); // MySQL
   try {
     await client.beginTransaction();
     const prefix = 'RKCT/2025-26';
@@ -265,7 +286,7 @@ async function createPaymentHandler(req, res) {
     });
   }
 
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
 
   try {
     await client.beginTransaction();
@@ -348,7 +369,7 @@ async function getInvoiceHistoryHandler(req, res) {
   }
 
   try {
-    const [rows] = await pool.query(
+    const [rows] = await req.db.query(
       `
       SELECT
         transaction_date,
@@ -386,7 +407,7 @@ async function createItemHandler(req, res) {
 
   //if (!hsn_code) return res.status(400).json({ error: 'All fields are required' })
 
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
 
   try {
     await client.beginTransaction();
@@ -439,7 +460,7 @@ async function createPartyHandler(req, res) {
 
   //const idempotencyKey = req.headers['idempotency-key']?.trim() || null;
 
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
   try {
     await client.beginTransaction();
 
@@ -501,7 +522,7 @@ function formatLedgerDate(dateValue) {
 }
 
 async function ledgerData(req, res) {
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
   try {
     console.log("Working");
     const [rows] = await client.query(`
@@ -565,7 +586,7 @@ async function createTransactionHandler(req, res) {
     });
   }
 
-  const client = await pool.getConnection();
+  const client = await req.db.getConnection();
 
   try {
     await client.beginTransaction();

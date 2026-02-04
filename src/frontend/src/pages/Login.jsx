@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Lock, User, Eye, EyeOff, LogIn } from 'lucide-react';
 
 export default function Login() {
@@ -8,10 +8,22 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Check for success message from signup
+    useEffect(() => {
+        if (location.state?.message) {
+            setSuccessMessage(location.state.message);
+            // Clear the message after 5 seconds
+            setTimeout(() => setSuccessMessage(''), 5000);
+        }
+    }, [location]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -49,12 +61,20 @@ export default function Login() {
                         <p className="text-gray-600">Sign in to access your billing system</p>
                     </div>
 
+                    {/* Success Alert */}
+                    {successMessage && (
+                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-start gap-3">
+                            <span className="text-sm">{successMessage}</span>
+                        </div>
+                    )}
+
                     {/* Error Alert */}
                     {error && (
                         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3 animate-shake">
                             <span className="text-sm">{error}</span>
                         </div>
                     )}
+
 
                     {/* Login Form */}
                     <form onSubmit={handleSubmit} className="space-y-4">

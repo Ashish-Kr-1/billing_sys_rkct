@@ -1,43 +1,34 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Navbar from "./components/Navbarr";
 import { API_BASE } from "./config/api.js";
+import { api, handleApiResponse } from "./config/apiClient.js";
+import { useCompany } from "./context/CompanyContext.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
 
 
 const createPayment = async ({ invoice_no, party_id, amount, date, remarks }) => {
   console.log(invoice_no, party_id, amount);
-  const res = await fetch(`${API_BASE}/ledger/payment`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  return handleApiResponse(
+    api.post('/ledger/payment', {
       invoice_no,
       amount,
       date,
       remarks,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to save payment");
-  }
-
-  return res.json();
+    })
+  );
 };
 
 const fetchPaymentHistory = async (invoiceNo) => {
-  const res = await fetch(
-    `${API_BASE}/ledger/payments?invoice_no=${encodeURIComponent(invoiceNo)}`
+  const data = await handleApiResponse(
+    api.get(`/ledger/payments?invoice_no=${encodeURIComponent(invoiceNo)}`)
   );
-
-  if (!res.ok) throw new Error("Failed to fetch payment history");
-  const data = await res.json();
   return data.payments || [];
 };
 
 
 
 export default function App() {
+  const { selectedCompany } = useCompany();
   const fallbackData = [
     { "date": "21 Nov 2025", "invoice": "INV-090", "client": "ACC Limited", "debit": 0, "credit": 20000, "remarks": "" },
     { "date": "10 May 2025", "invoice": "INV-091", "client": "Aditya Birla Traders", "debit": 17100, "credit": 0, "remarks": "" },
@@ -138,8 +129,7 @@ export default function App() {
   });
 
   const fetchLedgerData = () => {
-    fetch(`${API_BASE}/ledger`)
-      .then(res => res.ok ? res.json() : Promise.reject())
+    handleApiResponse(api.get('/ledger'))
       .then(data => {
         if (Array.isArray(data.ledger)) {
           setLedgerData(data.ledger);
@@ -150,8 +140,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchLedgerData();
-  }, []);
+    if (selectedCompany) {
+      fetchLedgerData();
+    }
+  }, [selectedCompany]);
 
 
   const openInvoicePopup = async (row) => {
@@ -329,6 +321,22 @@ export default function App() {
       <Navbar className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200" />
       <div className="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-900 font-sans mt-12">
         <div className="max-w-6xl mx-auto">
+          {/* Company Indicator */}
+          {selectedCompany && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold opacity-90">Viewing Ledger For</p>
+                  <p className="text-xl font-bold">{selectedCompany.name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs opacity-75">Company ID: {selectedCompany.id}</p>
+                  <p className="text-xs opacity-75">{selectedCompany.shortName}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 mt-6">
             <div>

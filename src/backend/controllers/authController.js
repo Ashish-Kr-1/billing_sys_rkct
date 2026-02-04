@@ -1,8 +1,12 @@
 import bcrypt from 'bcrypt';
-import pool from '../db.js';
+import { dbManager } from '../db.js';
 import { generateToken } from '../middleware/auth.js';
 
 const SALT_ROUNDS = 10;
+
+// Authentication always uses Company 1's database (central user store)
+const AUTH_DB_ID = 1;
+
 
 /**
  * Register a new user
@@ -19,7 +23,7 @@ export async function registerUser(req, res) {
         return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    const client = await pool.getConnection();
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
 
     try {
         await client.beginTransaction();
@@ -77,7 +81,7 @@ export async function loginUser(req, res) {
         return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const client = await pool.getConnection();
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
 
     try {
         await client.beginTransaction();
@@ -167,7 +171,7 @@ export async function logoutUser(req, res) {
     const token = authHeader.split(' ')[1];
 
     try {
-        await pool.query('DELETE FROM sessions WHERE token = ?', [token]);
+        await dbManager.getPool(AUTH_DB_ID).query('DELETE FROM sessions WHERE token = ?', [token]);
         return res.status(200).json({ success: true, message: 'Logged out successfully' });
     } catch (error) {
         console.error('Logout error:', error);
@@ -180,7 +184,7 @@ export async function logoutUser(req, res) {
  */
 export async function getCurrentUser(req, res) {
     try {
-        const [users] = await pool.query(
+        const [users] = await dbManager.getPool(AUTH_DB_ID).query(
             `SELECT user_id, username, email, full_name, role, last_login, created_at
        FROM users
        WHERE user_id = ?`,
@@ -213,7 +217,7 @@ export async function changePassword(req, res) {
         return res.status(400).json({ error: 'New password must be at least 8 characters' });
     }
 
-    const client = await pool.getConnection();
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
 
     try {
         await client.beginTransaction();
