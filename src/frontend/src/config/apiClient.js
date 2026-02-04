@@ -39,6 +39,12 @@ export async function apiFetch(endpoint, options = {}) {
         headers['x-company-id'] = company.id.toString();
     }
 
+    // Add Auth Token if available
+    const token = localStorage.getItem('token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     // Build full URL
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
 

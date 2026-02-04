@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
 import { authRouter, companyRouter, analyticsRouter } from '../routes/index.js';
+import { authenticateUser } from '../middleware/auth.js';
 
 dotenv.config()
 
@@ -59,6 +60,10 @@ app.use(helmet())
 
 // Mount auth and company routes
 app.use('/auth', authRouter);
+
+// Protect all subsequent routes
+app.use(authenticateUser);
+
 app.use('/companies', companyRouter);
 app.use('/analytics', analyticsRouter);
 

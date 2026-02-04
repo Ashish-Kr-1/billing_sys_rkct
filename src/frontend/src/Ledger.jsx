@@ -318,8 +318,7 @@ export default function App() {
 
   return (
     <>
-      <Navbar className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200" />
-      <div className="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-900 font-sans mt-12">
+      <div className="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-900 font-sans">
         <div className="max-w-6xl mx-auto">
           {/* Company Indicator */}
           {selectedCompany && (

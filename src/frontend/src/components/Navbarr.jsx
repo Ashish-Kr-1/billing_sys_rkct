@@ -1,131 +1,181 @@
-import logo from '../assets/logo.png'
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
+import {
+  Menu, X, LogOut, User, Building2,
+  FileText, BarChart2, BookOpen, Users
+} from 'lucide-react';
+import logo from '../assets/logo.png';
 
-function Navbar() {
-  const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+export default function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
+  const { selectedCompany } = useCompany();
+  const [isOpen, setIsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const navLinks = [
+    { name: 'New Invoice', path: '/Invoice', icon: FileText },
+    { name: 'Analytics', path: '/Analytics', icon: BarChart2 },
+    { name: 'Ledger', path: '/Ledger', icon: BookOpen },
+    { name: 'Parties', path: '/Create_Party', icon: Users },
+  ];
 
   return (
-    <div className="w-full fixed top-0 z-50 bg-black text-white shadow-lg rounded-b-lg">
-      <div className="px-5 md:pl-20 pr-10 py-4 flex justify-between items-center">
+    <nav className="fixed top-0 w-full z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
 
-        {/* LOGO */}
-        <div className="logo">
-          <img
-            src={logo}
-            alt="Logo"
-            className="w-32 cursor-pointer"
-            onClick={() => navigate('/')}
-          />
-        </div>
-
-        {/* DESKTOP MENU */}
-        <div className="hidden md:flex text-sm items-center gap-12">
-          <button
-            onClick={() => navigate('/Invoice')}
-            className=" font-bold  hover:text-emerald-400 cursor-pointer"
-          >
-            New Invoice
-          </button>
-          <button
-            onClick={() => navigate('/Analytics')}
-            className=" font-bold  hover:text-emerald-400 cursor-pointer"
-          >
-          Analytics
-          </button>
-          <button
-            onClick={() => navigate('/Ledger')}
-            className="font-bold mx-3  hover:text-emerald-400 transition cursor-pointer"
-          >
-            Ledger
-          </button>
-          <button
-            onClick={() => navigate('/Create_Party')}
-            className="  font-semibold py-3.5 hover:text-emerald-400 cursor-pointer"
-          > 
-            Create Party & Item
-          </button>
-        </div>
-
-        {/* MOBILE HAMBURGER */}
-        <div className="md:hidden">
-          <button
-            onClick={() => setOpen(!open)}
-            className="focus:outline-none"
-          >
-            <svg
-              className="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              {open ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/')}>
+            <img className="h-10 w-auto" src={logo} alt="RK Casting" />
+            <div className="hidden md:block">
+              <h1 className="text-lg font-bold tracking-tight text-white">Billing<span className="text-emerald-500">System</span></h1>
+              {selectedCompany && (
+                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider truncate max-w-[150px]">
+                  {selectedCompany.shortName || selectedCompany.name}
+                </p>
               )}
-            </svg>
-          </button>
+            </div>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.path);
+              return (
+                <button
+                  key={link.name}
+                  onClick={() => navigate(link.path)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                    ${active
+                      ? 'bg-slate-800 text-emerald-400 shadow-sm ring-1 ring-slate-700'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  <Icon size={16} className={active ? "text-emerald-400" : "text-slate-400"} />
+                  {link.name}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* User Profile */}
+          <div className="hidden md:flex items-center gap-4">
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-full hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700"
+              >
+                <div className="text-right hidden lg:block">
+                  <p className="text-xs font-bold text-white">{user?.username || 'User'}</p>
+                  <p className="text-[10px] text-slate-400 capitalize">{user?.role || 'Admin'}</p>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                  <span className="text-xs font-black text-white">{user?.username?.[0]?.toUpperCase() || 'U'}</span>
+                </div>
+              </button>
+
+              {/* Dropdown */}
+              {profileOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setProfileOpen(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white text-slate-900 rounded-xl shadow-2xl py-2 border border-slate-100 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-2 border-b border-slate-100 mb-1">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Signed in as</p>
+                      <p className="text-sm font-bold truncate">{user?.username}</p>
+                    </div>
+
+                    <button
+                      onClick={() => { navigate('/select-company'); setProfileOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 text-slate-600 font-medium"
+                    >
+                      <Building2 size={16} /> Switch Company
+                    </button>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center gap-2 font-medium"
+                    >
+                      <LogOut size={16} /> Sign Out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MOBILE MENU */}
-      {open && (
-        <div className="md:hidden bg-[#020617] px-5 py-4 space-y-3 border-t border-gray-800">
-          <button
-            onClick={() => {
-              navigate('/')
-              setOpen(false)
-            }}
-            className="block w-full text-left font-semibold py-2 hover:text-emerald-400"
-          >
-            Home
-          </button>
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden bg-slate-900 border-t border-slate-800 absolute w-full shadow-2xl animate-in slide-in-from-top-5 duration-200">
+          <div className="px-4 pt-4 pb-2 space-y-2">
+            <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-800/50 border border-slate-700 mb-4">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                <span className="text-sm font-black text-white">{user?.username?.[0]?.toUpperCase() || 'U'}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">{user?.username}</p>
+                <p className="text-xs text-slate-400">{selectedCompany?.name || 'No Company Selected'}</p>
+              </div>
+            </div>
 
-          <button
-            onClick={() => {
-              navigate('/Invoice')
-              setOpen(false)
-            }}
-            className="block w-full text-left font-semibold py-2 hover:text-emerald-400"
-          >
-            New Invoice
-          </button>
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.name}
+                  onClick={() => { navigate(link.path); setIsOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                  <Icon size={18} />
+                  {link.name}
+                </button>
+              );
+            })}
 
-          <button
-            onClick={() => {
-              navigate('/Ledger')
-              setOpen(false)
-            }}
-            className="block w-full text-left font-semibold py-2 hover:text-emerald-400"
-          >
-            Ledger
-          </button>
+            <div className="h-px bg-slate-800 my-2"></div>
 
-          <button
-            onClick={() => {
-              navigate('/Create_Party')
-              setOpen(false)
-            }}
-            className="block w-full text-left font-semibold py-3  hover:text-emerald-400"
-          >
-            Create Party & Item
-          </button>
-          <button
-            onClick={() => {
-              navigate('/Outstanding')
-              setOpen(false)
-            }}
-            className="block w-full text-left font-semibold py-3  hover:text-emerald-400"
-          >
-            Create Outstanding
-          </button>
+            <button
+              onClick={() => { navigate('/select-company'); setIsOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              <Building2 size={18} /> Switch Company
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-900/20"
+            >
+              <LogOut size={18} /> Sign Out
+            </button>
+          </div>
         </div>
       )}
-    </div>
-  )
+    </nav>
+  );
 }
-
-export default Navbar

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CompanyProvider } from "./context/CompanyContext.jsx";
 import { ProtectedRoute, PublicRoute } from "./components/ProtectedRoute.jsx";
+import Layout from "./components/Layout.jsx";
 
 // Auth Pages
 import Login from "./pages/Login.jsx";
@@ -60,55 +61,19 @@ function App() {
               }
             />
 
-            {/* Protected Application Routes */}
-            <Route
-              path='/Invoice'
-              element={
-                <ProtectedRoute>
-                  <Invoice />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/Analytics'
-              element={
-                <ProtectedRoute>
-                  <Analytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/Quotation'
-              element={
-                <ProtectedRoute>
-                  <Quotation />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/Create_Party'
-              element={
-                <ProtectedRoute>
-                  <Create_Party />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/Preview'
-              element={
-                <ProtectedRoute>
-                  <Preview />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/Ledger'
-              element={
-                <ProtectedRoute>
-                  <Ledger />
-                </ProtectedRoute>
-              }
-            />
+            {/* Protected Application Routes with Layout */}
+            <Route element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route path='/Invoice' element={<Invoice />} />
+              <Route path='/Analytics' element={<Analytics />} />
+              <Route path='/Quotation' element={<Quotation />} />
+              <Route path='/Create_Party' element={<Create_Party />} />
+              <Route path='/Preview' element={<Preview />} />
+              <Route path='/Ledger' element={<Ledger />} />
+            </Route>
 
             {/* Root redirect */}
             <Route path='/' element={<Navigate to="/login" replace />} />
