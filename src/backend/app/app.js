@@ -5,6 +5,7 @@ import pool from "../db.js";
 import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
+import { authRouter, companyRouter, analyticsRouter } from '../routes/index.js';
 
 dotenv.config()
 
@@ -55,6 +56,11 @@ app.use(cors({
 }));
 
 app.use(helmet())
+
+// Mount auth and company routes
+app.use('/auth', authRouter);
+app.use('/companies', companyRouter);
+app.use('/analytics', analyticsRouter);
 
 //endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));

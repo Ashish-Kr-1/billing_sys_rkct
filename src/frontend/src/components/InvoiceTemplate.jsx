@@ -1,7 +1,7 @@
 import Logo from '../assets/logo.png';
 import { useNavigate } from "react-router-dom";
 export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst }) {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   return (
     <div
       id="invoice-download"
@@ -9,18 +9,18 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
       style={{ fontFamily: "Rubik", color: "#1A1A1A", minHeight: "1122px" }}
     >
       {/* HEADER */}
-      <div> <p className="text-center underline font-serif "style={{ fontSize: "32px", color: "#0A4350", fontWeight: "600" , }}>INVOICE</p></div>
+      <div> <p className="text-center underline font-serif " style={{ fontSize: "32px", color: "#0A4350", fontWeight: "600", }}>INVOICE</p></div>
       <div className="flex justify-center items-center gap-0 pb-2 border-b-4 " style={{ borderColor: "#0A4350" }}>
-          <div className=''>
-            <p className=""style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600" , }}>GSTIN :{invoice.GSTIN0}</p>
-            <img 
-                  src={Logo}
-                  alt="Company Logo"
-                  className=" w-52 h-auto mr-5"
-                />
-          </div>
+        <div className=''>
+          <p className="" style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600", }}>GSTIN :{invoice.GSTIN0}</p>
+          <img
+            src={Logo}
+            alt="Company Logo"
+            className=" w-52 h-auto mr-5"
+          />
+        </div>
         <div className="max-w-full pr-10">
-          <h1 className="font-serif"style={{ fontSize: "28px", fontWeight: "800",  letterSpacing: "1px" }}>
+          <h1 className="font-serif" style={{ fontSize: "28px", fontWeight: "800", letterSpacing: "1px" }}>
             M/S R.K Casting & Engineering Works
           </h1>
           <p style={{ fontSize: "12px", fontWeight: "600" }}>
@@ -28,47 +28,47 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
             Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129 </p>
           <p style={{ fontSize: "14px", fontWeight: "600" }}>
             Mobile No : +91 6204583192</p>
-           <p style={{ fontSize: "14px",  fontWeight: "600" }}>
-           Email Id : rkcastingmoonidih@gmail.com</p>
+          <p style={{ fontSize: "14px", fontWeight: "600" }}>
+            Email Id : rkcastingmoonidih@gmail.com</p>
 
-           <p style={{ fontSize: "14px", fontWeight: "600" }}>
-             T. License No. - SEA2135400243601</p>      
+          <p style={{ fontSize: "14px", fontWeight: "600" }}>
+            T. License No. - SEA2135400243601</p>
         </div>
       </div>
       {/*Upper section*/}
-       <div className="text-sm grid grid-cols-3 gap-0.5 border-b-2 mt-2">
-          <p style={{ fontWeight: "700" }}>Invoice Number : {invoice.InvoiceNo}</p>
-          <p style={{ fontWeight: "700" }}>Transported By : {invoice.TrasnportBy}</p>
-          <p style={{ fontWeight: "700" }}> Vehicle Number : {invoice.VehicleNo}</p>
-          <p style={{ fontWeight: "700" }}> Date : {invoice.InvoiceDate}</p>
-          <p style={{ fontWeight: "700" }}> Place of Supply : {invoice.PlaceofSupply}</p>
-          <p style={{ fontWeight: "700" }}> Eway Bill No. : {invoice.EwayBillNo}</p>
-          <p style={{ fontWeight: "700" }}> PO No. : {invoice.PONo}</p>
-          <p style={{ fontWeight: "700" }}> PO Date : {invoice.PODate}</p>
-          <p style={{ fontWeight: "700" }}> Vendor Code : {invoice.VendorCode}</p>
-          <p style={{ fontWeight: "700" , marginBottom: "6px" }}> GatePass/Challan No. : {invoice.ChallanNo}</p>
-           <p style={{ marginBottom: "6px" }}> {invoice.ChallanDate}</p>
-        </div>
-      
+      <div className="text-sm grid grid-cols-3 gap-0.5 border-b-2 mt-2">
+        <p style={{ fontWeight: "700" }}>Invoice Number : {invoice.InvoiceNo}</p>
+        <p style={{ fontWeight: "700" }}>Transported By : {invoice.TrasnportBy}</p>
+        <p style={{ fontWeight: "700" }}> Vehicle Number : {invoice.VehicleNo}</p>
+        <p style={{ fontWeight: "700" }}> Date : {invoice.InvoiceDate}</p>
+        <p style={{ fontWeight: "700" }}> Place of Supply : {invoice.PlaceofSupply}</p>
+        <p style={{ fontWeight: "700" }}> Eway Bill No. : {invoice.EwayBillNo}</p>
+        <p style={{ fontWeight: "700" }}> PO No. : {invoice.PONo}</p>
+        <p style={{ fontWeight: "700" }}> PO Date : {invoice.PODate}</p>
+        <p style={{ fontWeight: "700" }}> Vendor Code : {invoice.VendorCode}</p>
+        <p style={{ fontWeight: "700", marginBottom: "6px" }}> GatePass/Challan No. : {invoice.ChallanNo}</p>
+        <p style={{ marginBottom: "6px" }}> {invoice.ChallanDate}</p>
+      </div>
+
 
       {/* BILLING SECTION */}
       <div className='grid grid-cols-2 gap-3.5'>
-      <div className="gap-10 mt-2 text-sm">
-        <div className="border rounded-md text-sm p-3">
-          <h2 className='flex items-center justify-center pb-2.5 rounded ' style={{ fontWeight: "700", marginBottom: "3px", backgroundColor: "#3E7373", color: "white"}}>BILLED TO PARTY </h2>
-          <p className="font-bold text-sm">{invoice.clientName}</p>
-          <p>{invoice.clientAddress}</p>
-          <p style={{ fontWeight: "700", marginBottom: "6px" }}>GSTIN Number : {invoice.GSTIN}</p>
+        <div className="gap-10 mt-2 text-sm">
+          <div className="border rounded-md text-sm p-3">
+            <h2 className='flex items-center justify-center pb-2.5 rounded ' style={{ fontWeight: "700", marginBottom: "3px", backgroundColor: "#3E7373", color: "white" }}>BILLED TO PARTY </h2>
+            <p className="font-bold text-sm">{invoice.clientName}</p>
+            <p>{invoice.clientAddress}</p>
+            <p style={{ fontWeight: "700", marginBottom: "6px" }}>GSTIN Number : {invoice.GSTIN}</p>
+          </div>
         </div>
-      </div>
-          <div className= "gap-10 mt-2 text-sm ">
-        <div className="border rounded-md p-3">
-          <h2 className='text-center rounded pb-2.5'style={{ fontWeight: "700", marginBottom: "3px", color: "#0A4350",backgroundColor: "#3E7373", color: "white" }}>SHIPPED TO PARTY </h2>
-          <p className="font-bold text-md">{invoice.clientName2}</p>
-          <p>{invoice.clientAddress2}</p>
-          <p className=""style={{ fontWeight: "700", marginBottom: "6px" }}>GSTIN Number : {invoice.GSTIN2}</p>
+        <div className="gap-10 mt-2 text-sm ">
+          <div className="border rounded-md p-3">
+            <h2 className='text-center rounded pb-2.5' style={{ fontWeight: "700", marginBottom: "3px", backgroundColor: "#3E7373", color: "white" }}>SHIPPED TO PARTY </h2>
+            <p className="font-bold text-md">{invoice.clientName2}</p>
+            <p>{invoice.clientAddress2}</p>
+            <p className="" style={{ fontWeight: "700", marginBottom: "6px" }}>GSTIN Number : {invoice.GSTIN2}</p>
+          </div>
         </div>
-      </div>
       </div>
 
       {/* ITEMS TABLE */}
@@ -98,50 +98,50 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
 
       {/* TOTALS SECTION */}
       <div className="mt-4 grid grid-cols-2 ">
-         <div className="border rounded-2xl p-5" style={{ borderColor: "#D9D9D9" }}>
-        <p className="text-xl font-bold"> Bank Details :- </p>
-        <p className=" text-sm">{invoice.AccountName}</p>
-        <p className=" text-sm">{invoice.CurrentACCno}</p>
-        <p className=" text-sm">{invoice.IFSCcode}</p>
-        <p className=" text-sm">{invoice.Branch}</p>
-      </div>
-      <div className='flex justify-end'>
-        <div className="w-64 ">
-          <div className="flex justify-around mb-2">
-            <span>Subtotal</span>
-            <span>₹{(subtotalAmount.toFixed(2))}</span>
-          </div>
-
-          <div className="flex justify-around mb-2">
-            <span>SGST ({sgst}%)</span>
-            <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
-          </div>
-
-          <div className="flex justify-around mb-2">
-            <span>CGST ({cgst}%)</span>
-            <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
-          </div>
-
-          <div
-            className="flex justify-around mt-3 pt-3 border-t-2"
-            style={{ borderColor: "#0A4350", fontWeight: "700", fontSize: "20px" }}
-          >
-            <span>Total Amount</span>
-            <span>₹{Math.round(totalAmount)}</span>
-          </div>
+        <div className="border rounded-2xl p-5" style={{ borderColor: "#D9D9D9" }}>
+          <p className="text-xl font-bold"> Bank Details :- </p>
+          <p className=" text-sm">{invoice.AccountName}</p>
+          <p className=" text-sm">{invoice.CurrentACCno}</p>
+          <p className=" text-sm">{invoice.IFSCcode}</p>
+          <p className=" text-sm">{invoice.Branch}</p>
         </div>
+        <div className='flex justify-end'>
+          <div className="w-64 ">
+            <div className="flex justify-around mb-2">
+              <span>Subtotal</span>
+              <span>₹{(subtotalAmount.toFixed(2))}</span>
+            </div>
+
+            <div className="flex justify-around mb-2">
+              <span>SGST ({sgst}%)</span>
+              <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-around mb-2">
+              <span>CGST ({cgst}%)</span>
+              <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
+            </div>
+
+            <div
+              className="flex justify-around mt-3 pt-3 border-t-2"
+              style={{ borderColor: "#0A4350", fontWeight: "700", fontSize: "20px" }}
+            >
+              <span>Total Amount</span>
+              <span>₹{Math.round(totalAmount)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* FOOTER */}
       <div className="mt-4 border rounded-md p-3">
-      <h2 className="font-semibold mb-2">
-       Terms &amp; Conditions
-      </h2>
-      <p className="text-sm whitespace-pre-line">
-       {invoice.Terms || "No terms and conditions specified."}
-       </p>
-       </div>
+        <h2 className="font-semibold mb-2">
+          Terms &amp; Conditions
+        </h2>
+        <p className="text-sm whitespace-pre-line">
+          {invoice.Terms || "No terms and conditions specified."}
+        </p>
+      </div>
     </div>
   );
 }

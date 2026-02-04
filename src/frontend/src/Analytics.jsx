@@ -108,7 +108,7 @@ function generateTransactions() {
   const rand = seededRandom(42);
   const transactions = [];
   let txId = 1;
-  const monthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
+  const monthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
   for (let month = 0; month < 12; month++) {
     const baseVolume = 30 + Math.floor(rand() * 25); // 30-55 transactions/month
@@ -305,7 +305,7 @@ function computeKPIs() {
     const gst = monthTx.reduce((s, t) => s + t.igst_amount + t.cgst_amount + t.sgst_amount, 0);
     const txCount = monthTx.length;
     return {
-      month: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m],
+      month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
       revenue: Math.round(rev / 1000),
       collected: Math.round(col / 1000),
       gst: Math.round(gst / 1000),
@@ -317,7 +317,7 @@ function computeKPIs() {
   const monthlyStatus = Array.from({ length: 12 }, (_, m) => {
     const monthTx = RAW_TRANSACTIONS.filter(t => t.month === m);
     return {
-      month: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m],
+      month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
       Received: monthTx.filter(t => t.status === "Received").reduce((s, t) => s + t.sell_amount, 0) / 1000,
       Pending: monthTx.filter(t => t.status === "Pending").reduce((s, t) => s + t.sell_amount, 0) / 1000,
       Blocked: monthTx.filter(t => t.status === "Blocked").reduce((s, t) => s + t.sell_amount, 0) / 1000,
@@ -382,7 +382,7 @@ function computeKPIs() {
     const mReg = SALES_REGISTER.filter(r => r.month === m);
     const conv = mReg.filter(r => r.converted).length;
     return {
-      month: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m],
+      month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
       total: mReg.length,
       converted: conv,
       rate: mReg.length ? Math.round((conv / mReg.length) * 100) : 0
@@ -426,7 +426,7 @@ const COLORS = {
 
 const PIE_COLORS = [COLORS.emerald, COLORS.amber, COLORS.red, COLORS.blue];
 const GST_COLORS = [COLORS.blue, COLORS.emerald, COLORS.amber, COLORS.purple];
-const ITEM_GRADIENT = ["#0f2f3f","#1a4d5c","#1e6b7a","#2a8a9a","#3ba8b8","#52c5d3","#6fdde8"];
+const ITEM_GRADIENT = ["#0f2f3f", "#1a4d5c", "#1e6b7a", "#2a8a9a", "#3ba8b8", "#52c5d3", "#6fdde8"];
 
 const fmt = (v) => {
   if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
@@ -596,9 +596,9 @@ const OverviewTab = () => (
               <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
-              <Bar dataKey="Received" stackId="a" fill={COLORS.emerald} radius={[0,0,0,0]} />
+              <Bar dataKey="Received" stackId="a" fill={COLORS.emerald} radius={[0, 0, 0, 0]} />
               <Bar dataKey="Pending" stackId="a" fill={COLORS.amber} />
-              <Bar dataKey="Blocked" stackId="a" fill={COLORS.red} radius={[4,4,0,0]} />
+              <Bar dataKey="Blocked" stackId="a" fill={COLORS.red} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -612,7 +612,7 @@ const OverviewTab = () => (
             return (
               <div key={name}>
                 <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[11px] font-bold" style={{ color: COLORS.primary }}>{name.split(" ").slice(0,3).join(" ")}</span>
+                  <span className="text-[11px] font-bold" style={{ color: COLORS.primary }}>{name.split(" ").slice(0, 3).join(" ")}</span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                     style={{ background: eff >= 70 ? "#dcfce7" : "#fef3c7", color: eff >= 70 ? "#16a34a" : "#d97706" }}>
                     {eff}% collected
@@ -650,8 +650,8 @@ const OverviewTab = () => (
               <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
                 <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{t.invoice_no}</td>
                 <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{t.transaction_date}</td>
-                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: "#374151" }}>{t.party_name.split(" ").slice(0,2).join(" ")}</td>
-                <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{t.company_name.split(" ").slice(0,2).join(" ")}</td>
+                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: "#374151" }}>{t.party_name.split(" ").slice(0, 2).join(" ")}</td>
+                <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{t.company_name.split(" ").slice(0, 2).join(" ")}</td>
                 <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{fmt(t.sell_amount)}</td>
                 <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.blue }}>{t.gst_percentage}%</td>
                 <td className="px-4 py-3">
@@ -676,8 +676,8 @@ const GSTTab = () => (
   <div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total GST" value={fmt(KPIs.totalGST)} icon={Layers} color={COLORS.purple} subtitle="All components" />
-      <MetricCard title="IGST (Interstate)" value={fmt(KPIs.totalIGST)} icon={MapPin} color={COLORS.sky} subtitle={`${((KPIs.totalIGST/KPIs.totalGST)*100).toFixed(0)}% of total GST`} />
-      <MetricCard title="CGST + SGST" value={fmt(KPIs.totalCGST_SGST)} icon={Layers} color={COLORS.blue} subtitle={`${((KPIs.totalCGST_SGST/KPIs.totalGST)*100).toFixed(0)}% of total GST`} />
+      <MetricCard title="IGST (Interstate)" value={fmt(KPIs.totalIGST)} icon={MapPin} color={COLORS.sky} subtitle={`${((KPIs.totalIGST / KPIs.totalGST) * 100).toFixed(0)}% of total GST`} />
+      <MetricCard title="CGST + SGST" value={fmt(KPIs.totalCGST_SGST)} icon={Layers} color={COLORS.blue} subtitle={`${((KPIs.totalCGST_SGST / KPIs.totalGST) * 100).toFixed(0)}% of total GST`} />
       <MetricCard title="Avg GST/Invoice" value={fmt(KPIs.totalGST / KPIs.totalInvoices)} icon={DollarSign} color={COLORS.emerald} subtitle="Per transaction" />
     </div>
 
@@ -736,7 +736,7 @@ const GSTTab = () => (
           <BarChart data={Array.from({ length: 12 }, (_, m) => {
             const mTx = RAW_TRANSACTIONS.filter(t => t.month === m);
             return {
-              month: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m],
+              month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
               IGST: Math.round(mTx.reduce((s, t) => s + t.igst_amount, 0) / 1000),
               "CGST+SGST": Math.round(mTx.reduce((s, t) => s + t.cgst_amount + t.sgst_amount, 0) / 1000)
             };
@@ -746,8 +746,8 @@ const GSTTab = () => (
             <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
             <Tooltip content={<CustomTooltip />} />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
-            <Bar dataKey="IGST" fill={COLORS.sky} radius={[4,4,0,0]} />
-            <Bar dataKey="CGST+SGST" fill={COLORS.purple} radius={[4,4,0,0]} />
+            <Bar dataKey="IGST" fill={COLORS.sky} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="CGST+SGST" fill={COLORS.purple} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -760,7 +760,7 @@ const PartiesTab = () => (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Parties" value={PARTIES.length} icon={Users} color={COLORS.blue} subtitle="Active customers" />
       <MetricCard title="Top Party Revenue" value={fmt(KPIs.topParties[0]?.value || 0)} icon={Users} color={COLORS.emerald} subtitle={KPIs.topParties[0]?.name || ""} />
-      <MetricCard title="Top 3 Concentration" value={`${(KPIs.topParties.slice(0,3).reduce((s,p) => s + parseFloat(p.pct), 0)).toFixed(0)}%`} icon={Target} color={COLORS.amber} subtitle="Revenue share" />
+      <MetricCard title="Top 3 Concentration" value={`${(KPIs.topParties.slice(0, 3).reduce((s, p) => s + parseFloat(p.pct), 0)).toFixed(0)}%`} icon={Target} color={COLORS.amber} subtitle="Revenue share" />
       <MetricCard title="Avg Revenue/Party" value={fmt(KPIs.totalRevenue / PARTIES.length)} icon={DollarSign} color={COLORS.purple} subtitle="Per active party" />
     </div>
 
@@ -796,9 +796,9 @@ const PartiesTab = () => (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={[
-                ...KPIs.topParties.slice(0, 3).map(p => ({ name: p.name.split(" ").slice(0,2).join(" "), value: p.value })),
+                ...KPIs.topParties.slice(0, 3).map(p => ({ name: p.name.split(" ").slice(0, 2).join(" "), value: p.value })),
                 { name: "Others", value: KPIs.totalRevenue - KPIs.topParties.slice(0, 3).reduce((s, p) => s + p.value, 0) }
-              ]} cx="50%" cy="50%" innerRadius={40} outerRadius={75} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`} labelLine={{ stroke: "#94a3b8", strokeWidth: 1 }}>
+              ]} cx="50%" cy="50%" innerRadius={40} outerRadius={75} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#94a3b8", strokeWidth: 1 }}>
                 <Cell fill={COLORS.primary} />
                 <Cell fill={COLORS.blue} />
                 <Cell fill={COLORS.teal} />
@@ -820,7 +820,7 @@ const ProductsTab = () => (
     {/* KPI Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Items" value={ITEMS.length} icon={Package} color={COLORS.blue} subtitle="Active products" />
-      <MetricCard title="Top Item Units" value={KPIs.topItems[0]?.units.toLocaleString() || 0} icon={Package} color={COLORS.emerald} subtitle={KPIs.topItems[0]?.name.split(" ").slice(0,2).join(" ") || ""} />
+      <MetricCard title="Top Item Units" value={KPIs.topItems[0]?.units.toLocaleString() || 0} icon={Package} color={COLORS.emerald} subtitle={KPIs.topItems[0]?.name.split(" ").slice(0, 2).join(" ") || ""} />
       <MetricCard title="Total Units Sold" value={SELL_SUMMARY.reduce((s, d) => s + d.units_sold, 0).toLocaleString()} icon={Package} color={COLORS.amber} subtitle="All items combined" />
       <MetricCard title="Avg Items/Invoice" value={((SELL_SUMMARY.length / RAW_TRANSACTIONS.length)).toFixed(1)} icon={FileText} color={COLORS.purple} subtitle="Line items per invoice" />
     </div>
@@ -836,7 +836,7 @@ const ProductsTab = () => (
               <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis dataKey="name" type="category" width={105} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#374151" }} />
               <Tooltip formatter={(v) => [v.toLocaleString(), "Units"]} contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
-              <Bar dataKey="units" radius={[0,4,4,0]}>
+              <Bar dataKey="units" radius={[0, 4, 4, 0]}>
                 {KPIs.topItems.map((_, i) => <Cell key={i} fill={ITEM_GRADIENT[i % ITEM_GRADIENT.length]} />)}
               </Bar>
             </BarChart>
@@ -853,7 +853,7 @@ const ProductsTab = () => (
             return (
               <div key={i}>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] font-bold" style={{ color: COLORS.primary }}>{item.name.length > 26 ? item.name.slice(0,24)+"…" : item.name}</span>
+                  <span className="text-[10px] font-bold" style={{ color: COLORS.primary }}>{item.name.length > 26 ? item.name.slice(0, 24) + "…" : item.name}</span>
                   <span className="text-[10px] font-bold" style={{ color: "#64748b" }}>{fmt(item.revenue)}</span>
                 </div>
                 <div className="w-full h-1.5 rounded-full" style={{ background: "#f1f5f9" }}>
@@ -909,8 +909,8 @@ const GeographyTab = () => (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="States Served" value={KPIs.stateData.length} icon={MapPin} color={COLORS.blue} subtitle="Geographic spread" />
       <MetricCard title="Top State" value={KPIs.stateData[0]?.state || ""} icon={MapPin} color={COLORS.emerald} subtitle={fmt(KPIs.stateData[0]?.value || 0)} />
-      <MetricCard title="Interstate Rev" value={fmt(KPIs.interstateTotal)} icon={MapPin} color={COLORS.amber} subtitle={`${((KPIs.interstateTotal/KPIs.totalRevenue)*100).toFixed(0)}% of total`} />
-      <MetricCard title="Intrastate Rev" value={fmt(KPIs.intrastate)} icon={MapPin} color={COLORS.purple} subtitle={`${((KPIs.intrastate/KPIs.totalRevenue)*100).toFixed(0)}% of total`} />
+      <MetricCard title="Interstate Rev" value={fmt(KPIs.interstateTotal)} icon={MapPin} color={COLORS.amber} subtitle={`${((KPIs.interstateTotal / KPIs.totalRevenue) * 100).toFixed(0)}% of total`} />
+      <MetricCard title="Intrastate Rev" value={fmt(KPIs.intrastate)} icon={MapPin} color={COLORS.purple} subtitle={`${((KPIs.intrastate / KPIs.totalRevenue) * 100).toFixed(0)}% of total`} />
     </div>
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
@@ -920,10 +920,10 @@ const GeographyTab = () => (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={KPIs.stateData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v/1000).toFixed(0)}K`} />
+              <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
               <YAxis dataKey="state" type="category" width={90} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip formatter={(v) => [fmt(v), "Revenue"]} contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
-              <Bar dataKey="value" radius={[0,4,4,0]}>
+              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                 {KPIs.stateData.map((_, i) => <Cell key={i} fill={ITEM_GRADIENT[i % ITEM_GRADIENT.length]} />)}
               </Bar>
             </BarChart>
@@ -939,7 +939,7 @@ const GeographyTab = () => (
               <Pie data={[
                 { name: "Interstate", value: KPIs.interstateTotal },
                 { name: "Intrastate", value: KPIs.intrastate }
-              ]} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`}>
+              ]} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                 <Cell fill={COLORS.sky} />
                 <Cell fill={COLORS.teal} />
               </Pie>
@@ -982,8 +982,8 @@ const QuotationsTab = () => (
               <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
               <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
-              <Bar dataKey="total" name="Total Quotations" fill="#e2e8f0" radius={[4,4,0,0]} />
-              <Bar dataKey="converted" name="Converted" fill={COLORS.emerald} radius={[4,4,0,0]} />
+              <Bar dataKey="total" name="Total Quotations" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="converted" name="Converted" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -35,30 +35,7 @@ const fetchPaymentHistory = async (invoiceNo) => {
   return data.payments || [];
 };
 
-const apiKey = "AIzaSyAUPpi_33zKIS9ADNyN8nOA3i-jDskHTJ0";
-const GEMINI_MODEL = "gemini-2.5-flash";
 
-const callGemini = async (prompt) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const payload = { contents: [{ parts: [{ text: prompt }] }] };
-  let delay = 1000;
-  for (let i = 0; i < 5; i++) {
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) throw new Error("API Limit reached");
-      const result = await response.json();
-      return result.candidates?.[0]?.content?.parts?.[0]?.text;
-    } catch (error) {
-      if (i === 4) throw error;
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      delay *= 2;
-    }
-  }
-};
 
 export default function App() {
   const fallbackData = [
@@ -217,9 +194,6 @@ export default function App() {
   const [fromMonth, setFromMonth] = useState("All");
   const [toMonth, setToMonth] = useState("All");
   const [selectedClient, setSelectedClient] = useState("All");
-  const [aiInsight, setAiInsight] = useState("");
-  const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
-  const [draftEmail, setDraftEmail] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [newReceipt, setNewReceipt] = useState({ date: "", amount: "", remark: "" });
   const navigate = useNavigate();
@@ -266,23 +240,6 @@ export default function App() {
     return { totalDebit, totalCredit, outstanding: totalDebit - totalCredit };
   }, [ledgerData, selectedClient]);
 
-  const generateAIInsight = async () => {
-    setIsGeneratingInsight(true);
-    const summary = filteredData.slice(0, 100).map(d => `${d.client}: Billed ₹${d.debit}, Paid ₹${d.credit}`).join(", ");
-    if (!summary) { setAiInsight("No transactions found."); setIsGeneratingInsight(false); return; }
-    const prompt = `Senior accounts analyst. Analyze: [${summary}]. Total Billed: ₹${stats.totalDebit}. Total Outstanding: ₹${stats.outstanding}. Identify top 3 clients needing follow up. STRICTLY 1-2 sentences.`;
-    try { const result = await callGemini(prompt); setAiInsight(result); }
-    catch (e) { setAiInsight("Error connecting to AI."); }
-    finally { setIsGeneratingInsight(false); }
-  };
-
-  const draftReminderEmail = async (tone = "Professional") => {
-    if (selectedClient === "All" || !clientSummaryStats) return;
-    setDraftEmail({ loading: true, client: selectedClient, tone });
-    const prompt = `Write a ${tone} reminder to ${selectedClient} from R.K Casting. Total Outstanding: ₹${clientSummaryStats.outstanding}.`;
-    try { const result = await callGemini(prompt); setDraftEmail({ loading: false, client: selectedClient, tone, text: result, amount: clientSummaryStats.outstanding }); }
-    catch (e) { setDraftEmail(null); }
-  };
 
   const getRowDueAmount = (row) => Number(row.debit || 0) - Number(row.credit || 0);
   const getPaymentStatus = (row) => {
@@ -376,31 +333,9 @@ export default function App() {
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 mt-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">Financial Ledger</h1>
-              <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">AI powered analysis</p>
+              <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Transaction Management</p>
             </div>
-            {selectedClient === "All" && (
-              <button
-                onClick={generateAIInsight}
-                disabled={isGeneratingInsight}
-                className="bg-[#004f43cc] hover:bg-emerald-900 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg active:scale-95"
-              >
-                {isGeneratingInsight ? "Analyzing..." : "Identify Critical Client"}
-              </button>
-            )}
           </div>
-
-          {aiInsight && (
-            <div className="mb-8 bg-white border border-indigo-100 p-6 rounded-2xl relative shadow-xl">
-              <button onClick={() => setAiInsight("")} className="absolute top-4 right-5 text-slate-400 text-2xl font-bold">&times;</button>
-              <div className="flex gap-5 items-start">
-                <div className="p-3 bg-indigo-50 rounded-xl text-[#004f43cc] text-2xl border border-indigo-100">🔍</div>
-                <div>
-                  <h3 className="font-bold text-[#004f43cc] text-[10px] uppercase tracking-widest mb-2">Critical Analysis</h3>
-                  <p className="text-lg text-slate-700 font-medium">"{aiInsight}"</p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ANALYTICS CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -498,38 +433,11 @@ export default function App() {
                       Outstanding: <span className={clientSummaryStats.outstanding > 0 ? 'text-orange-500' : 'text-emerald-600'}>₹{clientSummaryStats.outstanding.toLocaleString()}</span>
                     </p>
                   </div>
-                  {clientSummaryStats.outstanding > 0 && (
-                    <div className="flex gap-2">
-                      <button onClick={() => draftReminderEmail("Gentle")} className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-bold border border-emerald-200">Gentle</button>
-                      <button onClick={() => draftReminderEmail("Urgent")} className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold border border-red-200">Urgent</button>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
           </div>
         </div>
-
-        {/* EMAIL DRAFT MODAL */}
-        {draftEmail && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-lg rounded-2xl p-8 shadow-2xl relative">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">{draftEmail.tone} Draft</h2>
-                <button onClick={() => setDraftEmail(null)} className="text-3xl">&times;</button>
-              </div>
-              {draftEmail.loading ? <div className="py-10 text-center animate-pulse">Crafting message...</div> : (
-                <div className="space-y-6">
-                  <div className="bg-slate-50 border p-5 rounded-xl text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto">{draftEmail.text}</div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => { navigator.clipboard.writeText(draftEmail.text) }} className="bg-indigo-600 text-white py-4 rounded-xl font-bold">Copy</button>
-                    <button onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(draftEmail.text)}`, '_blank') }} className="bg-emerald-600 text-white py-4 rounded-xl font-bold">WhatsApp</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* INVOICE POPUP */}
         {invoicePopup && (
