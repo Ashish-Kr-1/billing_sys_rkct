@@ -378,14 +378,14 @@ export default function App() {
         InvoiceNo: data.invoice.invoice_no || invoice_no,
         InvoiceDate: formatDate(data.invoice.invoice_date),
         GSTIN0: data.invoice.gstin || '',
-        GSTIN: data.party?.gstin || data.invoice_details?.gstin || '',
+        GSTIN: data.party?.gstin_no || data.invoice_details?.gstin || '',
         GSTIN2: data.invoice_details?.gstin2 || '',
 
         // Client/Party details
-        clientName: data.party?.party_name || data.invoice_details?.client_name || '',
-        clientAddress: data.party?.address || data.invoice_details?.client_address || '',
-        clientName2: data.invoice_details?.client_name2 || '',
-        clientAddress2: data.invoice_details?.client_address2 || '',
+        clientName: data.invoice_details?.client_name || data.party?.party_name || '',
+        clientAddress: data.invoice_details?.client_address || data.party?.billing_address || '',
+        clientName2: data.invoice_details?.client_name2 || data.party?.party_name || '',
+        clientAddress2: data.invoice_details?.client_address2 || data.party?.shipping_address || '',
 
         // Transport & delivery
         TrasnportBy: data.invoice_details?.transported_by || '',
@@ -396,7 +396,7 @@ export default function App() {
         // PO & Vendor
         PONo: data.invoice_details?.po_no || '',
         PODate: data.invoice_details?.po_date ? formatDate(data.invoice_details.po_date) : '',
-        VendorCode: data.invoice_details?.vendore_code || '',
+        VendorCode: data.invoice_details?.vendore_code || data.party?.vendore_code || '',
 
         // Challan
         ChallanNo: data.invoice_details?.challan_no || '',
