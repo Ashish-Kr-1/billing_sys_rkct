@@ -36,6 +36,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'New Invoice', path: '/Invoice', icon: FileText },
+    { name: 'Quotations', path: '/Quotation', icon: FileText },
     { name: 'Analytics', path: '/Analytics', icon: BarChart2 },
     { name: 'Ledger', path: '/Ledger', icon: BookOpen },
     { name: 'Parties', path: '/Create_Party', icon: Users },
