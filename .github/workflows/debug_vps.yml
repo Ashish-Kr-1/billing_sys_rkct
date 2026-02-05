@@ -1,0 +1,30 @@
+name: Debug VPS Status
+
+on: workflow_dispatch
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH Debug
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            echo "==== NGINX STATUS ===="
+            systemctl status nginx --no-pager
+            
+            echo "==== NGINX CONFIG TEST ===="
+            nginx -t
+            
+            echo "==== DOCKER STATUS ===="
+            docker ps -a
+            
+            echo "==== FIREWALL STATUS ===="
+            ufw status verbose
+            
+            echo "==== PORTS ===="
+            netstat -tulpn | grep LISTEN
