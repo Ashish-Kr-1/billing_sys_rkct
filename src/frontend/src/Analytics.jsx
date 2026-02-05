@@ -401,7 +401,8 @@ const tabs = [
   { id: "gst", label: "GST Health", icon: Layers },
   { id: "parties", label: "Parties", icon: Users },
   { id: "products", label: "Products", icon: Package },
-  { id: "geography", label: "Geography", icon: MapPin }
+  { id: "geography", label: "Geography", icon: MapPin },
+  { id: "quotations", label: "Quotations", icon: FileText }
 ];
 
 // ============================================================
