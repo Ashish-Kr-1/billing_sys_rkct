@@ -1228,7 +1228,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-5 flex gap-1 pb-1">
+        <div className="max-w-7xl mx-auto px-5 flex gap-1 pb-1 overflow-x-auto">
           {tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
