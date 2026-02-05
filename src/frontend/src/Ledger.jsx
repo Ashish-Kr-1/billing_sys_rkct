@@ -320,7 +320,7 @@ export default function App() {
    */
   const handlePreviewInvoice = async (invoice_no) => {
     try {
-      console.log('🔍 [v2.QUERY_PARAMS_2026-02-06] Fetching invoice details for:', invoice_no);
+      console.log('🔍 [v3.FIX_PREVIEW_BUTTON] Fetching invoice details for:', invoice_no);
       console.log('🔍 API URL will be:', `/createInvoice/details?invoice_no=${encodeURIComponent(invoice_no)}`);
 
       // Fetch complete invoice details from backend
