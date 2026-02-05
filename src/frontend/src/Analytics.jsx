@@ -721,6 +721,51 @@ const GeographyTab = ({ KPIs }) => (
 // ============================================================
 // MAIN APP
 // ============================================================
+const QuotationsTab = ({ KPIs }) => (
+  <div>
+    <div className="grid grid-cols-1 gap-5 mb-5">
+      <CardShell>
+        <SectionTitle icon={Activity} subtitle="Sales pipeline health indicator">
+          Pipeline Performance Summary
+        </SectionTitle>
+        <div className="space-y-4 mt-3">
+          <div className="p-4 rounded-lg" style={{ background: "#dcfce7" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#166534" }}>CONVERTED</p>
+            <p className="text-2xl font-black mb-1" style={{ color: COLORS.emerald }}>{KPIs.convertedQuotations}</p>
+            <p className="text-[9px]" style={{ color: "#166534" }}>{fmt(KPIs.convertedValue)} revenue generated</p>
+          </div>
+
+          <div className="p-4 rounded-lg" style={{ background: "#fee2e2" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST</p>
+            <p className="text-2xl font-black mb-1" style={{ color: COLORS.red }}>{KPIs.totalQuotations - KPIs.convertedQuotations}</p>
+            <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity lost</p>
+          </div>
+
+          <div className="p-4 rounded-lg" style={{ background: "#dbeafe" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#1e40af" }}>AVERAGE</p>
+            <p className="text-2xl font-black mb-1" style={{ color: COLORS.blue }}>
+              {fmt(KPIs.quotationValue / (KPIs.totalQuotations || 1))}
+            </p>
+            <p className="text-[9px]" style={{ color: "#1e40af" }}>Per quotation value</p>
+          </div>
+        </div>
+      </CardShell >
+    </div >
+
+    {parseFloat(KPIs.quotationConversionRate) < 50 && KPIs.totalQuotations > 10 && (
+      <div className="mt-5">
+        <InsightBanner
+          type="warning"
+          message="Conversion rate below 50%. Review pricing strategy, follow-up process, and competitor positioning."
+        />
+      </div>
+    )}
+  </div >
+);
+
+// ============================================================
+// MAIN APP COMPONENT
+// ============================================================
 export default function App() {
   const { selectedCompany } = useCompany();
   const [activeTab, setActiveTab] = useState("overview");
@@ -729,7 +774,6 @@ export default function App() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch analytics data when company changes
   useEffect(() => {
     if (selectedCompany) {
       fetchAnalytics();
@@ -762,7 +806,6 @@ export default function App() {
     setRefreshing(false);
   }
 
-  // Compute KPIs from real data
   const KPIs = useMemo(() => {
     return analyticsData ? computeKPIs(analyticsData) : null;
   }, [analyticsData]);
@@ -772,10 +815,10 @@ export default function App() {
     gst: KPIs ? <GSTTab KPIs={KPIs} /> : null,
     parties: KPIs && analyticsData ? <PartiesTab KPIs={KPIs} PARTIES={analyticsData.parties || []} /> : null,
     products: KPIs && analyticsData ? <ProductsTab KPIs={KPIs} ITEMS={analyticsData.items || []} SELL_SUMMARY={analyticsData.sellSummary || []} /> : null,
-    geography: KPIs ? <GeographyTab KPIs={KPIs} /> : null
+    geography: KPIs ? <GeographyTab KPIs={KPIs} /> : null,
+    quotations: KPIs ? <QuotationsTab KPIs={KPIs} /> : null
   };
 
-  // Loading state
   if (!selectedCompany) {
     return (
       <div style={{ minHeight: "100vh", background: "#f0f4f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -832,31 +875,31 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f5", fontFamily: "'Inter', system-ui, sans-serif" }}>
-      {/* TOP HEADER */}
       <header style={{ background: "linear-gradient(135deg, #0f2f3f 0%, #1a4d5c 50%, #1e6b7a 100%)", color: "#fff" }}>
         <div className="max-w-7xl mx-auto px-5 py-4">
-          {/* Company Indicator Banner */}
           <div className="mb-3 p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(4px)" }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-semibold opacity-75">Viewing Analytics For</p>
+                <p className="text-[10px] font-semibold opacity-75">Analytics Dashboard</p>
                 <p className="text-lg font-bold">{selectedCompany.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs opacity-60">Company ID: {selectedCompany.id}</p>
+                <p className="text-xs opacity-60">Health Score</p>
+                <p className="text-2xl font-black" style={{ color: KPIs.healthScore >= 75 ? "#34d399" : KPIs.healthScore >= 50 ? "#fbbf24" : "#f87171" }}>
+                  {KPIs.healthScore}/100
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Main Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)" }}>
                 <BarChart2 size={20} color="#14b8a6" />
               </div>
               <div>
-                <h1 className="text-[15px] font-black tracking-tight">Invoice Analytics</h1>
-                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>{selectedCompany.name} · FY 2024</p>
+                <h1 className="text-[15px] font-black">Business Intelligence</h1>
+                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>Actionable insights • FY 2024</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -876,7 +919,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* TAB NAV */}
         <div className="max-w-7xl mx-auto px-5 flex gap-1 pb-1">
           {tabs.map(tab => {
             const Icon = tab.icon;
@@ -897,25 +939,30 @@ export default function App() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-5 py-6">
         {tabContent[activeTab]}
       </main>
 
-      {/* FOOTER SUMMARY BAR */}
       <footer className="max-w-7xl mx-auto px-5 pb-6">
         <div className="rounded-2xl p-5 flex flex-wrap justify-between gap-4"
           style={{ background: "linear-gradient(135deg, #0f2f3f 0%, #1a4d5c 100%)", color: "#fff" }}>
           {[
-            { label: "Total Revenue", val: fmt(KPIs.totalRevenue), sub: `${KPIs.totalInvoices} invoices` },
-            { label: "Collection Rate", val: `${KPIs.collectionRate}%`, sub: "Efficiency" },
-            { label: "Avg Invoice", val: fmt(KPIs.avgInvoiceValue), sub: "Per transaction" },
-            { label: "Total GST", val: fmt(KPIs.totalGST), sub: "Collected" }
+            { label: "Total Revenue", val: fmt(KPIs.totalRevenue), sub: `${KPIs.totalInvoices} invoices`, growth: KPIs.revenueGrowthRate },
+            { label: "Collection Rate", val: `${KPIs.collectionRate}%`, sub: "Efficiency", growth: "N/A" },
+            { label: "Active Customers", val: KPIs.activeParties, sub: "Parties served", growth: "N/A" },
+            { label: "Win Rate", val: `${KPIs.quotationConversionRate}%`, sub: "Quotations", growth: "N/A" }
           ].map((s, i) => (
             <div key={i} className="flex-1" style={{ minWidth: 120 }}>
               <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>{s.label}</p>
               <h3 className="text-[20px] font-black mt-0.5">{s.val}</h3>
-              <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{s.sub}</p>
+              <p className="text-[10px] mt-0.5 flex items-center gap-1.5">
+                {s.growth !== "N/A" && (
+                  <span style={{ color: parseFloat(s.growth) >= 0 ? "#34d399" : "#f87171" }}>
+                    {parseFloat(s.growth) >= 0 ? "↑" : "↓"} {Math.abs(parseFloat(s.growth))}%
+                  </span>
+                )}
+                <span style={{ color: "rgba(255,255,255,0.35)" }}>{s.sub}</span>
+              </p>
             </div>
           ))}
         </div>
