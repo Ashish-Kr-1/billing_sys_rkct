@@ -561,6 +561,7 @@ export default function App() {
                     <th className="text-right px-4">Receipt</th>
                     <th className="text-right px-4">Due</th>
                     <th className="text-right px-6">Status</th>
+                    <th className="text-right px-6">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -585,6 +586,13 @@ export default function App() {
                               {status.label}
                             </span>
                           </button>
+                          <button
+                            onClick={() => handlePreviewInvoice(invoicePopup.invoice)}
+                            className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
+                          >
+                            Preview
+                          </button>
+
                         </td>
                       </tr>
                     );
@@ -631,14 +639,6 @@ export default function App() {
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => handlePreviewInvoice(invoicePopup.invoice)}
-                    className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
-                  >
-                    Preview
-                  </button>
-
-
                   <button
                     onClick={() => setInvoicePopup(null)}
                     className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
