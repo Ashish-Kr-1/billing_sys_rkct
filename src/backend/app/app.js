@@ -786,6 +786,169 @@ async function createTransactionHandler(req, res) {
 }
 
 /**
+ * Update existing transaction (Edit Invoice)
+ */
+async function updateTransactionHandler(req, res) {
+  const { invoiceNo } = req.params;
+  const { invoice, invoice_details, items } = req.body;
+
+  if (!invoiceNo) {
+    return res.status(400).json({ error: "Invoice No is required" });
+  }
+
+  const client = await req.db.getConnection();
+
+  try {
+    await client.beginTransaction();
+
+    // 1. Check if invoice exists
+    const [exists] = await client.query(
+      "SELECT transaction_id FROM transactions WHERE invoice_no = ?",
+      [invoiceNo]
+    );
+
+    if (exists.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: "Invoice not found or access denied" });
+    }
+
+    // 2. Calculations
+    const subtotal = Number(invoice.subtotal) || 0;
+    const cgst = Number(invoice.cgst) || 0;
+    const sgst = Number(invoice.sgst) || 0;
+
+    const cgst_amount = (subtotal * cgst) / 100;
+    const sgst_amount = (subtotal * sgst) / 100;
+    const igst_amount = 0; // Assuming intra-state for now logic
+
+    const taxable_amount = subtotal;
+    const total_amount = taxable_amount + cgst_amount + sgst_amount;
+    const round_off = Math.round(total_amount) - total_amount;
+
+    const transaction_type = invoice.transaction_type || "SALE";
+    const debit_amount = transaction_type === "SALE" ? total_amount + round_off : 0;
+    const credit_amount = transaction_type === "PURCHASE" ? total_amount + round_off : 0;
+    const gst_percentage = cgst + sgst;
+
+    // 3. Update Transaction Table
+    await client.query(`
+      UPDATE transactions SET
+        transaction_date = ?,
+        transaction_type = ?,
+        party_id = ?,
+        sell_amount = ?,
+        credit_amount = ?,
+        taxable_amount = ?,
+        igst_amount = ?,
+        cgst_amount = ?,
+        sgst_amount = ?,
+        round_off = ?,
+        gst_percentage = ?,
+        gst_number = ?,
+        narration = ?
+      WHERE invoice_no = ?
+    `, [
+      invoice.InvoiceDate || new Date(),
+      transaction_type,
+      invoice.party_id,
+      debit_amount,
+      credit_amount,
+      taxable_amount,
+      igst_amount,
+      cgst_amount,
+      sgst_amount,
+      round_off,
+      gst_percentage,
+      invoice.GSTIN || null,
+      invoice.Terms || `Invoice ${invoiceNo}`,
+      invoiceNo
+    ]);
+
+    // 4. Update Invoice Details (Handle potentially missing/renamed fields)
+    // Note: Frontend might send 'gstIn' instead of 'gstin', 'vehicle_no' instead of 'vehical_no'
+    const gstin1 = invoice_details.gstin || invoice_details.gstIn || null;
+    const gstin2 = invoice_details.gstin2 || invoice_details.gstIn2 || null;
+
+    await client.query(`
+      UPDATE invoice_details SET
+        invoice_date = ?,
+        transported_by = ?,
+        place_of_supply = ?,
+        vehical_no = ?,
+        eway_bill_no = ?,
+        vendore_code = ?,
+        po_no = ?,
+        po_date = ?,
+        challan_no = ?,
+        challan_date = ?,
+        account_name = ?,
+        account_no = ?,
+        ifsc_code = ?,
+        branch = ?,
+        terms_conditions = ?,
+        client_name = ?,
+        client_address = ?,
+        gstin = ?,
+        client_name2 = ?,
+        client_address2 = ?,
+        gstin2 = ?
+      WHERE invoice_no = ?
+    `, [
+      invoice.InvoiceDate || new Date(),
+      invoice_details.transported_by,
+      invoice_details.place_of_supply,
+      invoice_details.vehicle_no || invoice_details.vehical_no, // handle typo mapping
+      invoice_details.eway_bill_no,
+      invoice_details.vendor_code,
+      invoice_details.po_no,
+      invoice_details.po_date,
+      invoice_details.challan_no,
+      invoice_details.challan_date,
+      invoice_details.account_name,
+      invoice_details.account_no,
+      invoice_details.ifsc_code,
+      invoice_details.branch,
+      invoice_details.terms_conditions,
+      invoice_details.client_name,
+      invoice_details.client_address,
+      gstin1,
+      invoice_details.client_name2,
+      invoice_details.client_address2,
+      gstin2,
+      invoiceNo
+    ]);
+
+    // 5. Update Items (Delete and Re-insert)
+    await client.query("DELETE FROM sell_summary WHERE invoice_no = ?", [invoiceNo]);
+
+    if (items && items.length > 0) {
+      for (const item of items) {
+        if (item.item_id || item.description) {
+          await client.query(`
+             INSERT INTO sell_summary (invoice_no, item_id, units_sold)
+             VALUES (?, ?, ?)
+           `, [
+            invoiceNo,
+            item.item_id || null,
+            Number(item.quantity) || 0
+          ]);
+        }
+      }
+    }
+
+    await client.commit();
+    return res.status(200).json({ success: true, message: "Invoice updated successfully" });
+
+  } catch (err) {
+    await client.rollback();
+    console.error("Update Transaction Error:", err);
+    return res.status(500).json({ error: err.message, stack: err.stack });
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Get complete invoice details for editing
  */
 async function getInvoiceDetailsHandler(req, res) {
@@ -890,6 +1053,7 @@ router.post('/', createPartyHandler);
 routerTransaction.post("/", createTransactionHandler);
 routerTransaction.get("/invoiceNo", getNextInvoiceNumber);
 routerTransaction.get("/:invoiceNo/details", getInvoiceDetailsHandler);
+routerTransaction.put("/:invoiceNo", updateTransactionHandler);
 
 routerParty.get('/', partyList);
 routerParty.get('/:id', partyDetails);

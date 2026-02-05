@@ -113,11 +113,27 @@ export default function Preview() {
 
     try {
       // Use handleApiResponse to manage token headers and error checking
-      const data = await handleApiResponse(api.post('/createInvoice', payload));
-      console.log("Invoice saved:", data);
+      let data;
+      if (state?.isEditMode) {
+        data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
+        alert("Invoice Updated Successfully!");
+      } else {
+        data = await handleApiResponse(api.post('/createInvoice', payload));
+        // Only alert if it's a new creation, to be polite. Or just silent.
+        // But user complained "not working", so Feedback is key.
+        // However, on Download, silent is better usually. 
+        // But for now, let's log it.
+        console.log("Invoice Saved");
+      }
+      console.log("Invoice transaction result:", data);
     } catch (err) {
       console.error("Save invoice error:", err);
-      // alert("Invoice saved partially (PDF ok, DB failed)"); // Optional: notify user
+      // If duplicate key error on 'Create', it means it's already saved. Not a fatal error for 'Download'.
+      if (!state?.isEditMode && err.message && err.message.includes("exists")) {
+        console.log("Invoice already exists (idempotent save).");
+      } else {
+        alert(`Error saving invoice: ${err.message}`);
+      }
     }
   }
 
@@ -147,7 +163,17 @@ export default function Preview() {
             </button>
             <button
               className="mt-6 px-6 py-3 bg-[#1F5E6C] hover:bg-[#1f6c53] text-white rounded"
-              onClick={() => navigate("/Invoice", { state: { invoice, subtotalAmount, totalAmount, sgst, cgst, } })}
+              onClick={() => navigate("/Invoice", {
+                state: {
+                  invoice,
+                  subtotalAmount,
+                  totalAmount,
+                  sgst,
+                  cgst,
+                  isEditMode: state?.isEditMode,
+                  company_id: state?.company_id
+                }
+              })}
             >
               Edit
             </button>

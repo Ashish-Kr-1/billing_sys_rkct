@@ -474,9 +474,9 @@ const OverviewTab = ({ KPIs }) => (
       </CardShell>
     </div>
 
-    {/* Company / Client Performance */}
+    {/* -Client-Wise Performance */}
     <CardShell>
-      <SectionTitle icon={Briefcase}>Company Wise Performance</SectionTitle>
+      <SectionTitle icon={Briefcase}>Client Wise Performance</SectionTitle>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>

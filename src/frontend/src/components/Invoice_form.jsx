@@ -640,7 +640,17 @@ export default function InvoiceForm({ initialData }) {
         </div>
 
         <div className=" max-w-3xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
-          <button className=" mx-32 md:mx-80 rounded-md font-bold cursor-progress " onClick={() => navigate("/Preview", { state: { invoice, subtotalAmount, totalAmount, sgst, cgst, } })}> Preview </button>
+          <button className=" mx-32 md:mx-80 rounded-md font-bold cursor-progress " onClick={() => navigate("/Preview", {
+            state: {
+              invoice,
+              subtotalAmount,
+              totalAmount,
+              sgst,
+              cgst,
+              isEditMode: initialData?.isEditMode,
+              company_id: selectedCompany?.id
+            }
+          })}> Preview </button>
         </div>
       </div>
     </div>
