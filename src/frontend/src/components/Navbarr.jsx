@@ -49,7 +49,10 @@ export default function Navbar() {
           {/* Logo & Brand */}
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/')}>
             <div className="hidden md:block">
-              <h1 className="text-lg font-bold tracking-tight text-white">Billing<span className="text-emerald-500">System</span></h1>
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-lg font-bold tracking-tight text-white">Billing<span className="text-emerald-500">System</span></h1>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">v1.1</span>
+              </div>
               {selectedCompany && (
                 <div className="flex items-center gap-2">
                   <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider truncate max-w-[150px]">

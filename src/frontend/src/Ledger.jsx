@@ -414,7 +414,7 @@ export default function App() {
 
     } catch (error) {
       console.error('❌ Error fetching invoice details:', error);
-      alert('Failed to load invoice details. Please try again.');
+      alert(`Failed to load invoice details: ${error.message}`);
     }
   };
 
