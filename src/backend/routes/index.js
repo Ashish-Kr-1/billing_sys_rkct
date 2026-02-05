@@ -21,8 +21,10 @@ import {
 // Analytics controllers
 import {
     getCompanyAnalytics,
-    getCompanySummary
+    getCompanySummary,
+    getAllCompaniesAnalytics
 } from '../controllers/analyticsController.js';
+
 
 // Auth middleware
 import { authenticateUser } from '../middleware/auth.js';
@@ -54,6 +56,7 @@ companyRouter.get('/:companyId/config', getCompanyConfig);
 // ============================================================
 const analyticsRouter = express.Router();
 
+analyticsRouter.get('/comparison', getAllCompaniesAnalytics);
 analyticsRouter.get('/:companyId/data', getCompanyAnalytics);
 analyticsRouter.get('/:companyId/summary', getCompanySummary);
 

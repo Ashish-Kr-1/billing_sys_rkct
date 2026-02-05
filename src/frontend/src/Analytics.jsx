@@ -16,7 +16,19 @@ import { useCompany } from "./context/CompanyContext.jsx";
 // ============================================================
 // DERIVED KPI COMPUTATIONS - FIXED FOR ACTUAL DB SCHEMA
 // ============================================================
-function computeKPIs(data = null) {
+// GST State Code Mapping
+const STATE_CODES = {
+  "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh", "05": "Uttarakhand",
+  "06": "Haryana", "07": "Delhi", "08": "Rajasthan", "09": "Uttar Pradesh", "10": "Bihar",
+  "11": "Sikkim", "12": "Arunachal Pradesh", "13": "Nagaland", "14": "Manipur", "15": "Mizoram",
+  "16": "Tripura", "17": "Meghalaya", "18": "Assam", "19": "West Bengal", "20": "Jharkhand",
+  "21": "Odisha", "22": "Chhattisgarh", "23": "Madhya Pradesh", "24": "Gujarat", "25": "Daman & Diu",
+  "26": "Dadra & Nagar Haveli", "27": "Maharashtra", "28": "Andhra Pradesh", "29": "Karnataka", "30": "Goa",
+  "31": "Lakshadweep", "32": "Kerala", "33": "Tamil Nadu", "34": "Puducherry", "35": "Andaman & Nicobar",
+  "36": "Telangana", "37": "Andhra Pradesh (New)", "38": "Ladakh"
+};
+
+function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   // Use provided data or return empty
   const RAW_TRANSACTIONS = data?.transactions || [];
   const SELL_SUMMARY = data?.sellSummary || [];
@@ -93,8 +105,31 @@ function computeKPIs(data = null) {
   const totalRevenue = enrichedTransactions.reduce((s, t) => s + t.sell_amount, 0);
   const totalCredited = enrichedTransactions.reduce((s, t) => s + t.credit_amount, 0);
   const collectionRate = totalRevenue > 0 ? ((totalCredited / totalRevenue) * 100).toFixed(1) : "0.0";
-  const pendingAmount = enrichedTransactions.filter(t => t.status === "Pending").reduce((s, t) => s + t.sell_amount, 0);
-  const blockedAmount = 0; // No blocked status in current schema
+
+  // Fixed Pending Calculation: Group by Invoice to find distinct outstanding
+  const invoiceAggregation = {};
+  enrichedTransactions.forEach(t => {
+    if (!invoiceAggregation[t.invoice_no]) {
+      invoiceAggregation[t.invoice_no] = { sell: 0, credit: 0 };
+    }
+    invoiceAggregation[t.invoice_no].sell += t.sell_amount;
+    invoiceAggregation[t.invoice_no].credit += t.credit_amount;
+  });
+
+  let calculatedPending = 0;
+  let realInvoiceCount = 0;
+
+  Object.values(invoiceAggregation).forEach(inv => {
+    // If payment > sell (advance), pending is 0 for that specific invoice context (Advance is tracked separately in Client Perf)
+    const due = Math.max(0, inv.sell - inv.credit);
+    calculatedPending += due;
+
+    // Count as invoice only if it has sales value (excludes standalone receipts)
+    if (inv.sell > 0) realInvoiceCount++;
+  });
+
+  const pendingAmount = calculatedPending;
+  const blockedAmount = 0;
 
   // KPI-05–07: GST Health
   const totalGST = enrichedTransactions.reduce((s, t) => s + t.igst_amount + t.cgst_amount + t.sgst_amount, 0);
@@ -107,7 +142,7 @@ function computeKPIs(data = null) {
   });
 
   // KPI-08–10: Invoice Pipeline
-  const totalInvoices = enrichedTransactions.length;
+  const totalInvoices = realInvoiceCount;
   const avgInvoiceValue = totalRevenue / (totalInvoices || 1);
 
   // KPI-11–13: Party Health & Performance
@@ -127,14 +162,11 @@ function computeKPIs(data = null) {
       name,
       ...d,
       pending: d.revenue - d.collected,
-      efficiency: d.revenue > 0 ? (d.collected / d.revenue) * 100 : 0
+      efficiency: d.revenue > 0 ? (d.collected / d.revenue) * 100 : (d.collected > 0 ? 100 : 0)
     }))
     .sort((a, b) => {
-      // Ascending Efficiency (0 -> 100) - Show Defaulters First
-      if (a.efficiency !== b.efficiency) {
-        return a.efficiency - b.efficiency;
-      }
-      // Secondary: Descending Revenue
+      // Sort by Efficiency Descending (Best First), then by Revenue
+      if (a.efficiency !== b.efficiency) return b.efficiency - a.efficiency;
       return b.revenue - a.revenue;
     });
 
@@ -161,7 +193,8 @@ function computeKPIs(data = null) {
   // KPI-17–18: Geographic (simplified - would need state_codes_lookup join)
   const stateRevenue = {};
   enrichedTransactions.forEach(t => {
-    const state = t.party_state;
+    const rawState = t.party_state ? String(t.party_state).padStart(2, '0') : "Unknown";
+    const state = STATE_CODES[rawState] || t.party_state || "Unknown";
     stateRevenue[state] = (stateRevenue[state] || 0) + t.sell_amount;
   });
   const stateData = Object.entries(stateRevenue)
@@ -180,7 +213,7 @@ function computeKPIs(data = null) {
   // KPI-21–22: Company Performance (single company in current context)
   const companyStats = {};
   if (enrichedTransactions.length > 0) {
-    const companyName = "Current Company";
+    const companyName = data?.companyName || "Current Company";
     companyStats[companyName] = {
       revenue: totalRevenue,
       collected: totalCredited,
@@ -189,14 +222,21 @@ function computeKPIs(data = null) {
   }
 
   // Monthly trends
-  const monthlyData = Array.from({ length: 12 }, (_, m) => {
+  // Monthly trends (Dynamic based on selected range)
+  const rangeStart = monthRange.start;
+  const rangeEnd = monthRange.end;
+  const monthCount = Math.max(0, rangeEnd - rangeStart + 1);
+  const ALL_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const monthlyData = Array.from({ length: monthCount }, (_, i) => {
+    const m = rangeStart + i;
     const monthTx = enrichedTransactions.filter(t => t.month === m);
     const rev = monthTx.reduce((s, t) => s + t.sell_amount, 0);
     const col = monthTx.reduce((s, t) => s + t.credit_amount, 0);
     const gst = monthTx.reduce((s, t) => s + t.igst_amount + t.cgst_amount + t.sgst_amount, 0);
     const txCount = monthTx.length;
     return {
-      month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
+      month: ALL_MONTHS[m],
       revenue: Math.round(rev / 1000),
       collected: Math.round(col / 1000),
       gst: Math.round(gst / 1000),
@@ -205,12 +245,18 @@ function computeKPIs(data = null) {
   });
 
   // Monthly status breakdown
-  const monthlyStatus = Array.from({ length: 12 }, (_, m) => {
+  // Monthly status breakdown
+  const monthlyStatus = Array.from({ length: monthCount }, (_, i) => {
+    const m = rangeStart + i;
     const monthTx = enrichedTransactions.filter(t => t.month === m);
+
+    const collectedPortion = monthTx.reduce((s, t) => s + Math.min(t.sell_amount, t.credit_amount), 0);
+    const pendingPortion = monthTx.reduce((s, t) => s + Math.max(0, t.sell_amount - t.credit_amount), 0);
+
     return {
-      month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
-      Received: monthTx.filter(t => t.status === "Received").reduce((s, t) => s + t.sell_amount, 0) / 1000,
-      Pending: monthTx.filter(t => t.status === "Pending").reduce((s, t) => s + t.sell_amount, 0) / 1000,
+      month: ALL_MONTHS[m],
+      Received: collectedPortion / 1000,
+      Pending: pendingPortion / 1000,
       Blocked: 0
     };
   });
@@ -225,12 +271,16 @@ function computeKPIs(data = null) {
   }));
 
   // Quotation monthly conversion (not available)
-  const quotationMonthly = Array.from({ length: 12 }, (_, m) => ({
-    month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
-    total: 0,
-    converted: 0,
-    rate: 0
-  }));
+  // Quotation monthly conversion
+  const quotationMonthly = Array.from({ length: monthCount }, (_, i) => {
+    const m = rangeStart + i;
+    return {
+      month: ALL_MONTHS[m],
+      total: 0,
+      converted: 0,
+      rate: 0
+    };
+  });
 
   // Recent transactions (last 8)
   const recentTransactions = [...enrichedTransactions]
@@ -238,7 +288,7 @@ function computeKPIs(data = null) {
     .slice(0, 8)
     .map(t => ({
       ...t,
-      company_name: "Current Company" // Add for display
+      company_name: data?.companyName || "Current Company"
     }));
 
   return {
@@ -358,163 +408,226 @@ const tabs = [
 // PAGE SECTIONS
 // ============================================================
 
-const OverviewTab = ({ KPIs }) => (
-  <div>
-    {/* Top KPI Cards */}
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <MetricCard title="Total Revenue" value={fmt(KPIs.totalRevenue)} icon={DollarSign} color={COLORS.emerald} subtitle={`${KPIs.totalInvoices} invoices`} />
-      <MetricCard title="Collected" value={fmt(KPIs.totalCredited)} icon={Activity} color={COLORS.blue} subtitle={`${KPIs.collectionRate}% rate`} />
-      <MetricCard title="Pending" value={fmt(KPIs.pendingAmount)} icon={Clock} color={COLORS.amber} trendLabel="Payment pending" />
-      <MetricCard title="Avg Invoice" value={fmt(KPIs.avgInvoiceValue)} icon={FileText} color={COLORS.purple} subtitle="Per transaction" />
-    </div>
+const OverviewTab = ({ KPIs, comparisonData, monthRange }) => {
+  // Prepare Comparison Chart Data
+  const { chartData, companyNames } = useMemo(() => {
+    if (!comparisonData || !comparisonData.length) return { chartData: [], companyNames: [] };
 
-    {/* Row 1: Monthly Revenue Trend + Payment Status */}
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-      <CardShell className="lg:col-span-2">
-        <SectionTitle icon={Activity}>Monthly Revenue & Collections</SectionTitle>
-        <div style={{ height: 240 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={KPIs.monthlyData}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.15} />
-                  <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
-              <Area type="monotone" dataKey="revenue" name="Revenue" fill="url(#revGrad)" stroke={COLORS.emerald} strokeWidth={2.5} />
-              <Line type="monotone" dataKey="collected" name="Collected" stroke={COLORS.blue} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.blue }} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </CardShell>
+    if (!comparisonData || !comparisonData.length) return { chartData: [], companyNames: [] };
+    const ALL_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = monthRange ? ALL_MONTHS.slice(monthRange.start, monthRange.end + 1) : ALL_MONTHS;
 
-      <CardShell>
-        <SectionTitle icon={PieIcon}>Payment Status</SectionTitle>
-        <div style={{ height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={[
-                { name: "Received", value: KPIs.totalCredited },
-                { name: "Pending", value: KPIs.pendingAmount }
-              ]} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none">
-                <Cell fill={COLORS.emerald} />
-                <Cell fill={COLORS.amber} />
-              </Pie>
-              <Tooltip formatter={(v) => fmt(v)} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="space-y-2 mt-2">
-          {[
-            { label: "Received", color: COLORS.emerald, val: KPIs.totalCredited },
-            { label: "Pending", color: COLORS.amber, val: KPIs.pendingAmount }
-          ].map(d => (
-            <div key={d.label} className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                <span style={{ color: "#64748b" }}>{d.label}</span>
-              </span>
-              <span className="font-bold" style={{ color: COLORS.primary }}>{fmt(d.val)}</span>
-            </div>
-          ))}
-        </div>
-      </CardShell>
-    </div>
+    const data = months.map(m => ({ month: m }));
+    const mapCompanies = comparisonData.map(c => c.name);
 
-    {/* Row 2: Monthly Status Stacked + Company Performance */}
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-      <CardShell className="lg:col-span-2">
-        <SectionTitle icon={BarChart2}>Monthly Collection Breakdown</SectionTitle>
-        <div style={{ height: 240 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={KPIs.monthlyStatus}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
-              <Bar dataKey="Received" stackId="a" fill={COLORS.emerald} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Pending" stackId="a" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardShell>
+    comparisonData.forEach(comp => {
+      const compName = comp.name;
+      (comp.transactions || []).forEach(t => {
+        // Robust Date Parsing
+        let d = new Date(t.transaction_date);
+        if (isNaN(d.getTime())) return;
 
-      <CardShell>
-        <SectionTitle icon={Briefcase}>Company Efficiency</SectionTitle>
-        <div className="space-y-4 mt-2">
-          {Object.entries(KPIs.companyStats).map(([name, d]) => {
-            const eff = d.revenue > 0 ? ((d.collected / d.revenue) * 100).toFixed(0) : 0;
-            return (
-              <div key={name}>
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[11px] font-bold" style={{ color: COLORS.primary }}>{name.split(" ").slice(0, 3).join(" ")}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: eff >= 70 ? "#dcfce7" : "#fef3c7", color: eff >= 70 ? "#16a34a" : "#d97706" }}>
-                    {eff}% collected
-                  </span>
-                </div>
-                <div className="w-full h-2 rounded-full" style={{ background: "#f1f5f9" }}>
-                  <div className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${eff}%`, background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.teal})` }} />
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[9px]" style={{ color: "#94a3b8" }}>{d.count} invoices</span>
-                  <span className="text-[9px] font-bold" style={{ color: "#64748b" }}>{fmt(d.revenue)}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardShell>
-    </div>
+        const mIndex = d.getMonth(); // 0-11
+        // Skip if outside range (though filtered upstream, double safety)
+        if (monthRange && (mIndex < monthRange.start || mIndex > monthRange.end)) return;
 
-    {/* -Client-Wise Performance */}
-    <CardShell>
-      <SectionTitle icon={Briefcase}>Client Wise Performance</SectionTitle>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              {["Client / Company", "Invoices", "Total Revenue", "Collected", "Pending", "Efficiency"].map(h => (
-                <th key={h} className="px-4 py-3 text-[9px] font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {(KPIs.clientPerformance || []).slice(0, 10).map((client, i) => (
-              <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
-                <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{client.name}</td>
-                <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{client.count}</td>
-                <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.emerald }}>{fmt(client.revenue)}</td>
-                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.blue }}>{fmt(client.collected)}</td>
-                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.amber }}>{fmt(client.pending)}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                      <div className="h-full rounded-full"
-                        style={{
-                          width: `${Math.min(client.efficiency, 100)}%`,
-                          background: client.efficiency >= 90 ? COLORS.emerald : (client.efficiency >= 50 ? COLORS.blue : COLORS.amber)
-                        }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold" style={{ color: "#64748b" }}>{client.efficiency.toFixed(0)}%</span>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        // Calculate relative index for the data array
+        const dataIndex = monthRange ? mIndex - monthRange.start : mIndex;
+
+        if (dataIndex < 0 || dataIndex >= data.length) return;
+
+        const val = parseFloat(t.credit_amount || 0);
+
+        if (!data[dataIndex][compName]) data[dataIndex][compName] = 0;
+        data[dataIndex][compName] += val;
+      });
+    });
+
+    // Normalize to K
+    data.forEach(d => {
+      Object.keys(d).forEach(k => {
+        if (k !== 'month' && typeof d[k] === 'number') d[k] = Math.round(d[k] / 1000);
+      });
+    });
+
+    return { chartData: data, companyNames: mapCompanies };
+  }, [comparisonData, monthRange]);
+
+  const COMP_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#6366f1", "#ec4899"];
+
+  return (
+    <div>
+      {/* Top KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <MetricCard title="Total Revenue" value={fmt(KPIs.totalRevenue)} icon={DollarSign} color={COLORS.emerald} subtitle={`${KPIs.totalInvoices} invoices`} />
+        <MetricCard title="Collected" value={fmt(KPIs.totalCredited)} icon={Activity} color={COLORS.blue} subtitle={`${KPIs.collectionRate}% rate`} />
+        <MetricCard title="Pending" value={fmt(KPIs.pendingAmount)} icon={Clock} color={COLORS.amber} trendLabel="Payment pending" />
+        <MetricCard title="Avg Invoice" value={fmt(KPIs.avgInvoiceValue)} icon={FileText} color={COLORS.purple} subtitle="Per transaction" />
       </div>
-    </CardShell>
-  </div>
-);
+
+      {/* Row 1: Monthly Revenue Trend + Payment Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <CardShell className="lg:col-span-2">
+          <SectionTitle icon={Activity}>Monthly Revenue & Collections</SectionTitle>
+          <div style={{ height: 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={KPIs.monthlyData}>
+                <defs>
+                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.15} />
+                    <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
+                <Area type="monotone" dataKey="revenue" name="Revenue" fill="url(#revGrad)" stroke={COLORS.emerald} strokeWidth={2.5} />
+                <Line type="monotone" dataKey="collected" name="Collected" stroke={COLORS.blue} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.blue }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </CardShell>
+
+        <CardShell>
+          <SectionTitle icon={PieIcon}>Payment Status</SectionTitle>
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={[
+                  { name: "Received", value: KPIs.totalCredited },
+                  { name: "Pending", value: KPIs.pendingAmount }
+                ]} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none">
+                  <Cell fill={COLORS.emerald} />
+                  <Cell fill={COLORS.amber} />
+                </Pie>
+                <Tooltip formatter={(v) => fmt(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-2 mt-2">
+            {[
+              { label: "Received", color: COLORS.emerald, val: KPIs.totalCredited },
+              { label: "Pending", color: COLORS.amber, val: KPIs.pendingAmount }
+            ].map(d => (
+              <div key={d.label} className="flex items-center justify-between text-[11px]">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
+                  <span style={{ color: "#64748b" }}>{d.label}</span>
+                </span>
+                <span className="font-bold" style={{ color: COLORS.primary }}>{fmt(d.val)}</span>
+              </div>
+            ))}
+          </div>
+        </CardShell>
+      </div>
+
+      {/* Row 2: Monthly Comparison + Company Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <CardShell className="lg:col-span-2">
+          <SectionTitle icon={BarChart2}>Monthly Collection Comparison</SectionTitle>
+          <div style={{ height: 240 }}>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
+                  {companyNames.map((name, i) => (
+                    <Bar key={name} dataKey={name} fill={COMP_COLORS[i % COMP_COLORS.length]} radius={[4, 4, 0, 0]} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <p className="text-xs font-semibold">No comparison data available</p>
+              </div>
+            )}
+          </div>
+        </CardShell>
+
+        <CardShell>
+          <SectionTitle icon={Briefcase}>Company Efficiency</SectionTitle>
+          <div className="space-y-4 mt-2">
+            {comparisonData.map((comp) => {
+              const txs = comp.transactions || [];
+              const rev = txs.reduce((s, t) => s + (parseFloat(t.sell_amount) || 0), 0);
+              const col = txs.reduce((s, t) => s + (parseFloat(t.credit_amount) || 0), 0);
+              const eff = rev > 0 ? ((col / rev) * 100).toFixed(0) : "0";
+              const effNum = parseFloat(eff);
+              const name = comp.name;
+
+              return (
+                <div key={name}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[11px] font-bold" style={{ color: COLORS.primary }}>{name.split(" ").slice(0, 3).join(" ")}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: effNum >= 70 ? "#dcfce7" : "#fef3c7", color: effNum >= 70 ? "#16a34a" : "#d97706" }}>
+                      {eff}% collected
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full" style={{ background: "#f1f5f9" }}>
+                    <div className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${Math.min(effNum, 100)}%`, background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.teal})` }} />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[9px]" style={{ color: "#94a3b8" }}>{comp.name === 'Total' ? '-' : `${txs.length} invoices`}</span>
+                    <span className="text-[9px] font-bold" style={{ color: "#64748b" }}>{fmt(rev)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardShell>
+      </div>
+
+      {/* -Client-Wise Performance */}
+      <CardShell>
+        <SectionTitle icon={Briefcase}>Client Wise Performance of this Company </SectionTitle>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["Client / Company", "Invoices", "Total Revenue", "Collected", "Pending", "Efficiency"].map(h => (
+                  <th key={h} className="px-4 py-3 text-[9px] font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(KPIs.clientPerformance || []).slice(0, 10).map((client, i) => (
+                <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{client.name}</td>
+                  <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{client.count}</td>
+                  <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.emerald }}>{fmt(client.revenue)}</td>
+                  <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.blue }}>{fmt(client.collected)}</td>
+                  <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: client.pending <= 0 ? COLORS.emerald : COLORS.amber }}>
+                    {client.pending <= 0 ? <span>{fmt(Math.abs(client.pending))} <span className="text-[9px] opacity-75">(Adv)</span></span> : fmt(client.pending)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(client.efficiency, 100)}%`,
+                            background: client.efficiency >= 90 ? COLORS.emerald : (client.efficiency >= 50 ? COLORS.blue : COLORS.amber)
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold" style={{ color: "#64748b" }}>{client.efficiency.toFixed(0)}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardShell >
+    </div >
+  );
+};
 
 const GSTTab = ({ KPIs }) => (
   <div>
@@ -795,6 +908,9 @@ const QuotationsTab = ({ KPIs }) => (
 export default function App() {
   const { selectedCompany } = useCompany();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [monthRange, setMonthRange] = useState({ start: 0, end: 11 }); // 0-11 for Jan-Dec
+  const [comparisonData, setComparisonData] = useState([]); // Comparison Data State
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -805,6 +921,14 @@ export default function App() {
       fetchAnalytics();
     }
   }, [selectedCompany]);
+
+  // Fetch Comparison Data on Mount
+  // Fetch Comparison Data on Mount
+  useEffect(() => {
+    handleApiResponse(api.get('/analytics/comparison'))
+      .then(res => setComparisonData(res.data || []))
+      .catch(err => console.error("Comparison fetch error:", err));
+  }, []);
 
   async function fetchAnalytics() {
     if (!selectedCompany) return;
@@ -817,7 +941,7 @@ export default function App() {
         api.get(`/analytics/${selectedCompany.id}/data`)
       );
 
-      setAnalyticsData(response.data);
+      setAnalyticsData({ ...response.data, companyName: response.companyName });
     } catch (err) {
       console.error('Analytics fetch error:', err);
       setError(err.message || 'Failed to fetch analytics data');
@@ -832,12 +956,68 @@ export default function App() {
     setRefreshing(false);
   }
 
-  const KPIs = useMemo(() => {
-    return analyticsData ? computeKPIs(analyticsData) : null;
+  // Compute Available Years
+  const availableYears = useMemo(() => {
+    const currentY = new Date().getFullYear();
+    if (!analyticsData?.transactions) return [currentY];
+    const years = new Set();
+    years.add(currentY);
+    analyticsData.transactions.forEach(t => {
+      const d = new Date(t.transaction_date);
+      if (!isNaN(d)) years.add(d.getFullYear());
+    });
+    return Array.from(years).sort((a, b) => b - a);
   }, [analyticsData]);
 
+  // Filter Data by Year & Month Range
+  const filteredData = useMemo(() => {
+    if (!analyticsData) return null;
+
+    const rawTx = analyticsData.transactions || [];
+    const targetYear = parseInt(selectedYear);
+
+    // Filter Transactions
+    const filteredTx = rawTx.filter(t => {
+      const d = new Date(t.transaction_date);
+      if (isNaN(d)) return false;
+      const y = d.getFullYear();
+      const m = d.getMonth(); // 0-11
+      return y === targetYear && m >= monthRange.start && m <= monthRange.end;
+    });
+
+    const validIds = new Set(filteredTx.map(t => t.invoice_no));
+    // Filter Sell Summary based on valid invoice IDs
+    const filteredSell = (analyticsData.sellSummary || []).filter(s => validIds.has(s.invoice_no));
+
+    return {
+      ...analyticsData,
+      transactions: filteredTx,
+      sellSummary: filteredSell
+    };
+  }, [analyticsData, selectedYear, monthRange]);
+
+  const filteredComparisonData = useMemo(() => {
+    if (!comparisonData) return [];
+    const targetYear = parseInt(selectedYear);
+
+    return comparisonData.map(c => ({
+      ...c,
+      transactions: (c.transactions || []).filter(t => {
+        const d = new Date(t.transaction_date);
+        if (isNaN(d)) return false;
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        return y === targetYear && m >= monthRange.start && m <= monthRange.end;
+      })
+    }));
+  }, [comparisonData, selectedYear, monthRange]);
+
+  const KPIs = useMemo(() => {
+    return filteredData ? computeKPIs(filteredData, monthRange) : null;
+  }, [filteredData, monthRange]);
+
   const tabContent = {
-    overview: KPIs ? <OverviewTab KPIs={KPIs} /> : null,
+    overview: KPIs ? <OverviewTab KPIs={KPIs} comparisonData={filteredComparisonData} monthRange={monthRange} /> : null,
     gst: KPIs ? <GSTTab KPIs={KPIs} /> : null,
     parties: KPIs && analyticsData ? <PartiesTab KPIs={KPIs} PARTIES={analyticsData.parties || []} /> : null,
     products: KPIs && analyticsData ? <ProductsTab KPIs={KPIs} ITEMS={analyticsData.items || []} SELL_SUMMARY={analyticsData.sellSummary || []} /> : null,
@@ -912,8 +1092,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)" }}>
                 <BarChart2 size={20} color="#14b8a6" />
               </div>
@@ -922,7 +1102,54 @@ export default function App() {
                 <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>Actionable insights </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+              {/* Year & Month Range Filter */}
+              <div className="bg-white/10 rounded-lg px-2 py-1.5 flex items-center backdrop-blur-sm border border-white/10 gap-3">
+                {/* Year Select */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-white/70 font-bold uppercase tracking-wider">Year</span>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="bg-transparent text-[11px] font-bold text-teal-400 outline-none cursor-pointer"
+                  >
+                    {availableYears.map(y => (
+                      <option key={y} value={y} className="text-slate-900 bg-white">{y}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-px h-3 bg-white/20"></div>
+
+                {/* From Month */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-white/70 font-bold uppercase tracking-wider">From</span>
+                  <select
+                    value={monthRange.start}
+                    onChange={(e) => setMonthRange(prev => ({ ...prev, start: Number(e.target.value) }))}
+                    className="bg-transparent text-[11px] font-bold text-teal-400 outline-none cursor-pointer"
+                  >
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, i) => (
+                      <option key={m} value={i} className="text-slate-900 bg-white">{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* To Month */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-white/70 font-bold uppercase tracking-wider">To</span>
+                  <select
+                    value={monthRange.end}
+                    onChange={(e) => setMonthRange(prev => ({ ...prev, end: Number(e.target.value) }))}
+                    className="bg-transparent text-[11px] font-bold text-teal-400 outline-none cursor-pointer"
+                  >
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, i) => (
+                      <option key={m} value={i} className="text-slate-900 bg-white">{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}

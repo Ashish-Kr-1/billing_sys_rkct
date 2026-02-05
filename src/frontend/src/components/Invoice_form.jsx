@@ -32,10 +32,10 @@ export default function InvoiceForm({ initialData }) {
       ChallanNo: "",
       ChallanDate: "",
       Terms: "",
-      AccountName: "R.K CASTING AND ENGINEERING WORKS",
-      CurrentACCno: "08710210000724",
-      IFSCcode: "UCBA0000871",
-      Branch: "Moonidih | Branch Code - 0871",
+      AccountName: "",
+      CurrentACCno: "",
+      IFSCcode: "",
+      Branch: "",
       items: [{ description: "", HSNCode: "", quantity: '', price: "" }],
       transaction_type: "",
       party_id: ""
@@ -253,11 +253,6 @@ export default function InvoiceForm({ initialData }) {
                   value={invoice.GSTIN0}
                   onChange={handleChange} />
               </h2>
-
-              {/* Right side: Original Copy */}
-              <p className="italic text-xs sm:text-sm text-right">
-                (Original Copy)
-              </p>
             </div>
 
             {/* MAIN ROW */}
@@ -276,19 +271,19 @@ export default function InvoiceForm({ initialData }) {
                   Tax Invoice
                 </h1>
 
-                <h2 className="text-xl sm:text-2xl font-bold mt-1">
-                  {companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}
+                <h2 className="text-xl sm:text-2xl font-bold mt-1 lg:ml-32">
+                  {companyConfig?.company_name}
                 </h2>
 
                 <p className="text-xs text-center sm:text-sm">
-                  {companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}
+                  {companyConfig?.company_address}
                 </p>
 
                 <p className="font-semibold text-xs text-center sm:text-sm mt-1">
-                  Mobile No : {companyConfig?.mobile_no || '+91 6204583192'}
+                  Mobile No : {companyConfig?.mobile_no}
                 </p>
                 <p className="font-semibold  text-center text-xs sm:text-sm">
-                  Email Id : {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}
+                  Email Id : {companyConfig?.email}
                 </p>
                 {companyConfig?.cin_no && (
                   <p className="font-semibold text-xs text-center sm:text-sm">
@@ -578,47 +573,47 @@ export default function InvoiceForm({ initialData }) {
           <h1 className="text-center sm:text-lg font-bold mb-2 underline">
             BANK DETAILS
           </h1>
-          <div className='grid grid-cols-2 gap-4'>
-            <div className='grid grid-cols-2 '>
-              <h2 className=" sm:text-lg font-bold text-center ">Account Name</h2>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='flex flex-col sm:grid sm:grid-cols-2 items-center gap-2'>
+              <h2 className="sm:text-lg font-bold text-center sm:text-left">Account Name</h2>
               <input
                 type="text"
                 name="AccountName"
                 placeholder="Account Name "
-                className="border p-2 rounded "
+                className="border p-2 rounded w-full"
                 value={invoice.AccountName}
                 onChange={handleChange}
               />
             </div>
-            <div className='grid grid-cols-2'>
-              <h2 className="text-base sm:text-lg font-bold text-center">Current Account No.</h2>
+            <div className='flex flex-col sm:grid sm:grid-cols-2 items-center gap-2'>
+              <h2 className="text-base sm:text-lg font-bold text-center sm:text-left">Current Account No.</h2>
               <input
                 type="text"
                 name="CurrentACCno"
                 placeholder="Current Account no "
-                className="border p-2 rounded"
+                className="border p-2 rounded w-full"
                 value={invoice.CurrentACCno}
                 onChange={handleChange}
               />
             </div>
-            <div className='grid grid-cols-2'>
-              <h2 className="text-base sm:text-lg font-bold  text-center">IFSC CODE </h2>
+            <div className='flex flex-col sm:grid sm:grid-cols-2 items-center gap-2'>
+              <h2 className="text-base sm:text-lg font-bold text-center sm:text-left">IFSC CODE </h2>
               <input
                 type="text"
                 name="IFSCcode"
                 placeholder="IFSC code "
-                className="border p-2 rounded "
+                className="border p-2 rounded w-full"
                 value={invoice.IFSCcode}
                 onChange={handleChange}
               />
             </div>
-            <div className='grid grid-cols-2'>
-              <h2 className="text-base sm:text-lg font-bold  text-center">Branch</h2>
+            <div className='flex flex-col sm:grid sm:grid-cols-2 items-center gap-2'>
+              <h2 className="text-base sm:text-lg font-bold text-center sm:text-left">Branch</h2>
               <input
                 type="text"
                 name="Branch"
                 placeholder="Branch"
-                className="border p-2 rounded"
+                className="border p-2 rounded w-full"
                 value={invoice.Branch}
                 onChange={handleChange}
               />
@@ -640,17 +635,7 @@ export default function InvoiceForm({ initialData }) {
         </div>
 
         <div className=" max-w-3xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
-          <button className=" mx-32 md:mx-80 rounded-md font-bold cursor-progress " onClick={() => navigate("/Preview", {
-            state: {
-              invoice,
-              subtotalAmount,
-              totalAmount,
-              sgst,
-              cgst,
-              isEditMode: initialData?.isEditMode,
-              company_id: selectedCompany?.id
-            }
-          })}> Preview </button>
+          <button className="w-full md:w-64 block mx-auto rounded-md font-bold cursor-progress py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors" onClick={() => navigate("/Preview", { state: { invoice, subtotalAmount, totalAmount, sgst, cgst, } })}> Preview </button>
         </div>
       </div>
     </div>

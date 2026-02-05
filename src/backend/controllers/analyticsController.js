@@ -39,20 +39,20 @@ async function fetchAnalyticsData(companyId) {
     // Fetch transactions
     const transactions = await dbManager.query(
         companyId,
-        `SELECT 
-      transaction_id,
-      transaction_date,
-      invoice_no,
-      transaction_type,
-      party_id,
-      sell_amount,
-      credit_amount,
-      taxable_amount,
-      igst_amount,
-      cgst_amount,
-      sgst_amount,
-      gst_percentage,
-      narration
+        `SELECT
+transaction_id,
+    transaction_date,
+    invoice_no,
+    transaction_type,
+    party_id,
+    sell_amount,
+    credit_amount,
+    taxable_amount,
+    igst_amount,
+    cgst_amount,
+    sgst_amount,
+    gst_percentage,
+    narration
     FROM transactions
     ORDER BY transaction_date DESC`
     );
@@ -60,14 +60,14 @@ async function fetchAnalyticsData(companyId) {
     // Fetch parties
     const parties = await dbManager.query(
         companyId,
-        `SELECT 
-      party_id,
-      party_name,
-      gstin_no,
-      type,
-      billing_address,
-      supply_state_code,
-      mobile_no
+        `SELECT
+party_id,
+    party_name,
+    gstin_no,
+    type,
+    billing_address,
+    supply_state_code,
+    mobile_no
     FROM parties
     ORDER BY party_name`
     );
@@ -75,12 +75,12 @@ async function fetchAnalyticsData(companyId) {
     // Fetch items
     const items = await dbManager.query(
         companyId,
-        `SELECT 
-      item_id,
-      item_name,
-      hsn_code,
-      unit,
-      rate
+        `SELECT
+item_id,
+    item_name,
+    hsn_code,
+    unit,
+    rate
     FROM items
     ORDER BY item_name`
     );
@@ -88,12 +88,12 @@ async function fetchAnalyticsData(companyId) {
     // Fetch invoice details
     const invoiceDetails = await dbManager.query(
         companyId,
-        `SELECT 
-      invoice_no,
-      invoice_date,
-      place_of_supply,
-      po_no,
-      client_name
+        `SELECT
+invoice_no,
+    invoice_date,
+    place_of_supply,
+    po_no,
+    client_name
     FROM invoice_details
     ORDER BY invoice_date DESC`
     );
@@ -101,13 +101,13 @@ async function fetchAnalyticsData(companyId) {
     // Fetch sell summary for product performance
     const sellSummary = await dbManager.query(
         companyId,
-        `SELECT 
-      ss.invoice_no,
-      ss.item_id,
-      ss.units_sold,
-      i.rate as unit_price,
-      i.item_name,
-      i.hsn_code
+        `SELECT
+ss.invoice_no,
+    ss.item_id,
+    ss.units_sold,
+    i.rate as unit_price,
+    i.item_name,
+    i.hsn_code
     FROM sell_summary ss
     JOIN items i ON ss.item_id = i.item_id
     ORDER BY ss.invoice_no DESC`
@@ -152,10 +152,10 @@ export async function getCompanySummary(req, res) {
         // Get revenue summary
         const [revenueSummary] = await dbManager.query(
             companyId,
-            `SELECT 
-        SUM(sell_amount) as total_revenue,
-        SUM(credit_amount) as total_collections,
-        SUM(sell_amount - credit_amount) as outstanding
+            `SELECT
+SUM(sell_amount) as total_revenue,
+    SUM(credit_amount) as total_collections,
+    SUM(sell_amount - credit_amount) as outstanding
       FROM transactions
       WHERE transaction_type = 'SALE'`
         );
@@ -178,3 +178,38 @@ export async function getCompanySummary(req, res) {
         return res.status(500).json({ error: 'Internal server error' });
     }
 }
+
+/**
+ * Get aggregated analytics for all companies for comparison
+ */
+export async function getAllCompaniesAnalytics(req, res) {
+    try {
+        const companies = dbManager.getAllCompanies();
+
+        const results = await Promise.all(companies.map(async (comp) => {
+            try {
+                // Reuse the existing helper to get transactions
+                const data = await fetchAnalyticsData(comp.id);
+                return {
+                    companyId: comp.id,
+                    name: comp.shortName || comp.name,
+                    transactions: data.transactions || []
+                };
+            } catch (err) {
+                console.error(`Error fetching for company ${comp.id}: `, err);
+                return { companyId: comp.id, name: comp.name, transactions: [] };
+            }
+        }));
+
+        return res.status(200).json({
+            success: true,
+            data: results
+        });
+
+    } catch (error) {
+        console.error('Global analytics error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+

@@ -61,8 +61,6 @@ export default function Preview() {
 
     pdf.addImage(imgData, "PNG", 0, 0, width, 0);
     pdf.save("invoice.pdf");
-
-    await saveInvoiceToDB();
   }
 
   async function saveInvoiceToDB() {
@@ -123,7 +121,7 @@ export default function Preview() {
         // But user complained "not working", so Feedback is key.
         // However, on Download, silent is better usually. 
         // But for now, let's log it.
-        console.log("Invoice Saved");
+        alert("Invoice Created Successfully!");
       }
       console.log("Invoice transaction result:", data);
     } catch (err) {
@@ -157,12 +155,9 @@ export default function Preview() {
             cgst={cgst}
             companyConfig={companyConfig}
           />
-          <div className="flex justify-around">
-            <button onClick={downloadPDF} className="mt-6 px-6 py-3 bg-blue-600 hover:bg-[#3d8ecb] text-white rounded">
-              Download PDF
-            </button>
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-8 py-4 flex justify-center gap-4 shadow-lg z-50">
             <button
-              className="mt-6 px-6 py-3 bg-[#1F5E6C] hover:bg-[#1f6c53] text-white rounded"
+              className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition-colors"
               onClick={() => navigate("/Invoice", {
                 state: {
                   invoice,
@@ -175,16 +170,34 @@ export default function Preview() {
                 }
               })}
             >
-              Edit
-            </button>
-            <button
-              className="mt-6 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded"
-              onClick={() => navigate("/Invoice")}
-            >
-              New Invoice
+              Back to Edit
             </button>
 
+            <button
+              onClick={() => saveInvoiceToDB()}
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center gap-2"
+            >
+              <span>Save Invoice</span>
+            </button>
+
+            <button
+              onClick={downloadPDF}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center gap-2"
+            >
+              <span>Download PDF</span>
+            </button>
+
+            <div className="w-px bg-slate-300 mx-2"></div>
+
+            <button
+              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-md transition-colors"
+              onClick={() => navigate("/Invoice")}
+            >
+              Create New
+            </button>
           </div>
+          {/* Add padding to bottom of page so buttons don't cover content */}
+          <div className="h-24"></div>
         </>
       )}
     </div>

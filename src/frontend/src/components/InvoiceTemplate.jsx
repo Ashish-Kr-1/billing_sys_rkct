@@ -13,7 +13,6 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
     if (companyConfig.company_id === 3) {
       return GlobalBharatLogo;
     }
-
     // Check if logo_url contains global-bharat
     if (companyConfig.logo_url?.includes('global-bharat')) {
       return GlobalBharatLogo;

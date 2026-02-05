@@ -318,7 +318,7 @@ export default function App() {
   /**
    * Handle Edit Invoice - Fetch full invoice details and navigate to Preview
    */
-  const handleEditInvoice = async (invoice_no) => {
+  const handlePreviewInvoice = async (invoice_no) => {
     try {
       console.log('🔍 Fetching invoice details for:', invoice_no);
 
@@ -548,7 +548,6 @@ export default function App() {
             )}
           </div>
         </div>
-
         {/* INVOICE POPUP */}
         {invoicePopup && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -574,196 +573,10 @@ export default function App() {
                 </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => handleEditInvoice(invoicePopup.invoice)}
+                    onClick={() => handlePreviewInvoice(invoicePopup.invoice)}
                     className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
                   >
-                    EDIT
-                  </button>
-                  <button
-                    onClick={() => setInvoicePopup(null)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-8 max-h-[80vh] overflow-y-auto">
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div className="p-4 bg-slate-50 rounded-2xl border">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">
-                      Total Sale
-                    </p>
-                    <p className="text-lg font-bold">
-                      ₹{calculateTotalSale().toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase">
-                      Received
-                    </p>
-                    <p className="text-lg font-bold text-emerald-700">
-                      ₹{calculateTotalReceived().toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase">
-                      Due
-                    </p>
-                    <p className="text-lg font-bold text-indigo-700">
-                      ₹{calculateTotalDue().toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border rounded-2xl overflow-hidden shadow-sm mb-8">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-800 text-white text-[10px] uppercase tracking-widest">
-                      <tr>
-                        <th className="px-4 py-4 text-left">Date</th>
-                        <th className="px-4 py-4 text-right">Sale</th>
-                        <th className="px-4 py-4 text-right">Receipt</th>
-                        <th className="px-4 py-4 text-right">Balance</th>
-                        <th className="px-4 py-4 text-left">Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {[...invoicePopup.history]
-                        .sort((a, b) =>
-                          getSortableDate(a.date).localeCompare(
-                            getSortableDate(b.date)
-                          )
-                        )
-                        .map((row, i) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="px-4 py-4 text-xs whitespace-nowrap">
-                              {row.date}
-                            </td>
-                            <td className="px-4 py-4 text-right font-semibold">
-                              {row.debit > 0
-                                ? `₹${row.debit.toLocaleString()}`
-                                : "—"}
-                            </td>
-                            <td className="px-4 py-4 text-right font-semibold text-emerald-600">
-                              {row.credit > 0
-                                ? `₹${row.credit.toLocaleString()}`
-                                : "—"}
-                            </td>
-                            <td className="px-4 py-4 text-right font-bold text-slate-900">
-                              ₹{calculateRunningBalance(i).toLocaleString()}
-                            </td>
-                            <td
-                              className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate"
-                              title={row.remarks}
-                            >
-                              {row.remarks || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">
-                      General Notes
-                    </label>
-                    <textarea
-                      rows={6}
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl border text-sm outline-none bg-slate-50/50"
-                    />
-                  </div>
-
-                  <div className="bg-slate-50 p-6 rounded-2xl border">
-                    <h4 className="text-xs font-black uppercase text-slate-600 mb-4">
-                      Quick Payment Record
-                    </h4>
-
-                    <div className="space-y-3">
-                      <input
-                        type="date"
-                        value={newReceipt.date}
-                        disabled={calculateTotalDue() <= 0}
-                        onChange={(e) =>
-                          setNewReceipt({ ...newReceipt, date: e.target.value })
-                        }
-                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Amount (₹)"
-                        value={newReceipt.amount}
-                        disabled={calculateTotalDue() <= 0}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (val <= calculateTotalDue()) {
-                            setNewReceipt({ ...newReceipt, amount: e.target.value });
-                          }
-                        }}
-                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
-                      />
-
-                      <input
-                        type="text"
-                        placeholder="Remark for this payment"
-                        value={newReceipt.remark}
-                        disabled={calculateTotalDue() <= 0}
-                        onChange={(e) =>
-                          setNewReceipt({ ...newReceipt, remark: e.target.value })
-                        }
-                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
-                      />
-
-                      <button
-                        onClick={handleAddReceipt}
-                        disabled={
-                          !newReceipt.amount ||
-                          !newReceipt.date ||
-                          calculateTotalDue() <= 0
-                        }
-                        className="w-full bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg"
-                      >
-                        Save Payment
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}{/* INVOICE POPUP */}
-        {invoicePopup && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-              <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-black text-slate-800">
-                      Invoice #{invoicePopup.invoice}
-                    </h2>
-                    <span
-                      className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${calculateTotalDue() <= 0
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                        }`}
-                    >
-                      {calculateTotalDue() <= 0 ? "Fully Paid" : "Balance Pending"}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-slate-500 mt-1">
-                    Client: <span className="text-slate-900">{invoicePopup.client}</span>
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleEditInvoice(invoicePopup.invoice)}
-                    className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
-                  >
-                    EDIT
+                    Preview
                   </button>
                   <button
                     onClick={() => setInvoicePopup(null)}
