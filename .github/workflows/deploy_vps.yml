@@ -12,22 +12,25 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST }}       # IP Address
-          username: ${{ secrets.VPS_USER }}   # usually 'root'
-          password: ${{ secrets.VPS_PASSWORD }} # or key
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           script: |
              cd /var/www/billing_sys_rkct
-             git pull origin main
              
-             # Zero-Downtime Deployment
-             # 1. Force Clean Build (No Cache)
-             docker compose build --no-cache
+             # Force sync with GitHub
+             git fetch origin
+             git reset --hard origin/main
              
-             # 2. Recreate containers
+             # Stop containers
+             docker compose down
+             
+             # Build fresh
+             docker compose build
+             
+             # Start containers
              docker compose up -d
              
-             # Apply any Nginx configuration changes
-             # DISABLED: Manual SSL setup is stable. Do not overwrite.
-             # chmod +x scripts/setup_nginx_proxy.sh
-             # sudo ./scripts/setup_nginx_proxy.sh
+             # Show status
+             docker compose ps
