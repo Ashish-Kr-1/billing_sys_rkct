@@ -329,6 +329,8 @@ export default function App() {
 
       console.log('✅ Invoice details loaded:', data);
 
+      //Arigato Gozaimasu
+
       // Format date to dd/mm/yyyy if it's in ISO format
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
