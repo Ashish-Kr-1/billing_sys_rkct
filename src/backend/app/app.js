@@ -789,7 +789,12 @@ async function createTransactionHandler(req, res) {
  * Get complete invoice details for editing
  */
 async function getInvoiceDetailsHandler(req, res) {
-  const { invoiceNo } = req.params;
+  // FIXED: Use query param to handle slashes in invoice no
+  const invoiceNo = req.query.invoice_no;
+
+  if (!invoiceNo) {
+    return res.status(400).json({ error: "Invoice number required" });
+  }
 
   try {
     // Fetch transaction (main invoice)
@@ -889,7 +894,7 @@ router.post('/', createPartyHandler);
 
 routerTransaction.post("/", createTransactionHandler);
 routerTransaction.get("/invoiceNo", getNextInvoiceNumber);
-routerTransaction.get("/:invoiceNo/details", getInvoiceDetailsHandler);
+routerTransaction.get("/details", getInvoiceDetailsHandler);
 
 routerParty.get('/', partyList);
 routerParty.get('/:id', partyDetails);

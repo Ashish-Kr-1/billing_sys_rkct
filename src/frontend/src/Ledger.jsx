@@ -324,7 +324,7 @@ export default function App() {
 
       // Fetch complete invoice details from backend
       const data = await handleApiResponse(
-        api.get(`/createInvoice/${encodeURIComponent(invoice_no)}/details`)
+        api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoice_no)}`)
       );
 
       console.log('✅ Invoice details loaded:', data);
