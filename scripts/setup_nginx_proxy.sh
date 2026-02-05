@@ -20,6 +20,7 @@ echo "Configuring Nginx Proxy..."
 # 1. Configure HTTP Block (billing)
 cat << 'EOF' > /etc/nginx/sites-available/billing
 server {
+    listen 80;
     server_name billing.rkcasting.in;
 
     location / {
@@ -51,14 +52,13 @@ SSL_CONF="/etc/nginx/sites-available/billing-le-ssl.conf"
 if [ -f "$SSL_CONF" ]; then
     echo "Found SSL config: $SSL_CONF"
     
+    # Enable SSL site (CRITICAL FIX: Ensure it is linked)
+    ln -sf "$SSL_CONF" /etc/nginx/sites-enabled/
+    echo "🔗 Symlinked SSL config to sites-enabled"
+    
     # SAFETY: Remove any existing /api/ location blocks to prevent duplicates or corruption
-    # This sed command deletes from "location /api/ {" to the matching "}" (assuming standard formatting)
-    # We run this blindly to "clean" the file before adding the good block.
-    # Note: This simple sed assumes the closing brace is on a line by itself or indented. 
-    # A safer approach for corruption is to just check boundaries, but we will try to clean up.
     if grep -q "location /api/" "$SSL_CONF"; then
         echo "🧹 Cleaning up old /api/ block..."
-        # This is a bit risky if formatting is weird, but effective for standard blocks
         sudo sed -i '/location \/api\/ {/,/}/d' "$SSL_CONF"
     fi
 
@@ -85,7 +85,6 @@ echo "Testing Nginx configuration..."
 nginx -t
 
 # RESTART Nginx (Systemctl)
-# We use 'restart' which tries to stop then start, fixing 'dead' states.
 echo "Restarting Nginx..."
 service nginx restart || systemctl restart nginx
 # Check status
