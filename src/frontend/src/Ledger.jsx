@@ -316,80 +316,111 @@ export default function App() {
   };
 
   /**
-   * Handle Edit Invoice - Fetch full invoice details and navigate to Preview
+   * REBUILD: Preview Invoice - Fetch invoice by ID and navigate to Preview
+   * Uses query parameters to safely handle invoice numbers with slashes
    */
   const handlePreviewInvoice = async (invoice_no) => {
+    // Show loading state
+    const loadingToast = `Loading invoice ${invoice_no}...`;
+    console.log('🚀 [PREVIEW_v4.0] Starting preview for:', invoice_no);
+
     try {
-      console.log('🔍 [v3.FIX_PREVIEW_BUTTON] Fetching invoice details for:', invoice_no);
-      console.log('🔍 API URL will be:', `/createInvoice/details?invoice_no=${encodeURIComponent(invoice_no)}`);
+      // Validate invoice number
+      if (!invoice_no || invoice_no.trim() === '') {
+        throw new Error('Invoice number is required');
+      }
 
-      // Fetch complete invoice details from backend
-      const data = await handleApiResponse(
-        api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoice_no)}`)
-      );
+      if (!selectedCompany || !selectedCompany.id) {
+        throw new Error('No company selected. Please select a company first.');
+      }
 
-      console.log('✅ Invoice details loaded:', data);
+      // Build API URL with query parameter (safer for special characters)
+      const apiUrl = `/createInvoice/details?invoice_no=${encodeURIComponent(invoice_no)}`;
+      console.log('📡 API Request URL:', apiUrl);
+      console.log('🏢 Company ID:', selectedCompany.id);
 
+      // Make API request
+      const response = await api.get(apiUrl);
 
+      // Check if response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
 
-      // Format date to dd/mm/yyyy if it's in ISO format
+      const data = await response.json();
+      console.log('✅ Raw API Response:', data);
+
+      // Validate response structure
+      if (!data.invoice || !data.items) {
+        console.error('❌ Invalid response structure:', data);
+        throw new Error('Invalid invoice data received from server');
+      }
+
+      // Date formatter helper
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
-        const date = new Date(dateStr);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
+        try {
+          const date = new Date(dateStr);
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        } catch (err) {
+          console.warn('Date formatting error:', err);
+          return dateStr;
+        }
       };
 
-      // Map backend response to Preview component expected format
+      // Map backend response to frontend format
       const invoiceData = {
-        InvoiceNo: data.invoice.invoice_no,
+        InvoiceNo: data.invoice.invoice_no || invoice_no,
         InvoiceDate: formatDate(data.invoice.invoice_date),
         GSTIN0: data.invoice.gstin || '',
-        GSTIN: data.party?.gstin || data.invoice_details.gstin || '',
-        GSTIN2: data.invoice_details.gstin2 || '',
+        GSTIN: data.party?.gstin || data.invoice_details?.gstin || '',
+        GSTIN2: data.invoice_details?.gstin2 || '',
 
         // Client/Party details
-        clientName: data.party?.party_name || data.invoice_details.client_name || '',
-        clientAddress: data.party?.address || data.invoice_details.client_address || '',
-        clientName2: data.invoice_details.client_name2 || '',
-        clientAddress2: data.invoice_details.client_address2 || '',
+        clientName: data.party?.party_name || data.invoice_details?.client_name || '',
+        clientAddress: data.party?.address || data.invoice_details?.client_address || '',
+        clientName2: data.invoice_details?.client_name2 || '',
+        clientAddress2: data.invoice_details?.client_address2 || '',
 
-        // Transport & delivery details
-        TrasnportBy: data.invoice_details.transported_by || '',
-        PlaceofSupply: data.invoice_details.place_of_supply || '',
-        VehicleNo: data.invoice_details.vehical_no || '',
-        EwayBillNo: data.invoice_details.eway_bill_no || '',
+        // Transport & delivery
+        TrasnportBy: data.invoice_details?.transported_by || '',
+        PlaceofSupply: data.invoice_details?.place_of_supply || '',
+        VehicleNo: data.invoice_details?.vehical_no || '',
+        EwayBillNo: data.invoice_details?.eway_bill_no || '',
 
-        // PO & Vendor details
-        PONo: data.invoice_details.po_no || '',
-        PODate: data.invoice_details.po_date ? formatDate(data.invoice_details.po_date) : '',
-        VendorCode: data.invoice_details.vendore_code || '',
+        // PO & Vendor
+        PONo: data.invoice_details?.po_no || '',
+        PODate: data.invoice_details?.po_date ? formatDate(data.invoice_details.po_date) : '',
+        VendorCode: data.invoice_details?.vendore_code || '',
 
-        // Challan details
-        ChallanNo: data.invoice_details.challan_no || '',
-        ChallanDate: data.invoice_details.challan_date ? formatDate(data.invoice_details.challan_date) : '',
+        // Challan
+        ChallanNo: data.invoice_details?.challan_no || '',
+        ChallanDate: data.invoice_details?.challan_date ? formatDate(data.invoice_details.challan_date) : '',
 
         // Terms
-        Terms: data.invoice.narration || data.invoice_details.terms_conditions || '',
+        Terms: data.invoice.narration || data.invoice_details?.terms_conditions || '',
 
         // Bank details
-        AccountName: data.invoice_details.account_name || '',
-        CurrentACCno: data.invoice_details.account_no || '',
-        IFSCcode: data.invoice_details.ifsc_code || '',
-        Branch: data.invoice_details.branch || '',
+        AccountName: data.invoice_details?.account_name || '',
+        CurrentACCno: data.invoice_details?.account_no || '',
+        IFSCcode: data.invoice_details?.ifsc_code || '',
+        Branch: data.invoice_details?.branch || '',
 
-        // Invoice metadata
+        // Metadata
         party_id: data.invoice.party_id,
-        transaction_type: data.invoice.transaction_type,
+        transaction_type: data.invoice.transaction_type || 'SALE',
 
         // Items
-        items: data.items.map(item => ({
-          description: item.description,
-          HSNCode: item.hsn_code,
-          quantity: item.quantity,
-          price: item.unit_price,
+        items: (data.items || []).map(item => ({
+          description: item.description || '',
+          HSNCode: item.hsn_code || '',
+          quantity: Number(item.quantity) || 0,
+          price: Number(item.unit_price) || Number(item.price) || 0,
           item_id: item.item_id
         }))
       };
@@ -400,9 +431,16 @@ export default function App() {
       const sgstRate = parseFloat(data.invoice.sgst) || 0;
       const total = subtotal + (subtotal * cgstRate / 100) + (subtotal * sgstRate / 100);
 
-      console.log('📊 Calculated totals:', { subtotal, cgstRate, sgstRate, total });
+      console.log('💰 Financial Summary:', {
+        subtotal,
+        cgstRate,
+        sgstRate,
+        total,
+        itemCount: invoiceData.items.length
+      });
 
-      // Navigate to Preview with complete data and company_id
+      // Navigate to Preview route
+      console.log('🧭 Navigating to Preview...');
       navigate('/Preview', {
         state: {
           invoice: invoiceData,
@@ -415,335 +453,355 @@ export default function App() {
         }
       });
 
+      console.log('✅ Preview navigation completed');
+
     } catch (error) {
-      console.error('❌ Error fetching invoice details:', error);
-      alert(`Failed to load invoice details: ${error.message}`);
+      console.error('❌ Preview Error Details:', {
+        message: error.message,
+        stack: error.stack,
+        invoice_no,
+        company: selectedCompany
+      });
+
+      // Show user-friendly error message
+      const errorMessage = error.message.includes('404')
+        ? `Invoice "${invoice_no}" not found in the database. It may have been deleted.`
+        : error.message.includes('Network') || error.message.includes('fetch')
+          ? 'Unable to connect to server. Please check your internet connection.'
+          : `Failed to load invoice: ${error.message}`;
+
+      alert(errorMessage);
     }
-  };
 
 
-  return (
-    <>
-      <div className="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-900 font-sans">
-        <div className="max-w-6xl mx-auto">
-          {/* Company Indicator */}
-          {selectedCompany && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold opacity-90">Viewing Ledger For</p>
-                  <p className="text-xl font-bold">{selectedCompany.name}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs opacity-75">Company ID: {selectedCompany.id}</p>
-                  <p className="text-xs opacity-75">{selectedCompany.shortName}</p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 mt-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                Financial Ledger <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200 align-middle">v1.FIX</span>
-              </h1>
-              <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Transaction Management</p>
-            </div>
-          </div>
 
-          {/* ANALYTICS CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Total Billed</p>
-              <p className="text-3xl font-black text-slate-900">₹{stats.totalDebit.toLocaleString()}</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Total Collected</p>
-              <p className="text-3xl font-black text-emerald-600">₹{stats.totalCredit.toLocaleString()}</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">NET OUTSTANDING</p>
-              <p className="text-3xl font-black text-indigo-600">₹{stats.outstanding.toLocaleString()}</p>
-            </div>
-          </div>
 
-          {/* LEDGER TABLE */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden mb-8">
-            <div className="p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-4">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="Filter by invoice or client..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <select onChange={(e) => setFromMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
-                  <option value="All">From: Start</option>
-                  {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <select onChange={(e) => setToMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
-                  <option value="All">To: End</option>
-                  {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold min-w-[160px]">
-                  <option value="All">View All Clients</option>
-                  {clientOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-600 uppercase text-[10px] tracking-widest font-black border-b">
-                    <th className="py-5 px-6">Date</th>
-                    <th className="px-4">Invoice No.</th>
-                    <th className="px-4">Client</th>
-                    <th className="text-right px-4">Sale</th>
-                    <th className="text-right px-4">Receipt</th>
-                    <th className="text-right px-4">Due</th>
-                    <th className="text-right px-6">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredData.map((row, index) => {
-                    const due = getRowDueAmount(row);
-                    const status = getPaymentStatus(row);
-                    return (
-                      <tr key={index} className="hover:bg-slate-50">
-                        <td className="py-5 px-6 text-slate-500">{row.date}</td>
-                        <td className="px-4">
-                          <button onClick={() => openInvoicePopup(row)} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-mono text-xs border font-bold">
-                            {row.invoice}
-                          </button>
-                        </td>
-                        <td className="px-4 font-bold">{row.client}</td>
-                        <td className="text-right px-4">{row.debit > 0 ? `₹${row.debit.toLocaleString()}` : "—"}</td>
-                        <td className="text-right px-4 text-emerald-600">{row.credit > 0 ? `₹${row.credit.toLocaleString()}` : "—"}</td>
-                        <td className="text-right px-4 font-bold">{due > 0 ? `₹${due.toLocaleString()}` : "—"}</td>
-                        <td className="text-right px-6">
-                          <button onClick={() => openInvoicePopup(row)}>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}>
-                              {status.label}
-                            </span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {selectedClient !== "All" && clientSummaryStats && (
-              <div className="bg-slate-50 p-8 border-t border-slate-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    return (
+      <>
+        <div className="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-900 font-sans">
+          <div className="max-w-6xl mx-auto">
+            {/* Company Indicator */}
+            {selectedCompany && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow-lg">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold">Selected Party: {selectedClient}</h3>
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
-                      Outstanding: <span className={clientSummaryStats.outstanding > 0 ? 'text-orange-500' : 'text-emerald-600'}>₹{clientSummaryStats.outstanding.toLocaleString()}</span>
-                    </p>
+                    <p className="text-sm font-semibold opacity-90">Viewing Ledger For</p>
+                    <p className="text-xl font-bold">{selectedCompany.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs opacity-75">Company ID: {selectedCompany.id}</p>
+                    <p className="text-xs opacity-75">{selectedCompany.shortName}</p>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-        {/* INVOICE POPUP */}
-        {invoicePopup && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-              <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-black text-slate-800">
-                      Invoice #{invoicePopup.invoice}
-                    </h2>
-                    <span
-                      className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${calculateTotalDue() <= 0
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                        }`}
-                    >
-                      {calculateTotalDue() <= 0 ? "Fully Paid" : "Balance Pending"}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-slate-500 mt-1">
-                    Client: <span className="text-slate-900">{invoicePopup.client}</span>
-                  </p>
+
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 mt-6">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                  Financial Ledger <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200 align-middle">v1.FIX</span>
+                </h1>
+                <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Transaction Management</p>
+              </div>
+            </div>
+
+            {/* ANALYTICS CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Total Billed</p>
+                <p className="text-3xl font-black text-slate-900">₹{stats.totalDebit.toLocaleString()}</p>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Total Collected</p>
+                <p className="text-3xl font-black text-emerald-600">₹{stats.totalCredit.toLocaleString()}</p>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">NET OUTSTANDING</p>
+                <p className="text-3xl font-black text-indigo-600">₹{stats.outstanding.toLocaleString()}</p>
+              </div>
+            </div>
+
+            {/* LEDGER TABLE */}
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden mb-8">
+              <div className="p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-4">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Filter by invoice or client..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handlePreviewInvoice(invoicePopup.invoice)}
-                    className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
-                  >
-                    Preview
-                  </button>
-                  <button
-                    onClick={() => setInvoicePopup(null)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
-                  >
-                    &times;
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  <select onChange={(e) => setFromMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
+                    <option value="All">From: Start</option>
+                    {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select onChange={(e) => setToMonth(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold">
+                    <option value="All">To: End</option>
+                    {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold min-w-[160px]">
+                    <option value="All">View All Clients</option>
+                    {clientOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
               </div>
 
-              <div className="p-8 max-h-[80vh] overflow-y-auto">
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div className="p-4 bg-slate-50 rounded-2xl border">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">
-                      Total Sale
-                    </p>
-                    <p className="text-lg font-bold">
-                      ₹{calculateTotalSale().toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase">
-                      Received
-                    </p>
-                    <p className="text-lg font-bold text-emerald-700">
-                      ₹{calculateTotalReceived().toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase">
-                      Due
-                    </p>
-                    <p className="text-lg font-bold text-indigo-700">
-                      ₹{calculateTotalDue().toLocaleString()}
-                    </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 uppercase text-[10px] tracking-widest font-black border-b">
+                      <th className="py-5 px-6">Date</th>
+                      <th className="px-4">Invoice No.</th>
+                      <th className="px-4">Client</th>
+                      <th className="text-right px-4">Sale</th>
+                      <th className="text-right px-4">Receipt</th>
+                      <th className="text-right px-4">Due</th>
+                      <th className="text-right px-6">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredData.map((row, index) => {
+                      const due = getRowDueAmount(row);
+                      const status = getPaymentStatus(row);
+                      return (
+                        <tr key={index} className="hover:bg-slate-50">
+                          <td className="py-5 px-6 text-slate-500">{row.date}</td>
+                          <td className="px-4">
+                            <button onClick={() => openInvoicePopup(row)} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-mono text-xs border font-bold">
+                              {row.invoice}
+                            </button>
+                          </td>
+                          <td className="px-4 font-bold">{row.client}</td>
+                          <td className="text-right px-4">{row.debit > 0 ? `₹${row.debit.toLocaleString()}` : "—"}</td>
+                          <td className="text-right px-4 text-emerald-600">{row.credit > 0 ? `₹${row.credit.toLocaleString()}` : "—"}</td>
+                          <td className="text-right px-4 font-bold">{due > 0 ? `₹${due.toLocaleString()}` : "—"}</td>
+                          <td className="text-right px-6">
+                            <button onClick={() => openInvoicePopup(row)}>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}>
+                                {status.label}
+                              </span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedClient !== "All" && clientSummaryStats && (
+                <div className="bg-slate-50 p-8 border-t border-slate-200">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                      <h3 className="text-lg font-bold">Selected Party: {selectedClient}</h3>
+                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                        Outstanding: <span className={clientSummaryStats.outstanding > 0 ? 'text-orange-500' : 'text-emerald-600'}>₹{clientSummaryStats.outstanding.toLocaleString()}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="border rounded-2xl overflow-hidden shadow-sm mb-8">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-800 text-white text-[10px] uppercase tracking-widest">
-                      <tr>
-                        <th className="px-4 py-4 text-left">Date</th>
-                        <th className="px-4 py-4 text-right">Sale</th>
-                        <th className="px-4 py-4 text-right">Receipt</th>
-                        <th className="px-4 py-4 text-right">Balance</th>
-                        <th className="px-4 py-4 text-left">Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {[...invoicePopup.history]
-                        .sort((a, b) =>
-                          getSortableDate(a.date).localeCompare(
-                            getSortableDate(b.date)
-                          )
-                        )
-                        .map((row, i) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="px-4 py-4 text-xs whitespace-nowrap">
-                              {row.date}
-                            </td>
-                            <td className="px-4 py-4 text-right font-semibold">
-                              {row.debit > 0
-                                ? `₹${row.debit.toLocaleString()}`
-                                : "—"}
-                            </td>
-                            <td className="px-4 py-4 text-right font-semibold text-emerald-600">
-                              {row.credit > 0
-                                ? `₹${row.credit.toLocaleString()}`
-                                : "—"}
-                            </td>
-                            <td className="px-4 py-4 text-right font-bold text-slate-900">
-                              ₹{calculateRunningBalance(i).toLocaleString()}
-                            </td>
-                            <td
-                              className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate"
-                              title={row.remarks}
-                            >
-                              {row.remarks || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              )}
+            </div>
+          </div>
+          {/* INVOICE POPUP */}
+          {invoicePopup && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+                <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
                   <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">
-                      General Notes
-                    </label>
-                    <textarea
-                      rows={6}
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl border text-sm outline-none bg-slate-50/50"
-                    />
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-black text-slate-800">
+                        Invoice #{invoicePopup.invoice}
+                      </h2>
+                      <span
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${calculateTotalDue() <= 0
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                          }`}
+                      >
+                        {calculateTotalDue() <= 0 ? "Fully Paid" : "Balance Pending"}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-500 mt-1">
+                      Client: <span className="text-slate-900">{invoicePopup.client}</span>
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handlePreviewInvoice(invoicePopup.invoice)}
+                      className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
+                    >
+                      Preview
+                    </button>
+
+
+                    <button
+                      onClick={() => setInvoicePopup(null)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-8 max-h-[80vh] overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-4 mb-8">
+                    <div className="p-4 bg-slate-50 rounded-2xl border">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">
+                        Total Sale
+                      </p>
+                      <p className="text-lg font-bold">
+                        ₹{calculateTotalSale().toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                      <p className="text-[10px] font-bold text-emerald-500 uppercase">
+                        Received
+                      </p>
+                      <p className="text-lg font-bold text-emerald-700">
+                        ₹{calculateTotalReceived().toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                      <p className="text-[10px] font-bold text-indigo-500 uppercase">
+                        Due
+                      </p>
+                      <p className="text-lg font-bold text-indigo-700">
+                        ₹{calculateTotalDue().toLocaleString()}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="bg-slate-50 p-6 rounded-2xl border">
-                    <h4 className="text-xs font-black uppercase text-slate-600 mb-4">
-                      Quick Payment Record
-                    </h4>
+                  <div className="border rounded-2xl overflow-hidden shadow-sm mb-8">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-800 text-white text-[10px] uppercase tracking-widest">
+                        <tr>
+                          <th className="px-4 py-4 text-left">Date</th>
+                          <th className="px-4 py-4 text-right">Sale</th>
+                          <th className="px-4 py-4 text-right">Receipt</th>
+                          <th className="px-4 py-4 text-right">Balance</th>
+                          <th className="px-4 py-4 text-left">Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {[...invoicePopup.history]
+                          .sort((a, b) =>
+                            getSortableDate(a.date).localeCompare(
+                              getSortableDate(b.date)
+                            )
+                          )
+                          .map((row, i) => (
+                            <tr key={i} className="hover:bg-slate-50">
+                              <td className="px-4 py-4 text-xs whitespace-nowrap">
+                                {row.date}
+                              </td>
+                              <td className="px-4 py-4 text-right font-semibold">
+                                {row.debit > 0
+                                  ? `₹${row.debit.toLocaleString()}`
+                                  : "—"}
+                              </td>
+                              <td className="px-4 py-4 text-right font-semibold text-emerald-600">
+                                {row.credit > 0
+                                  ? `₹${row.credit.toLocaleString()}`
+                                  : "—"}
+                              </td>
+                              <td className="px-4 py-4 text-right font-bold text-slate-900">
+                                ₹{calculateRunningBalance(i).toLocaleString()}
+                              </td>
+                              <td
+                                className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate"
+                                title={row.remarks}
+                              >
+                                {row.remarks || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                    <div className="space-y-3">
-                      <input
-                        type="date"
-                        value={newReceipt.date}
-                        disabled={calculateTotalDue() <= 0}
-                        onChange={(e) =>
-                          setNewReceipt({ ...newReceipt, date: e.target.value })
-                        }
-                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">
+                        General Notes
+                      </label>
+                      <textarea
+                        rows={6}
+                        value={remarks}
+                        onChange={(e) => setRemarks(e.target.value)}
+                        className="w-full px-4 py-3 rounded-2xl border text-sm outline-none bg-slate-50/50"
                       />
+                    </div>
 
-                      <input
-                        type="number"
-                        placeholder="Amount (₹)"
-                        value={newReceipt.amount}
-                        disabled={calculateTotalDue() <= 0}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (val <= calculateTotalDue()) {
-                            setNewReceipt({ ...newReceipt, amount: e.target.value });
+                    <div className="bg-slate-50 p-6 rounded-2xl border">
+                      <h4 className="text-xs font-black uppercase text-slate-600 mb-4">
+                        Quick Payment Record
+                      </h4>
+
+                      <div className="space-y-3">
+                        <input
+                          type="date"
+                          value={newReceipt.date}
+                          disabled={calculateTotalDue() <= 0}
+                          onChange={(e) =>
+                            setNewReceipt({ ...newReceipt, date: e.target.value })
                           }
-                        }}
-                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
-                      />
+                          className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                        />
 
-                      <input
-                        type="text"
-                        placeholder="Remark for this payment"
-                        value={newReceipt.remark}
-                        disabled={calculateTotalDue() <= 0}
-                        onChange={(e) =>
-                          setNewReceipt({ ...newReceipt, remark: e.target.value })
-                        }
-                        className="w-full border rounded-xl px-4 py-2.5 text-sm"
-                      />
+                        <input
+                          type="number"
+                          placeholder="Amount (₹)"
+                          value={newReceipt.amount}
+                          disabled={calculateTotalDue() <= 0}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (val <= calculateTotalDue()) {
+                              setNewReceipt({ ...newReceipt, amount: e.target.value });
+                            }
+                          }}
+                          className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                        />
 
-                      <button
-                        onClick={handleAddReceipt}
-                        disabled={
-                          !newReceipt.amount ||
-                          !newReceipt.date ||
-                          calculateTotalDue() <= 0
-                        }
-                        className="w-full bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg"
-                      >
-                        Save Payment
-                      </button>
+                        <input
+                          type="text"
+                          placeholder="Remark for this payment"
+                          value={newReceipt.remark}
+                          disabled={calculateTotalDue() <= 0}
+                          onChange={(e) =>
+                            setNewReceipt({ ...newReceipt, remark: e.target.value })
+                          }
+                          className="w-full border rounded-xl px-4 py-2.5 text-sm"
+                        />
+
+                        <button
+                          onClick={handleAddReceipt}
+                          disabled={
+                            !newReceipt.amount ||
+                            !newReceipt.date ||
+                            calculateTotalDue() <= 0
+                          }
+                          className="w-full bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg"
+                        >
+                          Save Payment
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-      <footer className="mt-12 py-8 border-t text-center text-slate-500 text-sm">
-        <p>© 2026 R.K Casting & Engineering Works. All rights reserved.</p>
-      </footer>
-    </>
-  );
-}
+          )}
+        </div>
+        <footer className="mt-12 py-8 border-t text-center text-slate-500 text-sm">
+          <p>© 2026 R.K Casting & Engineering Works. All rights reserved.</p>
+        </footer>
+      </>
+    );
+  }
