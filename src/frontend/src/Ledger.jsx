@@ -623,11 +623,11 @@ export default function App() {
         {/* INVOICE POPUP */}
         {invoicePopup && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-              <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-black text-slate-800">
+            <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+              <div className="bg-slate-50 px-4 py-4 md:px-8 md:py-6 border-b flex justify-between items-start md:items-center shrink-0">
+                <div className="mr-2">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                    <h2 className="text-lg md:text-xl font-black text-slate-800">
                       Invoice #{invoicePopup.invoice}
                     </h2>
                     <span
@@ -636,46 +636,46 @@ export default function App() {
                         : "bg-amber-100 text-amber-700"
                         }`}
                     >
-                      {calculateTotalDue() <= 0 ? "Fully Paid" : "Balance Pending"}
+                      {calculateTotalDue() <= 0 ? "Paid" : "Pending"}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-slate-500 mt-1">
+                  <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 break-words line-clamp-2">
                     Client: <span className="text-slate-900">{invoicePopup.client}</span>
                   </p>
                 </div>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setInvoicePopup(null)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-xl"
+                    className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-200 hover:bg-red-100 transition-colors text-lg md:text-xl"
                   >
                     &times;
                   </button>
                 </div>
               </div>
 
-              <div className="p-8 max-h-[80vh] overflow-y-auto">
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div className="p-4 bg-slate-50 rounded-2xl border">
+              <div className="p-4 md:p-8 overflow-y-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+                  <div className="p-3 md:p-4 bg-slate-50 rounded-2xl border">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">
                       Total Sale
                     </p>
-                    <p className="text-lg font-bold">
+                    <p className="text-base md:text-lg font-bold">
                       ₹{calculateTotalSale().toLocaleString()}
                     </p>
                   </div>
-                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <div className="p-3 md:p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                     <p className="text-[10px] font-bold text-emerald-500 uppercase">
                       Received
                     </p>
-                    <p className="text-lg font-bold text-emerald-700">
+                    <p className="text-base md:text-lg font-bold text-emerald-700">
                       ₹{calculateTotalReceived().toLocaleString()}
                     </p>
                   </div>
-                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                  <div className="p-3 md:p-4 bg-indigo-50 rounded-2xl border border-indigo-100 col-span-2 sm:col-span-1">
                     <p className="text-[10px] font-bold text-indigo-500 uppercase">
                       Due
                     </p>
-                    <p className="text-lg font-bold text-indigo-700">
+                    <p className="text-base md:text-lg font-bold text-indigo-700">
                       ₹{calculateTotalDue().toLocaleString()}
                     </p>
                   </div>
