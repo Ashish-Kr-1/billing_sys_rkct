@@ -314,12 +314,12 @@ export default function QuotationForm({ initialData }) {
                     </div>
 
                 </div>
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <input
                         type="text"
                         name="QuotationNo"
                         placeholder="Quotation Number "
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.QuotationNo}
                         onChange={handleChange}
                         readOnly
@@ -327,21 +327,18 @@ export default function QuotationForm({ initialData }) {
                     <input
                         type="text"
                         name="TrasnportBy"
-                        placeholder=" Trasnport By"
-                        className="border p-2 rounded"
+                        placeholder="Transport By"
+                        className="border p-2 rounded w-full"
                         value={quotation.TrasnportBy}
                         onChange={handleChange}
                     />
-                    <div className="flex flex-col md:flex-row md:justify-around md:items-center border gap-2 md:gap-4">
-                        <h1 className="font-bold font-['Rubik']">
-                            Quotation Date
-                        </h1>
-
+                    <div className="flex flex-col border rounded p-1">
+                        <label className="text-xs font-bold text-gray-500 ml-1">Quotation Date</label>
                         <input
                             type="date"
                             name="QuotationDate"
                             placeholder="Quotation Date"
-                            className="w-full md:w-auto rounded px-2 py-1"
+                            className="w-full rounded px-1 py-1 outline-none"
                             value={quotation.QuotationDate}
                             onChange={handleChange}
                         />
@@ -351,7 +348,7 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="VehicleNo"
                         placeholder="Vehicle Number"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.VehicleNo}
                         onChange={handleChange}
                     />
@@ -359,7 +356,7 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="PlaceofSupply"
                         placeholder="Place of Supply"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.PlaceofSupply}
                         onChange={handleChange}
                     />
@@ -367,7 +364,7 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="EwayBillNo"
                         placeholder="Eway Bill Number"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.EwayBillNo}
                         onChange={handleChange}
                     />
@@ -375,7 +372,7 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="PONo"
                         placeholder="PO Number"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.PONo}
                         onChange={handleChange}
                     />
@@ -383,44 +380,37 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="VendorCode"
                         placeholder="Vendor Code"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.VendorCode}
                         onChange={handleChange}
                     />
-                    <div className="flex flex-col md:flex-row md:justify-around md:items-center border gap-2 md:gap-4">
-                        <h1 className="font-bold font-['Rubik']">
-                            PO Date
-                        </h1>
-
+                    <div className="flex flex-col border rounded p-1">
+                        <label className="text-xs font-bold text-gray-500 ml-1">PO Date</label>
                         <input
                             type="date"
                             name="PODate"
                             placeholder="PO Date"
-                            className="w-full md:w-auto p-2 rounded "
+                            className="w-full rounded px-1 py-1 outline-none"
                             value={quotation.PODate}
                             onChange={handleChange}
                         />
                     </div>
 
-                    <div className="flex flex-wrap md:flex-nowrap items-center border gap-2 md:gap-4">
-                        <h1 className="font-bold font-['Rubik']">
-                            Gatepass/Challan No.
-                        </h1>
-
+                    <div className="flex flex-col sm:flex-row gap-2 sm:col-span-2 lg:col-span-1 border rounded p-1">
                         <input
                             type="text"
                             name="ChallanNo"
                             placeholder="Challan Number"
-                            className="flex-1 min-w-[140px] p-2 rounded "
+                            className="flex-1 w-full outline-none p-1"
                             value={quotation.ChallanNo}
                             onChange={handleChange}
                         />
-
+                        <div className="w-px bg-gray-300 hidden sm:block"></div>
                         <input
                             type="date"
                             name="ChallanDate"
                             placeholder="Challan Date"
-                            className="flex-1 min-w-[140px] p-2 rounded "
+                            className="flex-1 w-full outline-none p-1"
                             value={quotation.ChallanDate}
                             onChange={handleChange}
                         />
@@ -446,11 +436,11 @@ export default function QuotationForm({ initialData }) {
                     </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <input
                         name="clientName"
                         placeholder="Client Name"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.clientName}
                         onChange={handleChange}
                     />
@@ -458,7 +448,7 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="GSTIN"
                         placeholder="GSTIN Number"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.GSTIN}
                         onChange={handleChange}
                     />
@@ -471,12 +461,12 @@ export default function QuotationForm({ initialData }) {
                     onChange={handleChange}
                 />
                 <h1 className="text-2xl mt-3 mb-3 font-bold ">Ship To Party</h1>
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <input
                         type="text"
                         name="clientName2"
                         placeholder="Client Name"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.clientName2}
                         onChange={handleChange}
                     />
@@ -484,7 +474,7 @@ export default function QuotationForm({ initialData }) {
                         type="text"
                         name="GSTIN2"
                         placeholder="GSTIN Number"
-                        className="border p-2 rounded"
+                        className="border p-2 rounded w-full"
                         value={quotation.GSTIN2}
                         onChange={handleChange}
                     />
@@ -502,50 +492,65 @@ export default function QuotationForm({ initialData }) {
                 <h2 className="text-2xl mt-2 font-semibold mb-2">Items</h2>
 
                 {quotation.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-4 mb-3">
-                        <select
-                            className="border p-2 rounded"
-                            value={item.item_id || ""}
-                            onChange={(e) => handleItemSelect(index, e.target.value)}
-                        >
-                            <option value="">-- Select Item --</option>
-                            {itemsList.map(it => (
-                                <option key={it.item_id} value={it.item_id}>
-                                    {it.item_name}
-                                </option>
-                            ))}
-                        </select>
+                    <div key={index} className="grid grid-cols-2 sm:grid-cols-12 gap-3 mb-4 p-3 border rounded-lg sm:border-none sm:p-0 bg-gray-50 sm:bg-transparent">
+                        <div className="col-span-2 sm:col-span-4">
+                            <label className="block text-xs text-gray-500 sm:hidden mb-1">Item Name</label>
+                            <select
+                                className="border p-2 rounded w-full"
+                                value={item.item_id || ""}
+                                onChange={(e) => handleItemSelect(index, e.target.value)}
+                            >
+                                <option value="">-- Select Item --</option>
+                                {itemsList.map(it => (
+                                    <option key={it.item_id} value={it.item_id}>
+                                        {it.item_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                        <input
-                            placeholder="HSN Code"
-                            className="border p-2 px-3.5 rounded"
-                            value={item.HSNCode}
-                            onChange={(e) =>
-                                handleItemChange(index, "HSNCode", e.target.value)
-                            }
-                        />
-                        <input
-                            type="number"
-                            className="border p-2 rounded"
-                            placeholder="Quantity"
-                            value={item.quantity}
-                            min={1}
-                            onChange={(e) =>
-                                handleItemChange(index, "quantity", Number(e.target.value))
-                            }
-                        />
-                        <input
-                            type="number"
-                            className="border p-2 rounded"
-                            placeholder="Price"
-                            value={item.price}
-                            min={0}
-                            onChange={(e) =>
-                                handleItemChange(index, "price", Number(e.target.value))
-                            }
-                        />
-                        <div className="flex items-center mr-16">
-                            <Button color="red" text='Remove' onClick={() => removeItem(index)} className="" />
+                        <div className="col-span-1 sm:col-span-2">
+                            <label className="block text-xs text-gray-500 sm:hidden mb-1">HSN</label>
+                            <input
+                                placeholder="HSN Code"
+                                className="border p-2 rounded w-full"
+                                value={item.HSNCode}
+                                onChange={(e) =>
+                                    handleItemChange(index, "HSNCode", e.target.value)
+                                }
+                            />
+                        </div>
+
+                        <div className="col-span-1 sm:col-span-2">
+                            <label className="block text-xs text-gray-500 sm:hidden mb-1">Quantity</label>
+                            <input
+                                type="number"
+                                className="border p-2 rounded w-full"
+                                placeholder="Qty"
+                                value={item.quantity}
+                                min={1}
+                                onChange={(e) =>
+                                    handleItemChange(index, "quantity", Number(e.target.value))
+                                }
+                            />
+                        </div>
+
+                        <div className="col-span-1 sm:col-span-2">
+                            <label className="block text-xs text-gray-500 sm:hidden mb-1">Price</label>
+                            <input
+                                type="number"
+                                className="border p-2 rounded w-full"
+                                placeholder="Price"
+                                value={item.price}
+                                min={0}
+                                onChange={(e) =>
+                                    handleItemChange(index, "price", Number(e.target.value))
+                                }
+                            />
+                        </div>
+
+                        <div className="col-span-1 sm:col-span-2 flex items-end">
+                            <Button color="red" text='Remove' onClick={() => removeItem(index)} className="w-full sm:w-auto h-[42px]" />
                         </div>
                     </div>
                 ))}

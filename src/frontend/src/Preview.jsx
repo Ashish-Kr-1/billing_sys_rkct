@@ -147,17 +147,22 @@ export default function Preview() {
         </div>
       ) : (
         <>
-          <InvoiceTemplate
-            invoice={invoice}
-            subtotalAmount={subtotalAmount}
-            totalAmount={totalAmount}
-            sgst={sgst}
-            cgst={cgst}
-            companyConfig={companyConfig}
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-8 py-4 flex justify-center gap-4 shadow-lg z-50">
+          <div className="overflow-auto pb-32">
+            <div className="min-w-[1024px] flex justify-center">
+              <InvoiceTemplate
+                invoice={invoice}
+                subtotalAmount={subtotalAmount}
+                totalAmount={totalAmount}
+                sgst={sgst}
+                cgst={cgst}
+                companyConfig={companyConfig}
+              />
+            </div>
+          </div >
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-4 flex flex-wrap justify-center gap-2 md:gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50">
             <button
-              className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition-colors"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition-colors text-sm"
               onClick={() => navigate("/Invoice", {
                 state: {
                   invoice,
@@ -175,29 +180,27 @@ export default function Preview() {
 
             <button
               onClick={() => saveInvoiceToDB()}
-              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm"
             >
               <span>Save Invoice</span>
             </button>
 
             <button
               onClick={downloadPDF}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm"
             >
               <span>Download PDF</span>
             </button>
 
-            <div className="w-px bg-slate-300 mx-2"></div>
+            <div className="w-px bg-slate-300 mx-1 hidden md:block"></div>
 
             <button
-              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-md transition-colors"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-md transition-colors text-sm"
               onClick={() => navigate("/Invoice")}
             >
-              Create New
+              New
             </button>
           </div>
-          {/* Add padding to bottom of page so buttons don't cover content */}
-          <div className="h-24"></div>
         </>
       )}
     </div>

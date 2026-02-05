@@ -681,7 +681,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="border rounded-2xl overflow-hidden shadow-sm mb-8">
+                <div className="border rounded-2xl overflow-hidden overflow-x-auto shadow-sm mb-8">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-800 text-white text-[10px] uppercase tracking-widest">
                       <tr>
