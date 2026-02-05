@@ -812,7 +812,7 @@ async function getInvoiceDetailsHandler(req, res) {
 
     const transaction = transactions[0];
 
-    // Fetch invoice_details
+    // Fetch invoice_detail
     const [invoiceDetails] = await req.db.query(
       'SELECT * FROM invoice_details WHERE invoice_no = ?',
       [invoiceNo]
