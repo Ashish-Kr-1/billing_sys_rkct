@@ -32,7 +32,7 @@ function computeKPIs(data = null) {
       topParties: [], topItems: [], stateData: [],
       interstateTotal: 0, intrastate: 0,
       totalQuotations: 0, convertedQuotations: 0, quotationConversionRate: "0.0",
-      companyStats: {}, companyProductBreakdown: [], companyWiseTopItems: [], companyWiseItemKeys: [],
+      companyStats: {}, clientPerformance: [], companyProductBreakdown: [], companyWiseTopItems: [], companyWiseItemKeys: [],
       monthlyData: [], monthlyStatus: [], gstPieData: [], quotationMonthly: [], recentTransactions: []
     };
   }
@@ -110,19 +110,32 @@ function computeKPIs(data = null) {
   const totalInvoices = enrichedTransactions.length;
   const avgInvoiceValue = totalRevenue / (totalInvoices || 1);
 
-  // KPI-11–13: Party Health
-  const partyRevenue = {};
+  // KPI-11–13: Party Health & Performance
+  const partyStatsDetails = {};
   enrichedTransactions.forEach(t => {
-    partyRevenue[t.party_name] = (partyRevenue[t.party_name] || 0) + t.sell_amount;
+    const name = t.party_name;
+    if (!partyStatsDetails[name]) {
+      partyStatsDetails[name] = { revenue: 0, collected: 0, count: 0 };
+    }
+    partyStatsDetails[name].revenue += t.sell_amount;
+    partyStatsDetails[name].collected += t.credit_amount;
+    partyStatsDetails[name].count += 1;
   });
-  const topParties = Object.entries(partyRevenue)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([name, val]) => ({
+
+  const clientPerformance = Object.entries(partyStatsDetails)
+    .map(([name, d]) => ({
       name,
-      value: val,
-      pct: totalRevenue > 0 ? ((val / totalRevenue) * 100).toFixed(1) : "0.0"
-    }));
+      ...d,
+      pending: d.revenue - d.collected,
+      efficiency: d.revenue > 0 ? (d.collected / d.revenue) * 100 : 0
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const topParties = clientPerformance.slice(0, 6).map(p => ({
+    name: p.name,
+    value: p.revenue,
+    pct: totalRevenue > 0 ? ((p.revenue / totalRevenue) * 100).toFixed(1) : "0.0"
+  }));
 
   // KPI-14–16: Item Performance
   const itemStats = {};
@@ -226,7 +239,7 @@ function computeKPIs(data = null) {
     topParties, topItems, stateData,
     interstateTotal, intrastate,
     totalQuotations, convertedQuotations, quotationConversionRate,
-    companyStats, companyProductBreakdown: [], companyWiseTopItems, companyWiseItemKeys,
+    companyStats, clientPerformance, companyProductBreakdown: [], companyWiseTopItems, companyWiseItemKeys,
     monthlyData, monthlyStatus, gstPieData, quotationMonthly, recentTransactions
   };
 }
@@ -452,34 +465,38 @@ const OverviewTab = ({ KPIs }) => (
       </CardShell>
     </div>
 
-    {/* Recent Transactions Table */}
+    {/* Company / Client Performance */}
     <CardShell>
-      <SectionTitle icon={FileText}>Recent Transactions</SectionTitle>
+      <SectionTitle icon={Briefcase}>Company Wise Performance</SectionTitle>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr style={{ background: "#f8fafc" }}>
-              {["Invoice", "Date", "Party", "Amount", "GST %", "Status"].map(h => (
+              {["Client / Company", "Invoices", "Total Revenue", "Collected", "Pending", "Efficiency"].map(h => (
                 <th key={h} className="px-4 py-3 text-[9px] font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {KPIs.recentTransactions.map((t, i) => (
+            {(KPIs.clientPerformance || []).slice(0, 10).map((client, i) => (
               <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
-                <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{t.invoice_no}</td>
-                <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{new Date(t.transaction_date).toLocaleDateString()}</td>
-                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: "#374151" }}>{t.party_name?.split(" ").slice(0, 2).join(" ")}</td>
-                <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{fmt(t.sell_amount)}</td>
-                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.blue }}>{t.gst_percentage}%</td>
+                <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.primary }}>{client.name}</td>
+                <td className="px-4 py-3 text-[11px]" style={{ color: "#64748b" }}>{client.count}</td>
+                <td className="px-4 py-3 text-[11px] font-bold" style={{ color: COLORS.emerald }}>{fmt(client.revenue)}</td>
+                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.blue }}>{fmt(client.collected)}</td>
+                <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: COLORS.amber }}>{fmt(client.pending)}</td>
                 <td className="px-4 py-3">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
-                    style={{
-                      background: t.status === "Received" ? "#dcfce7" : "#fef3c7",
-                      color: t.status === "Received" ? "#16a34a" : "#d97706"
-                    }}>
-                    {t.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(client.efficiency, 100)}%`,
+                          background: client.efficiency >= 90 ? COLORS.emerald : (client.efficiency >= 50 ? COLORS.blue : COLORS.amber)
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold" style={{ color: "#64748b" }}>{client.efficiency.toFixed(0)}%</span>
+                  </div>
                 </td>
               </tr>
             ))}
