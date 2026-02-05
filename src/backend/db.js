@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 dotenv.config();
+//Check check
 
 // Database configurations for all 3 companies
 const DB_CONFIGS = {
