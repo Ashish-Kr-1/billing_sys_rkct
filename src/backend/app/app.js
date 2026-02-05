@@ -179,7 +179,10 @@ async function partyDetails(req, res) {
         party_name,
         gstin_no,
         billing_address,
-        shipping_address
+        shipping_address,
+        vendore_code,
+        mobile_no,
+        contact_person
       FROM parties
       WHERE party_id = ?
       `,

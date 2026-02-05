@@ -165,6 +165,7 @@ export default function InvoiceForm({ initialData }) {
           clientAddress2: p.shipping_address,
           GSTIN: p.gstin_no,
           GSTIN2: p.gstin_no,
+          VendorCode: p.vendore_code || ''
         }));
       })
       .catch(err => console.error('Error fetching party details:', err));
