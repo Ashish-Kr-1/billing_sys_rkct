@@ -1,17 +1,16 @@
-
 import express from 'express';
 import {
-    createQuotation,
+    createQuotationHandler,
+    getNextQuotationNumber,
     getAllQuotations,
-    getQuotationById,
     deleteQuotation
 } from '../controllers/quotationController.js';
 
 const router = express.Router();
 
-router.post('/', createQuotation);
+router.post('/', createQuotationHandler);
+router.get('/quotationNo', getNextQuotationNumber);
 router.get('/', getAllQuotations);
-router.get('/:id', getQuotationById);
 router.delete('/:id', deleteQuotation);
 
 export default router;

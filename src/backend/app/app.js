@@ -5,8 +5,7 @@ import { dbManager } from "../db.js";
 import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
-import { authRouter, companyRouter, analyticsRouter } from '../routes/index.js';
-import quotationRouter from '../routes/quotationRoutes.js';
+import { authRouter, companyRouter, analyticsRouter, quotationRouter } from '../routes/index.js';
 import { authenticateUser } from '../middleware/auth.js';
 
 dotenv.config()
@@ -67,7 +66,7 @@ app.use(authenticateUser);
 
 app.use('/companies', companyRouter);
 app.use('/analytics', analyticsRouter);
-app.use('/quotations', quotationRouter);
+app.use('/createQuotation', quotationRouter); // Mounting at /createQuotation to match frontend ease, or cleaner /quotations
 
 // Middleware to select database pool based on Company ID
 app.use((req, res, next) => {

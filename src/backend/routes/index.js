@@ -60,4 +60,6 @@ analyticsRouter.get('/comparison', getAllCompaniesAnalytics);
 analyticsRouter.get('/:companyId/data', getCompanyAnalytics);
 analyticsRouter.get('/:companyId/summary', getCompanySummary);
 
-export { authRouter, companyRouter, analyticsRouter };
+import quotationRouter from './quotationRoutes.js';
+
+export { authRouter, companyRouter, analyticsRouter, quotationRouter };

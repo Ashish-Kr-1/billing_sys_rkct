@@ -205,15 +205,10 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   const interstateTotal = enrichedTransactions.filter(t => t.igst_amount > 0).reduce((s, t) => s + t.sell_amount, 0);
   const intrastate = totalRevenue - interstateTotal;
 
-  // KPI-19–20: Sales Register / Quotations
-  const RAW_QUOTATIONS = data?.quotations || [];
-  const totalQuotations = RAW_QUOTATIONS.length;
-  const convertedCount = RAW_QUOTATIONS.filter(q => q.status === 'Converted').length;
-  const convertedQuotations = convertedCount;
-  const quotationConversionRate = totalQuotations > 0 ? ((convertedCount / totalQuotations) * 100).toFixed(1) : "0.0";
-  const quotationValue = RAW_QUOTATIONS.reduce((s, q) => s + Number(q.total_amount || 0), 0);
-  const convertedValue = RAW_QUOTATIONS.filter(q => q.status === 'Converted').reduce((s, q) => s + Number(q.total_amount || 0), 0);
-  const lostQuotationValue = quotationValue - convertedValue;
+  // KPI-19–20: Sales Register (not available in current data)
+  const totalQuotations = 0;
+  const convertedQuotations = 0;
+  const quotationConversionRate = "0.0";
 
   // KPI-21–22: Company Performance (single company in current context)
   const companyStats = {};
@@ -302,7 +297,7 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     totalInvoices, avgInvoiceValue,
     topParties, topItems, stateData,
     interstateTotal, intrastate,
-    totalQuotations, convertedQuotations, quotationConversionRate, quotationValue, convertedValue, lostQuotationValue,
+    totalQuotations, convertedQuotations, quotationConversionRate,
     companyStats, clientPerformance, companyProductBreakdown: [], companyWiseTopItems, companyWiseItemKeys,
     monthlyData, monthlyStatus, gstPieData, quotationMonthly, recentTransactions
   };
@@ -406,8 +401,7 @@ const tabs = [
   { id: "gst", label: "GST Health", icon: Layers },
   { id: "parties", label: "Parties", icon: Users },
   { id: "products", label: "Products", icon: Package },
-  { id: "geography", label: "Geography", icon: MapPin },
-  { id: "quotations", label: "Quotations", icon: FileText }
+  { id: "geography", label: "Geography", icon: MapPin }
 ];
 
 // ============================================================

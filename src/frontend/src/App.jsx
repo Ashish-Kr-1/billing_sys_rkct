@@ -18,6 +18,7 @@ import Preview from "./Preview.jsx";
 import Ledger from "./Ledger.jsx";
 import Analytics from "./Analytics.jsx";
 import Quotation from "./Quotation.jsx";
+import QuotationPreview from "./QuotationPreview.jsx";
 
 function App() {
   return (
@@ -72,6 +73,7 @@ function App() {
               <Route path='/Quotation' element={<Quotation />} />
               <Route path='/Create_Party' element={<Create_Party />} />
               <Route path='/Preview' element={<Preview />} />
+              <Route path='/QuotationPreview' element={<QuotationPreview />} />
               <Route path='/Ledger' element={<Ledger />} />
             </Route>
 
