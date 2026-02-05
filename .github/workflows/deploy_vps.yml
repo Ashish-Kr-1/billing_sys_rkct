@@ -19,4 +19,11 @@ jobs:
           script: |
              cd /var/www/billing_sys_rkct
              git pull origin main
+             
+             # Rebuild and restart the Docker containers
+             docker compose down
              docker compose up -d --build
+             
+             # Apply any Nginx configuration changes
+             chmod +x scripts/setup_nginx_proxy.sh
+             sudo ./scripts/setup_nginx_proxy.sh
