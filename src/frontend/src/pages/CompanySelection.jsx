@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
 import { api, handleApiResponse } from '../config/apiClient';
-import { Building2, Factory, Globe, ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import DefaultLogo from '../assets/logo.png';
+import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 
-const COMPANY_ICONS = {
-    1: Factory,
-    2: Building2,
-    3: Globe
-};
+
 
 const COMPANY_COLORS = {
     1: { bg: 'from-orange-500 to-red-500', hover: 'hover:from-orange-600 hover:to-red-600' },
@@ -96,7 +94,6 @@ export default function CompanySelection() {
             {/* Company Cards Grid */}
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {companies.map((company) => {
-                    const Icon = COMPANY_ICONS[company.id] || Building2;
                     const colors = COMPANY_COLORS[company.id] || COMPANY_COLORS[1];
                     const isConnected = company.connectionStatus === 'connected';
                     const hasError = company.connectionStatus === 'error';
@@ -118,8 +115,14 @@ export default function CompanySelection() {
                                 }`}
                         >
                             {/* Gradient Header */}
-                            <div className={`h-32 bg-gradient-to-br ${colors.bg} ${isConnected ? colors.hover : ''} transition-all duration-300 flex items-center justify-center relative`}>
-                                <Icon className="w-16 h-16 text-white opacity-90" />
+                            <div className={`h-40 bg-gradient-to-br ${colors.bg} ${isConnected ? colors.hover : ''} transition-all duration-300 flex items-center justify-center relative`}>
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md p-3">
+                                    <img
+                                        src={company.id === 3 ? GlobalBharatLogo : DefaultLogo}
+                                        alt={company.name}
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
 
                                 {/* Connection Status Badge */}
                                 <div className={`absolute top-3 right-3 ${statusBg} rounded-full px-3 py-1 flex items-center gap-1.5`}>

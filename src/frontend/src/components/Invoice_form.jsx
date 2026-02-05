@@ -262,31 +262,31 @@ export default function InvoiceForm({ initialData }) {
               <img
                 src={getCompanyLogo()}
                 alt={companyConfig?.company_name || "Company Logo"}
-                className="w-28 flex sm:w-40 h-auto md:mr-40"
+                className="w-28 flex sm:w-40 h-auto"
               />
 
               {/* Company Details */}
               <div className="leading-tight text-center sm:text-left">
-                <h1 className="text-xl text-center sm:text-2xl font-bold underline">
+                <h1 className="text-xl text-center sm:text-left sm:text-2xl font-bold underline">
                   Tax Invoice
                 </h1>
 
-                <h2 className="text-xl sm:text-2xl font-bold mt-1 lg:ml-32">
+                <h2 className="text-xl sm:text-2xl font-bold mt-1">
                   {companyConfig?.company_name}
                 </h2>
 
-                <p className="text-xs text-center sm:text-sm">
+                <p className="text-xs text-center sm:text-left sm:text-sm">
                   {companyConfig?.company_address}
                 </p>
 
-                <p className="font-semibold text-xs text-center sm:text-sm mt-1">
+                <p className="font-semibold text-xs text-center sm:text-left sm:text-sm mt-1">
                   Mobile No : {companyConfig?.mobile_no}
                 </p>
-                <p className="font-semibold  text-center text-xs sm:text-sm">
+                <p className="font-semibold text-center sm:text-left text-xs sm:text-sm">
                   Email Id : {companyConfig?.email}
                 </p>
                 {companyConfig?.cin_no && (
-                  <p className="font-semibold text-xs text-center sm:text-sm">
+                  <p className="font-semibold text-xs text-center sm:text-left sm:text-sm">
                     CIN No. - {companyConfig.cin_no}
                   </p>
                 )}
