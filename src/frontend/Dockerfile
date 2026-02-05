@@ -4,6 +4,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
+# Force cache invalidation for the build step
+ARG CACHEBUST=1
 COPY . .
 RUN npm run build
 
