@@ -83,6 +83,7 @@ export default function QuotationPreview() {
                 vehicle_no: quotation.VehicleNo,
                 eway_bill_no: quotation.EwayBillNo,
                 vendor_code: quotation.VendorCode,
+                po_no: quotation.PONo,
                 po_date: quotation.PODate,
                 challan_no: quotation.ChallanNo,
                 challan_date: quotation.ChallanDate,

@@ -658,7 +658,7 @@ export default function QuotationForm({ initialData }) {
                 </div>
 
                 <div className=" max-w-3xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
-                    <button className="w-full md:w-64 block mx-auto rounded-md font-bold cursor-progress py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors" onClick={() => navigate("/QuotationPreview", { state: { quotation, subtotalAmount, totalAmount, sgst, cgst, } })}> Preview </button>
+                    <button className="w-full md:w-64 block mx-auto rounded-md font-bold cursor-progress py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors" onClick={() => navigate("/QuotationPreview", { state: { quotation, subtotalAmount, totalAmount, sgst, cgst, isEditMode: initialData?.isEditMode, company_id: selectedCompany?.id } })}> Preview </button>
                 </div>
             </div>
         </div>
