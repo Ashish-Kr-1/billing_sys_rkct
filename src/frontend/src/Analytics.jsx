@@ -129,13 +129,15 @@ function computeKPIs(data = null) {
       pending: d.revenue - d.collected,
       efficiency: d.revenue > 0 ? (d.collected / d.revenue) * 100 : 0
     }))
-    .sort((a, b) => b.revenue - a.revenue);
+    .sort((a, b) => b.efficiency - a.efficiency || b.revenue - a.revenue);
 
-  const topParties = clientPerformance.slice(0, 6).map(p => ({
-    name: p.name,
-    value: p.revenue,
-    pct: totalRevenue > 0 ? ((p.revenue / totalRevenue) * 100).toFixed(1) : "0.0"
-  }));
+  const topParties = [...clientPerformance]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 6).map(p => ({
+      name: p.name,
+      value: p.revenue,
+      pct: totalRevenue > 0 ? ((p.revenue / totalRevenue) * 100).toFixed(1) : "0.0"
+    }));
 
   // KPI-14–16: Item Performance
   const itemStats = {};
@@ -900,12 +902,6 @@ export default function App() {
                 <p className="text-[10px] font-semibold opacity-75">Analytics Dashboard</p>
                 <p className="text-lg font-bold">{selectedCompany.name}</p>
               </div>
-              <div className="text-right">
-                <p className="text-xs opacity-60">Health Score</p>
-                <p className="text-2xl font-black" style={{ color: KPIs.healthScore >= 75 ? "#34d399" : KPIs.healthScore >= 50 ? "#fbbf24" : "#f87171" }}>
-                  {KPIs.healthScore}/100
-                </p>
-              </div>
             </div>
           </div>
 
@@ -916,7 +912,7 @@ export default function App() {
               </div>
               <div>
                 <h1 className="text-[15px] font-black">Business Intelligence</h1>
-                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>Actionable insights • FY 2024</p>
+                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>Actionable insights </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -929,9 +925,6 @@ export default function App() {
                 <RefreshCw size={13} color="#14b8a6" className={refreshing ? "animate-spin" : ""} />
                 <span className="text-[11px] font-semibold">{refreshing ? "Refreshing..." : "Refresh"}</span>
               </button>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
-                <Bell size={15} color="rgba(255,255,255,0.7)" />
-              </div>
             </div>
           </div>
         </div>
