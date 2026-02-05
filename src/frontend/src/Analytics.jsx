@@ -205,10 +205,15 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   const interstateTotal = enrichedTransactions.filter(t => t.igst_amount > 0).reduce((s, t) => s + t.sell_amount, 0);
   const intrastate = totalRevenue - interstateTotal;
 
-  // KPI-19–20: Sales Register (not available in current data)
-  const totalQuotations = 0;
-  const convertedQuotations = 0;
-  const quotationConversionRate = "0.0";
+  // KPI-19–20: Quotations Analysis
+  const QUOTATIONS = data?.quotations || [];
+  const totalQuotations = QUOTATIONS.length;
+  const convertedQuotations = QUOTATIONS.filter(q => q.status === 'Converted').length;
+  const quotationConversionRate = totalQuotations > 0 ? ((convertedQuotations / totalQuotations) * 100).toFixed(1) : "0.0";
+  const quotationValue = QUOTATIONS.reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
+  const convertedValue = QUOTATIONS.filter(q => q.status === 'Converted').reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
+  const lostQuotationValue = quotationValue - convertedValue;
+
 
   // KPI-21–22: Company Performance (single company in current context)
   const companyStats = {};
@@ -221,7 +226,6 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     };
   }
 
-  // Monthly trends
   // Monthly trends (Dynamic based on selected range)
   const rangeStart = monthRange.start;
   const rangeEnd = monthRange.end;
@@ -244,7 +248,6 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     };
   });
 
-  // Monthly status breakdown
   // Monthly status breakdown
   const monthlyStatus = Array.from({ length: monthCount }, (_, i) => {
     const m = rangeStart + i;
@@ -270,17 +273,32 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     name: `${rate}%`, value: count
   }));
 
-  // Quotation monthly conversion (not available)
-  // Quotation monthly conversion
+  // Quotation monthly trends
   const quotationMonthly = Array.from({ length: monthCount }, (_, i) => {
     const m = rangeStart + i;
+    const monthQs = QUOTATIONS.filter(q => {
+      const d = new Date(q.quotation_date);
+      return !isNaN(d) && d.getMonth() === m;
+    });
+
+    const totalCount = monthQs.length;
+    const convertedCount = monthQs.filter(q => q.status === 'Converted').length;
+    const totalVal = monthQs.reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
+
     return {
       month: ALL_MONTHS[m],
-      total: 0,
-      converted: 0,
-      rate: 0
+      total: totalCount,
+      converted: convertedCount,
+      value: Math.round(totalVal / 1000)
     };
   });
+
+  // Quotation Status Distribution
+  const quotationStatusData = [
+    { name: "Converted", value: convertedQuotations, color: COLORS.emerald },
+    { name: "Pending", value: QUOTATIONS.filter(q => q.status === 'Pending').length, color: COLORS.amber },
+    { name: "Rejected", value: QUOTATIONS.filter(q => q.status === 'Rejected').length, color: COLORS.red }
+  ].filter(d => d.value > 0);
 
   // Recent transactions (last 8)
   const recentTransactions = [...enrichedTransactions]
@@ -297,9 +315,9 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     totalInvoices, avgInvoiceValue,
     topParties, topItems, stateData,
     interstateTotal, intrastate,
-    totalQuotations, convertedQuotations, quotationConversionRate,
+    totalQuotations, convertedQuotations, quotationConversionRate, quotationValue, convertedValue, lostQuotationValue,
     companyStats, clientPerformance, companyProductBreakdown: [], companyWiseTopItems, companyWiseItemKeys,
-    monthlyData, monthlyStatus, gstPieData, quotationMonthly, recentTransactions
+    monthlyData, monthlyStatus, gstPieData, quotationMonthly, quotationStatusData, recentTransactions
   };
 }
 
@@ -459,7 +477,7 @@ const OverviewTab = ({ KPIs, comparisonData, monthRange }) => {
   return (
     <div>
       {/* Top KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard title="Total Revenue" value={fmt(KPIs.totalRevenue)} icon={DollarSign} color={COLORS.emerald} subtitle={`${KPIs.totalInvoices} invoices`} />
         <MetricCard title="Collected" value={fmt(KPIs.totalCredited)} icon={Activity} color={COLORS.blue} subtitle={`${KPIs.collectionRate}% rate`} />
         <MetricCard title="Pending" value={fmt(KPIs.pendingAmount)} icon={Clock} color={COLORS.amber} trendLabel="Payment pending" />
@@ -632,7 +650,7 @@ const OverviewTab = ({ KPIs, comparisonData, monthRange }) => {
 
 const GSTTab = ({ KPIs }) => (
   <div>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total GST" value={fmt(KPIs.totalGST)} icon={Layers} color={COLORS.purple} subtitle="All components" />
       <MetricCard title="IGST (Interstate)" value={fmt(KPIs.totalIGST)} icon={MapPin} color={COLORS.sky} subtitle={KPIs.totalGST > 0 ? `${((KPIs.totalIGST / KPIs.totalGST) * 100).toFixed(0)}% of total` : "N/A"} />
       <MetricCard title="CGST + SGST" value={fmt(KPIs.totalCGST_SGST)} icon={Layers} color={COLORS.blue} subtitle={KPIs.totalGST > 0 ? `${((KPIs.totalCGST_SGST / KPIs.totalGST) * 100).toFixed(0)}% of total` : "N/A"} />
@@ -691,7 +709,7 @@ const GSTTab = ({ KPIs }) => (
 
 const PartiesTab = ({ KPIs, PARTIES }) => (
   <div>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Parties" value={PARTIES.length} icon={Users} color={COLORS.blue} subtitle="Active customers" />
       <MetricCard title="Top Party Revenue" value={fmt(KPIs.topParties[0]?.value || 0)} icon={Users} color={COLORS.emerald} subtitle={KPIs.topParties[0]?.name || "N/A"} />
       <MetricCard title="Top 3 Concentration" value={`${(KPIs.topParties.slice(0, 3).reduce((s, p) => s + parseFloat(p.pct || 0), 0)).toFixed(0)}%`} icon={Target} color={COLORS.amber} subtitle="Revenue share" />
@@ -750,7 +768,7 @@ const PartiesTab = ({ KPIs, PARTIES }) => (
 const ProductsTab = ({ KPIs, ITEMS, SELL_SUMMARY }) => (
   <div>
     {/* KPI Cards */}
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="Total Items" value={ITEMS.length} icon={Package} color={COLORS.blue} subtitle="Active products" />
       <MetricCard title="Top Item Units" value={KPIs.topItems[0]?.units.toLocaleString() || 0} icon={Package} color={COLORS.emerald} subtitle={KPIs.topItems[0]?.name?.split(" ").slice(0, 2).join(" ") || "N/A"} />
       <MetricCard title="Total Units Sold" value={SELL_SUMMARY.reduce((s, d) => s + parseFloat(d.units_sold || 0), 0).toLocaleString()} icon={Package} color={COLORS.amber} subtitle="All items combined" />
@@ -802,7 +820,7 @@ const ProductsTab = ({ KPIs, ITEMS, SELL_SUMMARY }) => (
 
 const GeographyTab = ({ KPIs }) => (
   <div>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <MetricCard title="States Served" value={KPIs.stateData.length} icon={MapPin} color={COLORS.blue} subtitle="Geographic spread" />
       <MetricCard title="Top State" value={KPIs.stateData[0]?.state || "N/A"} icon={MapPin} color={COLORS.emerald} subtitle={fmt(KPIs.stateData[0]?.value || 0)} />
       <MetricCard title="Interstate Rev" value={fmt(KPIs.interstateTotal)} icon={MapPin} color={COLORS.amber} subtitle={KPIs.totalRevenue > 0 ? `${((KPIs.interstateTotal / KPIs.totalRevenue) * 100).toFixed(0)}% of total` : "N/A"} />
@@ -863,12 +881,67 @@ const GeographyTab = ({ KPIs }) => (
 // ============================================================
 const QuotationsTab = ({ KPIs }) => (
   <div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <MetricCard title="Total Quotations" value={KPIs.totalQuotations} icon={FileText} color={COLORS.blue} subtitle="Generated" />
+      <MetricCard title="Conversion Rate" value={`${KPIs.quotationConversionRate}%`} icon={Target} color={parseFloat(KPIs.quotationConversionRate) > 30 ? COLORS.emerald : COLORS.amber} subtitle="Won vs Total" />
+      <MetricCard title="Total Value" value={fmt(KPIs.quotationValue)} icon={DollarSign} color={COLORS.purple} subtitle="Pipeline value" />
+      <MetricCard title="Converted Value" value={fmt(KPIs.convertedValue)} icon={DollarSign} color={COLORS.emerald} subtitle="Revenue realized" />
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+      <CardShell className="lg:col-span-2">
+        <SectionTitle icon={Activity}>Monthly Quotation Activity</SectionTitle>
+        <div style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={KPIs.quotationMonthly}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => fmt(v)} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
+              <Bar yAxisId="left" dataKey="total" name="Created" fill={COLORS.blue} radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="left" dataKey="converted" name="Converted" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
+              <Line yAxisId="right" type="monotone" dataKey="value" name="Value" stroke={COLORS.purple} strokeWidth={2} dot={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardShell>
+
+      <CardShell>
+        <SectionTitle icon={PieIcon}>Status Distribution</SectionTitle>
+        <div style={{ height: 200 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={KPIs.quotationStatusData} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none">
+                {KPIs.quotationStatusData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v) => v} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="space-y-2 mt-2">
+          {KPIs.quotationStatusData.map((d, i) => (
+            <div key={i} className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
+                <span style={{ color: "#64748b" }}>{d.name}</span>
+              </span>
+              <span className="font-bold" style={{ color: COLORS.primary }}>{d.value}</span>
+            </div>
+          ))}
+        </div>
+      </CardShell>
+    </div>
+
     <div className="grid grid-cols-1 gap-5 mb-5">
       <CardShell>
         <SectionTitle icon={Activity} subtitle="Sales pipeline health indicator">
           Pipeline Performance Summary
         </SectionTitle>
-        <div className="space-y-4 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
           <div className="p-4 rounded-lg" style={{ background: "#dcfce7" }}>
             <p className="text-[10px] font-bold mb-1" style={{ color: "#166534" }}>CONVERTED</p>
             <p className="text-2xl font-black mb-1" style={{ color: COLORS.emerald }}>{KPIs.convertedQuotations}</p>
@@ -876,30 +949,21 @@ const QuotationsTab = ({ KPIs }) => (
           </div>
 
           <div className="p-4 rounded-lg" style={{ background: "#fee2e2" }}>
-            <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST</p>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST / PENDING</p>
             <p className="text-2xl font-black mb-1" style={{ color: COLORS.red }}>{KPIs.totalQuotations - KPIs.convertedQuotations}</p>
-            <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity lost</p>
+            <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity remaining</p>
           </div>
 
           <div className="p-4 rounded-lg" style={{ background: "#dbeafe" }}>
-            <p className="text-[10px] font-bold mb-1" style={{ color: "#1e40af" }}>AVERAGE</p>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#1e40af" }}>AVERAGE VALUE</p>
             <p className="text-2xl font-black mb-1" style={{ color: COLORS.blue }}>
               {fmt(KPIs.quotationValue / (KPIs.totalQuotations || 1))}
             </p>
-            <p className="text-[9px]" style={{ color: "#1e40af" }}>Per quotation value</p>
+            <p className="text-[9px]" style={{ color: "#1e40af" }}>Per quotation</p>
           </div>
         </div>
       </CardShell >
     </div >
-
-    {parseFloat(KPIs.quotationConversionRate) < 50 && KPIs.totalQuotations > 10 && (
-      <div className="mt-5">
-        <InsightBanner
-          type="warning"
-          message="Conversion rate below 50%. Review pricing strategy, follow-up process, and competitor positioning."
-        />
-      </div>
-    )}
   </div >
 );
 

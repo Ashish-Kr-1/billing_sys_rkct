@@ -113,12 +113,27 @@ ss.invoice_no,
     ORDER BY ss.invoice_no DESC`
     );
 
+    // Fetch quotations
+    const quotations = await dbManager.query(
+        companyId,
+        `SELECT
+    quotation_no,
+    quotation_date,
+    party_id,
+    total_amount,
+    status,
+    created_at
+    FROM quotations
+    ORDER BY quotation_date DESC`
+    );
+
     return {
         transactions: transactions || [],
         parties: parties || [],
         items: items || [],
         invoiceDetails: invoiceDetails || [],
-        sellSummary: sellSummary || []
+        sellSummary: sellSummary || [],
+        quotations: quotations || []
     };
 }
 
