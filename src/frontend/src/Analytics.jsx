@@ -129,7 +129,14 @@ function computeKPIs(data = null) {
       pending: d.revenue - d.collected,
       efficiency: d.revenue > 0 ? (d.collected / d.revenue) * 100 : 0
     }))
-    .sort((a, b) => b.efficiency - a.efficiency || b.revenue - a.revenue);
+    .sort((a, b) => {
+      // Ascending Efficiency (0 -> 100) - Show Defaulters First
+      if (a.efficiency !== b.efficiency) {
+        return a.efficiency - b.efficiency;
+      }
+      // Secondary: Descending Revenue
+      return b.revenue - a.revenue;
+    });
 
   const topParties = [...clientPerformance]
     .sort((a, b) => b.revenue - a.revenue)
