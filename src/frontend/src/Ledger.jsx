@@ -444,7 +444,9 @@ export default function App() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 mt-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Financial Ledger</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                Financial Ledger <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200 align-middle">v1.FIX</span>
+              </h1>
               <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Transaction Management</p>
             </div>
           </div>
