@@ -18,9 +18,9 @@ const DB_CONFIGS = {
     2: {
         // RKCASTING ENGINEERING PVT. LTD.
         host: process.env.DB_HOST || 'srv687.hstgr.io',
-        user: 'u971268451_global_billing',
+        user: 'u971268451_work_billing',
         password: process.env.DB_PASSWORD || 'RKbilling@123',
-        database: 'u971268451_GlobalBilling',
+        database: 'u971268451_RkWorkBilling',
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0
@@ -28,9 +28,9 @@ const DB_CONFIGS = {
     3: {
         // Global Bharat
         host: process.env.DB_HOST || 'srv687.hstgr.io',
-        user: 'u971268451_work_billing',
+        user: 'u971268451_global_billing',
         password: process.env.DB_PASSWORD || 'RKbilling@123',
-        database: 'u971268451_RkWorkBilling',
+        database: 'u971268451_GlobalBilling',
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0
@@ -49,13 +49,13 @@ export const COMPANIES = {
         id: 2,
         name: 'RKCASTING ENGINEERING PVT. LTD.',
         shortName: 'RK Engineering',
-        database: 'u971268451_GlobalBilling'
+        database: 'u971268451_RkWorkBilling'
     },
     3: {
         id: 3,
         name: 'Global Bharat',
         shortName: 'Global Bharat',
-        database: 'u971268451_RkWorkBilling'
+        database: 'u971268451_GlobalBilling'
     }
 };
 

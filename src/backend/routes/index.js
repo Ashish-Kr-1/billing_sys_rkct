@@ -14,7 +14,8 @@ import {
     getAllCompanies,
     getCompanyById,
     testCompanyConnection,
-    getCompanyStats
+    getCompanyStats,
+    getCompanyConfig
 } from '../controllers/companyController.js';
 
 // Analytics controllers
@@ -46,6 +47,7 @@ companyRouter.get('/', getAllCompanies);
 companyRouter.get('/:companyId', getCompanyById);
 companyRouter.get('/:companyId/test', testCompanyConnection);
 companyRouter.get('/:companyId/stats', getCompanyStats);
+companyRouter.get('/:companyId/config', getCompanyConfig);
 
 // ============================================================
 // ANALYTICS ROUTES

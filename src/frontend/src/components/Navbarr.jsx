@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
@@ -7,6 +7,7 @@ import {
   FileText, BarChart2, BookOpen, Users
 } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { api, handleApiResponse } from '../config/apiClient.js';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -15,8 +16,18 @@ export default function Navbar() {
   const { selectedCompany } = useCompany();
   const [isOpen, setIsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [companyConfig, setCompanyConfig] = useState(null);
 
   const isActive = (path) => location.pathname === path;
+
+  // Fetch company configuration for branding
+  useEffect(() => {
+    if (selectedCompany) {
+      handleApiResponse(api.get(`/companies/${selectedCompany.id}/config`))
+        .then(data => setCompanyConfig(data.config))
+        .catch(err => console.error('Error fetching company config:', err));
+    }
+  }, [selectedCompany]);
 
   const handleLogout = () => {
     logout();
@@ -37,13 +48,24 @@ export default function Navbar() {
 
           {/* Logo & Brand */}
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/')}>
-            <img className="h-10 w-auto" src={logo} alt="RK Casting" />
             <div className="hidden md:block">
               <h1 className="text-lg font-bold tracking-tight text-white">Billing<span className="text-emerald-500">System</span></h1>
               {selectedCompany && (
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider truncate max-w-[150px]">
-                  {selectedCompany.shortName || selectedCompany.name}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider truncate max-w-[150px]">
+                    {selectedCompany.shortName || selectedCompany.name}
+                  </p>
+                  <span
+                    className="text-[8px] px-1.5 py-0.5 rounded font-bold text-white"
+                    style={{
+                      background: companyConfig?.secondary_color
+                        ? `linear-gradient(135deg, ${companyConfig.primary_color}, ${companyConfig.secondary_color})`
+                        : 'linear-gradient(135deg, #1e293b, #10b981)'
+                    }}
+                  >
+                    C{selectedCompany.id}
+                  </span>
+                </div>
               )}
             </div>
           </div>

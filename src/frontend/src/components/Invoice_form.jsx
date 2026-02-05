@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE } from "../config/api.js";
 import { api, handleApiResponse } from "../config/apiClient.js";
 import { useCompany } from "../context/CompanyContext.jsx";
-import Logo from '../assets/logo.png';
+import DefaultLogo from '../assets/logo.png';
+import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 
 export default function InvoiceForm({ initialData }) {
   const { selectedCompany } = useCompany();
@@ -43,6 +44,7 @@ export default function InvoiceForm({ initialData }) {
   const [parties, setParties] = useState([]);
   const [itemsList, setItemsList] = useState([]);
   const [selectedPartyId, setSelectedPartyId] = useState("");
+  const [companyConfig, setCompanyConfig] = useState(null);
 
 
   //`${API_BASE}/parties`
@@ -58,19 +60,66 @@ export default function InvoiceForm({ initialData }) {
       .catch(err => console.error('Error fetching items:', err));
   }, [selectedCompany]);
 
+  // Fetch company configuration and reset invoice state when company changes
+  useEffect(() => {
+    if (selectedCompany) {
+      console.log('🔄 Company changed to:', selectedCompany);
+
+      // Reset party selection when company changes
+      setSelectedPartyId("");
+
+      handleApiResponse(api.get(`/companies/${selectedCompany.id}/config`))
+        .then(data => {
+          console.log('✅ Company config loaded:', data.config);
+          setCompanyConfig(data.config);
+
+          // Reset and update invoice state with company-specific defaults
+          setInvoice(prev => ({
+            ...prev,
+            GSTIN0: data.config.gstin || '',
+            // Clear party-related fields when changing company
+            clientName: '',
+            clientName2: '',
+            clientAddress: '',
+            clientAddress2: '',
+            GSTIN: '',
+            GSTIN2: '',
+            party_id: ''
+          }));
+        })
+        .catch(err => console.error('Error fetching company config:', err));
+    }
+  }, [selectedCompany]);
+
 
   useEffect(() => {
     console.log(import.meta.env.VITE_API_BASE_URL);
-    handleApiResponse(api.get('/createInvoice/invoiceNo'))
-      .then(data => {
-        setInvoice(prev => ({
-          ...prev,
-          InvoiceNo: data.InvoiceNo
-        }))
-      })
-      .catch(err => console.error('Error fetching invoice number:', err));
+    if (selectedCompany) {
+      handleApiResponse(api.get('/createInvoice/invoiceNo'))
+        .then(data => {
+          console.log('📄 Invoice number:', data.InvoiceNo);
+          setInvoice(prev => ({
+            ...prev,
+            InvoiceNo: data.InvoiceNo
+          }))
+        })
+        .catch(err => console.error('Error fetching invoice number:', err));
+    }
   }, [selectedCompany]);
 
+  // Helper function to get the correct logo based on company
+  const getCompanyLogo = () => {
+    // Company 3 is Global Bharat
+    if (selectedCompany?.id === 3) {
+      return GlobalBharatLogo;
+    }
+    // Check if config has logo_url with global-bharat
+    if (companyConfig?.logo_url?.includes('global-bharat')) {
+      return GlobalBharatLogo;
+    }
+    // Default logo for Company 1 and 2 (RK Casting and RK Engineering)
+    return DefaultLogo;
+  };
 
 
   //HANDLE Select Party from Backend
@@ -214,10 +263,10 @@ export default function InvoiceForm({ initialData }) {
             {/* MAIN ROW */}
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mt-4 ">
 
-              {/* Logo */}
+              {/* Dynamic Logo based on company */}
               <img
-                src={Logo}
-                alt="Company Logo"
+                src={getCompanyLogo()}
+                alt={companyConfig?.company_name || "Company Logo"}
                 className="w-28 flex sm:w-40 h-auto md:mr-40"
               />
 
@@ -228,23 +277,24 @@ export default function InvoiceForm({ initialData }) {
                 </h1>
 
                 <h2 className="text-xl sm:text-2xl font-bold mt-1">
-                  M/S R.K Casting & Engineering Works
+                  {companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}
                 </h2>
 
                 <p className="text-xs text-center sm:text-sm">
-                  Plot No. 125, Khata No.19, Rakuwa No. 05,<br />
-                  Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129
+                  {companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}
                 </p>
 
                 <p className="font-semibold text-xs text-center sm:text-sm mt-1">
-                  Mobile No : +91 6204583192
+                  Mobile No : {companyConfig?.mobile_no || '+91 6204583192'}
                 </p>
                 <p className="font-semibold  text-center text-xs sm:text-sm">
-                  Email Id : rkcastingmoonidih@gmail.com
+                  Email Id : {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}
                 </p>
-                <p className="font-semibold text-xs text-center sm:text-sm">
-                  T. License No. - SEA2135400243601
-                </p>
+                {companyConfig?.cin_no && (
+                  <p className="font-semibold text-xs text-center sm:text-sm">
+                    CIN No. - {companyConfig.cin_no}
+                  </p>
+                )}
               </div>
 
             </div>

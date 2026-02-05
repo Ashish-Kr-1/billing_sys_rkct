@@ -574,7 +574,7 @@ export default function App() {
                 </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => handleEditInvoice(invoicePopup.invoice)}
+                    onClick={() => navigate("/Preview", { state: { ...invoicePopup } })}
                     className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
                   >
                     EDIT
@@ -760,7 +760,7 @@ export default function App() {
                 </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => handleEditInvoice(invoicePopup.invoice)}
+                    onClick={() => navigate("/Preview", { state: { ...invoicePopup } })}
                     className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-white"
                   >
                     EDIT

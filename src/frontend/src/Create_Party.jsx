@@ -8,7 +8,7 @@ function Create_Party() {
   return (
     <>
       <div className='rounded-2xl bg-[#004f43cc]'>
-        <Party_form></Party_form>
+        <Party_form className='mt-10'></Party_form>
         <Item_form />
         <Footer></Footer>
       </div>

@@ -1,7 +1,28 @@
-import Logo from '../assets/logo.png';
+import DefaultLogo from '../assets/logo.png';
+import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 import { useNavigate } from "react-router-dom";
-export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst }) {
+import { useCompany } from "../context/CompanyContext";
+export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst, companyConfig }) {
   const navigate = useNavigate();
+
+  // Helper function to get company logo
+  const getCompanyLogo = () => {
+    if (!companyConfig) return DefaultLogo;
+
+    // Company 3 is Global Bharat
+    if (companyConfig.company_id === 3) {
+      return GlobalBharatLogo;
+    }
+
+    // Check if logo_url contains global-bharat
+    if (companyConfig.logo_url?.includes('global-bharat')) {
+      return GlobalBharatLogo;
+    }
+
+    // Default logo for other companies
+    return DefaultLogo;
+  };
+
   return (
     <div
       id="invoice-download"
@@ -12,27 +33,38 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
       <div> <p className="text-center underline font-serif " style={{ fontSize: "32px", color: "#0A4350", fontWeight: "600", }}>INVOICE</p></div>
       <div className="flex justify-center items-center gap-0 pb-2 border-b-4 " style={{ borderColor: "#0A4350" }}>
         <div className=''>
-          <p className="" style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600", }}>GSTIN :{invoice.GSTIN0}</p>
+          <p className="" style={{ fontSize: "16px", color: "#0000FF", fontWeight: "600", }}>
+            GSTIN: {companyConfig?.gstin || invoice.GSTIN0}
+          </p>
           <img
-            src={Logo}
-            alt="Company Logo"
+            src={getCompanyLogo()}
+            alt={companyConfig?.company_name || "Company Logo"}
             className=" w-52 h-auto mr-5"
           />
         </div>
         <div className="max-w-full pr-10">
           <h1 className="font-serif" style={{ fontSize: "28px", fontWeight: "800", letterSpacing: "1px" }}>
-            M/S R.K Casting & Engineering Works
+            {companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}
           </h1>
           <p style={{ fontSize: "12px", fontWeight: "600" }}>
-            Plot No. 125, Khata No.19, Rakuwa No. 05,
-            Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129 </p>
+            {companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}
+          </p>
           <p style={{ fontSize: "14px", fontWeight: "600" }}>
-            Mobile No : +91 6204583192</p>
+            Mobile No: {companyConfig?.mobile_no || '+91 6204583192'}
+          </p>
           <p style={{ fontSize: "14px", fontWeight: "600" }}>
-            Email Id : rkcastingmoonidih@gmail.com</p>
-
-          <p style={{ fontSize: "14px", fontWeight: "600" }}>
-            T. License No. - SEA2135400243601</p>
+            Email Id: {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}
+          </p>
+          {companyConfig?.cin_no && (
+            <p style={{ fontSize: "14px", fontWeight: "600" }}>
+              CIN No.: {companyConfig.cin_no}
+            </p>
+          )}
+          {!companyConfig?.cin_no && (
+            <p style={{ fontSize: "14px", fontWeight: "600" }}>
+              T. License No. - SEA2135400243601
+            </p>
+          )}
         </div>
       </div>
       {/*Upper section*/}

@@ -34,7 +34,7 @@ const r = express.Router()
 // ];
 
 const allowedOrigins = [
-  "http://localhost:5174",        // local dev (Vite)
+  "http://localhost:5173",        // local dev (Vite)
   "http://localhost:5000",        // local/VPS backend
   "https://billing.rkcasting.in", // Production Frontend
   "https://www.billing.rkcasting.in",
@@ -247,7 +247,17 @@ async function getNextInvoiceNumber(req, res) {
   const client = await req.db.getConnection(); // MySQL
   try {
     await client.beginTransaction();
-    const prefix = 'RKCT/2025-26';
+
+    // Use invoice prefix based on company ID (hardcoded mapping)
+    const prefixMap = {
+      1: 'RKCT',      // RK Casting
+      2: 'RKEP',      // RK Engineering
+      3: 'GBH'        // Global Bharat
+    };
+
+    const invoicePrefix = prefixMap[req.companyId] || 'RKCT';
+    const financialYear = '2025-26';
+    const prefix = `${invoicePrefix}/${financialYear}`;
 
     const [rows] = await client.query(`
     SELECT invoice_no
@@ -775,6 +785,97 @@ async function createTransactionHandler(req, res) {
   }
 }
 
+/**
+ * Get complete invoice details for editing
+ */
+async function getInvoiceDetailsHandler(req, res) {
+  const { invoiceNo } = req.params;
+
+  try {
+    // Fetch transaction (main invoice)
+    const [transactions] = await req.db.query(
+      'SELECT * FROM transactions WHERE invoice_no = ?',
+      [invoiceNo]
+    );
+
+    if (!transactions || transactions.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+
+    const transaction = transactions[0];
+
+    // Fetch invoice_details
+    const [invoiceDetails] = await req.db.query(
+      'SELECT * FROM invoice_details WHERE invoice_no = ?',
+      [invoiceNo]
+    );
+
+    // Fetch items from sell_summary with item details
+    const [sellSummary] = await req.db.query(
+      `SELECT 
+        ss.*,
+        i.item_name as description,
+        i.hsn_code,
+        i.rate as unit_price
+      FROM sell_summary ss
+      LEFT JOIN items i ON ss.item_id = i.item_id
+      WHERE ss.invoice_no = ?`,
+      [invoiceNo]
+    );
+
+    // Fetch party details if party_id exists
+    let party = null;
+    if (transaction.party_id) {
+      const [parties] = await req.db.query(
+        'SELECT * FROM parties WHERE party_id = ?',
+        [transaction.party_id]
+      );
+      party = parties[0] || null;
+    }
+
+    // Map to match frontend expected format
+    const invoiceData = {
+      invoice: {
+        invoice_no: transaction.invoice_no,
+        invoice_date: transaction.transaction_date,
+        gstin: transaction.gst_number,
+        party_id: transaction.party_id,
+        transaction_type: transaction.transaction_type,
+        subtotal: transaction.taxable_amount,
+        cgst: transaction.cgst_amount > 0 ? (transaction.cgst_amount / transaction.taxable_amount * 100) : 0,
+        sgst: transaction.sgst_amount > 0 ? (transaction.sgst_amount / transaction.taxable_amount * 100) : 0,
+        terms: transaction.narration
+      },
+      invoice_details: invoiceDetails[0] || {},
+      items: sellSummary.map(item => ({
+        item_id: item.item_id,
+        description: item.description,
+        hsn_code: item.hsn_code,
+        quantity: item.units_sold,
+        unit_price: item.unit_price,
+        price: item.unit_price // For compatibility
+      })),
+      party: party
+    };
+
+    return res.status(200).json({
+      success: true,
+      ...invoiceData
+    });
+
+  } catch (error) {
+    console.error('Get invoice details error details:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
+
 
 const PORT = process.env.PORT || 5000;
 
@@ -788,6 +889,7 @@ router.post('/', createPartyHandler);
 
 routerTransaction.post("/", createTransactionHandler);
 routerTransaction.get("/invoiceNo", getNextInvoiceNumber);
+routerTransaction.get("/:invoiceNo/details", getInvoiceDetailsHandler);
 
 routerParty.get('/', partyList);
 routerParty.get('/:id', partyDetails);
