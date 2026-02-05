@@ -64,31 +64,45 @@ export default function QuotationForm({ initialData }) {
         if (selectedCompany) {
             console.log('🔄 Company changed to:', selectedCompany);
 
-            // Reset party selection when company changes
-            setSelectedPartyId("");
-
             handleApiResponse(api.get(`/companies/${selectedCompany.id}/config`))
                 .then(data => {
                     console.log('✅ Company config loaded:', data.config);
                     setCompanyConfig(data.config);
 
-                    // Reset and update quotation state with company-specific defaults
-                    setQuotation(prev => ({
-                        ...prev,
-                        GSTIN0: data.config.gstin || '',
-                        // Clear party-related fields when changing company
-                        clientName: '',
-                        clientName2: '',
-                        clientAddress: '',
-                        clientAddress2: '',
-                        GSTIN: '',
-                        GSTIN2: '',
-                        party_id: ''
-                    }));
+                    if (!initialData) {
+                        // Reset party selection when company changes
+                        setSelectedPartyId("");
+
+                        // Reset and update quotation state with company-specific defaults
+                        setQuotation(prev => ({
+                            ...prev,
+                            GSTIN0: data.config.gstin || '',
+                            // Bank Details
+                            AccountName: data.config.account_name || prev.AccountName,
+                            CurrentACCno: data.config.account_no || prev.CurrentACCno,
+                            IFSCcode: data.config.ifsc_code || prev.IFSCcode,
+                            Branch: data.config.branch || prev.Branch,
+
+                            // Clear party-related fields when changing company
+                            clientName: '',
+                            clientName2: '',
+                            clientAddress: '',
+                            clientAddress2: '',
+                            GSTIN: '',
+                            GSTIN2: '',
+                            party_id: ''
+                        }));
+                    } else {
+                        // Preserve existing data if returning from preview
+                        setQuotation(prev => ({
+                            ...prev,
+                            GSTIN0: data.config.gstin || prev.GSTIN0
+                        }));
+                    }
                 })
                 .catch(err => console.error('Error fetching company config:', err));
         }
-    }, [selectedCompany]);
+    }, [selectedCompany, initialData]);
 
 
     useEffect(() => {

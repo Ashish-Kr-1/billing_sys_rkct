@@ -65,31 +65,53 @@ export default function InvoiceForm({ initialData }) {
     if (selectedCompany) {
       console.log('🔄 Company changed to:', selectedCompany);
 
-      // Reset party selection when company changes
-      setSelectedPartyId("");
-
       handleApiResponse(api.get(`/companies/${selectedCompany.id}/config`))
         .then(data => {
           console.log('✅ Company config loaded:', data.config);
           setCompanyConfig(data.config);
 
-          // Reset and update invoice state with company-specific defaults
-          setInvoice(prev => ({
-            ...prev,
-            GSTIN0: data.config.gstin || '',
-            // Clear party-related fields when changing company
-            clientName: '',
-            clientName2: '',
-            clientAddress: '',
-            clientAddress2: '',
-            GSTIN: '',
-            GSTIN2: '',
-            party_id: ''
-          }));
+          // Only reset if NOT in edit/preview-return mode (no initialData)
+          // OR if the company ID is different (user actively switched company)
+          // But since initialData is passed on mount, we should check if invoice is "fresh".
+
+          if (!initialData) {
+            // Reset party selection when company changes
+            setSelectedPartyId("");
+
+            setInvoice(prev => ({
+              ...prev,
+              GSTIN0: data.config.gstin || '',
+              // Bank Details
+              AccountName: data.config.account_name || prev.AccountName,
+              CurrentACCno: data.config.account_no || prev.CurrentACCno,
+              IFSCcode: data.config.ifsc_code || prev.IFSCcode,
+              Branch: data.config.branch || prev.Branch,
+
+              // Clear party-related fields when changing company
+              clientName: '',
+              clientName2: '',
+              clientAddress: '',
+              clientAddress2: '',
+              GSTIN: '',
+              GSTIN2: '',
+              party_id: ''
+            }));
+          } else {
+            // If we HAVE initialData (returning from preview), we might still want to ensure 
+            // bank details are populated if they were somehow missing, but usually we trust initialData.
+            // But actually, the issue "back to edit" wiping data is because this ran on mount.
+            // By adding if(!initialData), we prevent the wipe.
+
+            // However, allow updating local config state (GSTIN0) if needed, but carefully.
+            setInvoice(prev => ({
+              ...prev,
+              GSTIN0: data.config.gstin || prev.GSTIN0 // Ensure local GSTIN matches config if missing
+            }));
+          }
         })
         .catch(err => console.error('Error fetching company config:', err));
     }
-  }, [selectedCompany]);
+  }, [selectedCompany, initialData]); // Added initialData to deps to be safe, though constant
 
 
   useEffect(() => {

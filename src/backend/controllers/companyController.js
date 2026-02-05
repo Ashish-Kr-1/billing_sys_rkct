@@ -158,6 +158,13 @@ export async function getCompanyConfig(req, res) {
 
         const companyData = companies[0];
 
+        // Fetch bank details
+        const bankDetails = await dbManager.query(
+            companyId,
+            'SELECT * FROM bank_details LIMIT 1'
+        );
+        const bank = bankDetails.length > 0 ? bankDetails[0] : {};
+
         // Map the database fields to our expected config format
         const config = {
             company_id: companyId,
@@ -181,7 +188,13 @@ export async function getCompanyConfig(req, res) {
 
             // Branding colors based on company ID
             primary_color: getBrandingColors(companyId).primary,
-            secondary_color: getBrandingColors(companyId).secondary
+            secondary_color: getBrandingColors(companyId).secondary,
+
+            // Bank Details
+            account_name: bank.account_name || '',
+            account_no: bank.account_no || '',
+            ifsc_code: bank.ifsc_code || '',
+            branch: bank.branch || ''
         };
 
         return res.status(200).json({

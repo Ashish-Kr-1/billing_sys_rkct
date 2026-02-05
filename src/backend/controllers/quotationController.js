@@ -141,9 +141,9 @@ export const getNextQuotationNumber = async (req, res) => {
         await client.beginTransaction();
 
         const prefixMap = {
-            1: 'QT-RK',
-            2: 'QT-EP',
-            3: 'QT-GB'
+            1: 'RKCT',
+            2: 'RKEP',
+            3: 'GBH'
         };
         const prefix = prefixMap[companyId] || 'QT';
         const year = '2025-26'; // Hardcoded for now, can be dynamic
