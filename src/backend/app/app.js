@@ -881,7 +881,8 @@ async function getInvoiceDetailsHandler(req, res) {
         subtotal: transaction.taxable_amount,
         cgst: transaction.cgst_amount > 0 ? (transaction.cgst_amount / transaction.taxable_amount * 100) : 0,
         sgst: transaction.sgst_amount > 0 ? (transaction.sgst_amount / transaction.taxable_amount * 100) : 0,
-        terms: transaction.narration
+        terms: transaction.narration,
+        status: transaction.status // Add status for frontend handling
       },
       invoice_details: invoiceDetails[0] || {},
       items: sellSummary.map(item => ({

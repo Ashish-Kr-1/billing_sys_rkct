@@ -414,6 +414,7 @@ export default function App() {
         // Metadata
         party_id: data.invoice.party_id,
         transaction_type: data.invoice.transaction_type || 'SALE',
+        status: data.invoice.status, // Pass status to Preview
 
         // Items
         items: (data.items || []).map(item => ({

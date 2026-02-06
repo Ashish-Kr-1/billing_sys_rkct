@@ -48,19 +48,40 @@ export default function Preview() {
   async function downloadPDF() {
     const element = document.getElementById("invoice-download");
 
+    // Temporarily hide the 'Download' buttons or other UI if they are inside, 
+    // but here the element is just the invoice template.
+
+    // Use scale 2 for better quality, but compress the output image
     const canvas = await html2canvas(element, {
-      scale: 1.2,
+      scale: 2,
       useCORS: true,
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
+      logging: false
     });
-    //
 
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const width = pdf.internal.pageSize.getWidth();
+    // Use JPEG instead of PNG for significant size reduction
+    // Quality 0.7-0.8 usually gives great results for text/scans
+    const imgData = canvas.toDataURL("image/jpeg", 0.90);
 
-    pdf.addImage(imgData, "PNG", 0, 0, width, 0);
-    pdf.save("invoice.pdf");
+    // Initialize jsPDF with compression
+    const pdf = new jsPDF({
+      orientation: "p",
+      unit: "mm",
+      format: "a4",
+      compress: true
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    // Calculate final image dimensions to fit the PDF
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    // Add image with compression alias 'FAST' (adds slightly more compression)
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
+
+    pdf.save(`Invoice-${invoice.InvoiceNo || 'draft'}.pdf`);
   }
 
   async function saveInvoiceToDB() {
