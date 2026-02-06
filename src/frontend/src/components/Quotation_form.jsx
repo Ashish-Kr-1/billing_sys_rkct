@@ -106,7 +106,7 @@ export default function QuotationForm({ initialData }) {
 
 
     useEffect(() => {
-        if (selectedCompany) {
+        if (selectedCompany && !initialData) {
             handleApiResponse(api.get('/createQuotation/quotationNo'))
                 .then(data => {
                     console.log('📄 Quotation number:', data.QuotationNo);
@@ -117,7 +117,7 @@ export default function QuotationForm({ initialData }) {
                 })
                 .catch(err => console.error('Error fetching quotation number:', err));
         }
-    }, [selectedCompany]);
+    }, [selectedCompany, initialData]);
 
     // Helper function to get the correct logo based on company
     const getCompanyLogo = () => {

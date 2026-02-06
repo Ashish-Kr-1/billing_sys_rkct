@@ -116,7 +116,7 @@ export default function InvoiceForm({ initialData }) {
 
   useEffect(() => {
     console.log(import.meta.env.VITE_API_BASE_URL);
-    if (selectedCompany) {
+    if (selectedCompany && !initialData) {
       handleApiResponse(api.get('/createInvoice/invoiceNo'))
         .then(data => {
           console.log('📄 Invoice number:', data.InvoiceNo);
@@ -127,7 +127,7 @@ export default function InvoiceForm({ initialData }) {
         })
         .catch(err => console.error('Error fetching invoice number:', err));
     }
-  }, [selectedCompany]);
+  }, [selectedCompany, initialData]);
 
   // Helper function to get the correct logo based on company
   const getCompanyLogo = () => {

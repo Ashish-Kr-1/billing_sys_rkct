@@ -20,6 +20,8 @@ export default function SectionSelection() {
             navigate('/Analytics');
         } else if (section === 'invoice') {
             navigate('/Invoice');
+        } else if (section === 'quotation') {
+            navigate('/Quotation');
         }
     };
 
@@ -142,6 +144,43 @@ export default function SectionSelection() {
                     {/* Decorative Elements */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-teal-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
+                </button>
+
+                {/* Quotation Section */}
+                <button
+                    onClick={() => handleSelectSection('quotation')}
+                    className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden p-8 md:col-span-2 lg:col-span-1"
+                >
+                    {/* Gradient Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+
+                    {/* Icon */}
+                    <div className="relative mb-6">
+                        <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <FileText className="w-10 h-10 text-white" />
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="relative text-left">
+                        <h2 className="text-3xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors">
+                            Quotation Management
+                        </h2>
+                        <p className="text-gray-600 mb-4">
+                            Generate, edit, and print professional quotations for {selectedCompany.shortName}.
+                        </p>
+
+                        <div className="flex items-center gap-2 text-amber-600 font-semibold">
+                            <span>Manage Quotations</span>
+                            <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
                 </button>
             </div>
 
