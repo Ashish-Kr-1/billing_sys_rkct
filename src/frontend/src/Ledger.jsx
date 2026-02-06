@@ -486,7 +486,8 @@ export default function App() {
     if (!confirmed) return;
 
     try {
-      const response = await api.put(`/ledger/cancel/${encodeURIComponent(invoice_no)}`);
+      // Use query parameter to handle slashes safely
+      const response = await api.put(`/ledger/cancel?invoice_no=${encodeURIComponent(invoice_no)}`);
       const data = await response.json();
 
       if (response.ok) {

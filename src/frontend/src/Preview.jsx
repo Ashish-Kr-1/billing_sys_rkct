@@ -156,7 +156,7 @@ export default function Preview() {
         }
 
         // User confirmed - delete the invoice
-        const deleteResponse = await api.delete(`/createInvoice/${encodeURIComponent(invoiceNo)}`);
+        const deleteResponse = await api.delete(`/createInvoice?invoice_no=${encodeURIComponent(invoiceNo)}`);
 
         if (deleteResponse.ok) {
           alert(`✅ Invoice "${invoiceNo}" has been deleted. You can now create a new invoice.`);

@@ -998,10 +998,12 @@ async function cancelInvoiceHandler(req, res) {
 
 // Delete Invoice Handler
 async function deleteInvoiceHandler(req, res) {
-  const { invoice_no } = req.params;
+  // ROBUST FIX: Check query, body, then params. 
+  // This allows DELETE /createInvoice?invoice_no=RKCT/2025/001 (Safe)
+  const invoice_no = req.query.invoice_no || req.body.invoice_no || req.params.invoice_no;
 
   if (!invoice_no) {
-    return res.status(400).json({ error: 'Invoice number is required' });
+    return res.status(400).json({ error: 'Invoice number is required (pass as query param)' });
   }
 
   const client = await req.db.getConnection();
@@ -1056,13 +1058,28 @@ async function deleteInvoiceHandler(req, res) {
   }
 }
 
+// Wrapper for Cancel Handler to support Query Params
+const safeCancelHandler = (req, res, next) => {
+  // Inject query param into where the original function expects it
+  if (req.query.invoice_no || req.body.invoice_no) {
+    req.params.invoice_no = req.query.invoice_no || req.body.invoice_no;
+  }
+  return cancelInvoiceHandler(req, res, next);
+};
+
+// MOUNT ROUTES
+// 1. DELETE /createInvoice?invoice_no=... (Robust)
+routerTransaction.delete('/', deleteInvoiceHandler);
+// 2. DELETE /createInvoice/:invoice_no (Legacy/Simple)
 routerTransaction.delete('/:invoice_no', deleteInvoiceHandler);
 
-routerLedger.put('/cancel/:invoice_no', cancelInvoiceHandler);
+// 3. PUT /ledger/cancel?invoice_no=... (Robust)
+routerLedger.put('/cancel', safeCancelHandler);
+// 4. PUT /ledger/cancel/:invoice_no (Legacy)
+routerLedger.put('/cancel/:invoice_no', safeCancelHandler);
 
-// Fallback route for cancellation (in case of path mapping issues)
-// This handles /api/ledger/cancel/... if mounted at root level accidentally
-app.put('/api/ledger/cancel/:invoice_no', cancelInvoiceHandler);
+// Fallback
+app.put('/api/ledger/cancel', safeCancelHandler);
 
 console.log('🚀 BACKEND VERSION 2.0.0 - INVOICE CANCELLATION ENABLED');
 

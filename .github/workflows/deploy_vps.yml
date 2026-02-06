@@ -20,11 +20,11 @@ jobs:
              cd /var/www/billing_sys_rkct
              git pull origin main
              
-             # Stop containers and remove images to force refresh
-             docker compose down --rmi all
+             # Stop containers
+             docker compose down
              
-             # Build fresh without cache
-             docker compose build --no-cache
+             # Build fresh
+             docker compose build
              
              # Run migrations (if backend container exists)
              # Run migrations
