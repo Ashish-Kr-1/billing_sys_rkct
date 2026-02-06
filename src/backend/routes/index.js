@@ -34,7 +34,8 @@ import { authenticateUser } from '../middleware/auth.js';
 // ============================================================
 const authRouter = express.Router();
 
-authRouter.post('/register', registerUser);
+// Public signup disabled - use admin /users endpoint instead
+// authRouter.post('/register', registerUser);
 authRouter.post('/login', loginUser);
 authRouter.post('/logout', logoutUser);
 authRouter.get('/me', authenticateUser, getCurrentUser);
@@ -61,5 +62,6 @@ analyticsRouter.get('/:companyId/data', getCompanyAnalytics);
 analyticsRouter.get('/:companyId/summary', getCompanySummary);
 
 import quotationRouter from './quotationRoutes.js';
+import userRouter from './userRoutes.js';
 
-export { authRouter, companyRouter, analyticsRouter, quotationRouter };
+export { authRouter, companyRouter, analyticsRouter, quotationRouter, userRouter };

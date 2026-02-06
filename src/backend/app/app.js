@@ -5,7 +5,7 @@ import { dbManager } from "../db.js";
 import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
-import { authRouter, companyRouter, analyticsRouter, quotationRouter } from '../routes/index.js';
+import { authRouter, companyRouter, analyticsRouter, quotationRouter, userRouter } from '../routes/index.js';
 import { setupQuotationTables } from '../setup_quotation_tables.js';
 import { authenticateUser } from '../middleware/auth.js';
 
@@ -89,6 +89,7 @@ app.use((req, res, next) => {
 app.use('/companies', companyRouter);
 app.use('/analytics', analyticsRouter);
 app.use('/createQuotation', quotationRouter); // Mounting at /createQuotation to match frontend ease, or cleaner /quotations
+app.use('/users', userRouter); // Admin-only user management
 
 //endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));
