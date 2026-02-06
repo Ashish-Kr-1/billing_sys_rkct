@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
-import { BarChart3, FileText, ArrowLeft, LogOut, CreditCard } from 'lucide-react';
+import { BarChart3, FileText, ArrowLeft, LogOut, CreditCard, Users } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function SectionSelection() {
@@ -24,6 +24,8 @@ export default function SectionSelection() {
             navigate('/Quotation');
         } else if (section === 'ledger') {
             navigate('/Ledger');
+        } else if (section === 'users') {
+            navigate('/users');
         }
     };
 
@@ -221,6 +223,46 @@ export default function SectionSelection() {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-violet-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
                 </button>
+
+                {/* User Management Section - Admin Only */}
+                {user?.role === 'admin' && (
+                    <button
+                        onClick={() => handleSelectSection('users')}
+                        className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden p-8"
+                    >
+                        {/* Gradient Background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-blue-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+
+                        {/* Icon */}
+                        <div className="relative mb-6">
+                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <Users className="w-10 h-10 text-white" />
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="relative">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors">
+                                User Management
+                            </h2>
+                            <p className="text-gray-600 mb-6">
+                                Create and manage user accounts, roles, and permissions
+                            </p>
+
+                            {/* Arrow */}
+                            <div className="flex items-center text-indigo-600 font-semibold group-hover:translate-x-2 transition-transform">
+                                <span>Manage Users</span>
+                                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Decorative Elements */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
+                    </button>
+                )}
             </div>
 
             {/* Info Card */}

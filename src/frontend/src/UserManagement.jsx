@@ -1,0 +1,383 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from './config/apiClient';
+import { Users, Plus, Trash2, Key, Edit2, ArrowLeft, Shield, User as UserIcon } from 'lucide-react';
+import Footer from './components/Footer';
+
+export default function UserManagement() {
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const navigate = useNavigate();
+
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        full_name: '',
+        role: 'user'
+    });
+
+    const [resetPassword, setResetPassword] = useState('');
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const response = await api.get('/users');
+            const data = await response.json();
+            setUsers(data.users || []);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            if (error.message.includes('403')) {
+                alert('Access denied. Admin privileges required.');
+                navigate('/select-section');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreateUser = async (e) => {
+        e.preventDefault();
+
+        if (formData.password.length < 8) {
+            alert('Password must be at least 8 characters');
+            return;
+        }
+
+        try {
+            const response = await api.post('/users', formData);
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('User created successfully!');
+                setShowCreateModal(false);
+                setFormData({ username: '', email: '', password: '', full_name: '', role: 'user' });
+                fetchUsers();
+            } else {
+                alert(data.error || 'Failed to create user');
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+            alert('Failed to create user');
+        }
+    };
+
+    const handleDeleteUser = async (userId, username) => {
+        if (!window.confirm(`Are you sure you want to delete user "${username}"?`)) return;
+
+        try {
+            const response = await api.delete(`/users/${userId}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('User deleted successfully');
+                fetchUsers();
+            } else {
+                alert(data.error || 'Failed to delete user');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert('Failed to delete user');
+        }
+    };
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+
+        if (resetPassword.length < 8) {
+            alert('Password must be at least 8 characters');
+            return;
+        }
+
+        try {
+            const response = await api.post(`/users/${selectedUser.user_id}/reset-password`, {
+                new_password: resetPassword
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Password reset successfully!');
+                setShowResetModal(false);
+                setResetPassword('');
+                setSelectedUser(null);
+            } else {
+                alert(data.error || 'Failed to reset password');
+            }
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            alert('Failed to reset password');
+        }
+    };
+
+    const handleToggleActive = async (userId, currentStatus) => {
+        try {
+            const response = await api.put(`/users/${userId}`, {
+                is_active: !currentStatus
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                fetchUsers();
+            } else {
+                alert(data.error || 'Failed to update user status');
+            }
+        } catch (error) {
+            console.error('Error updating user:', error);
+            alert('Failed to update user');
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            {/* Header */}
+            <div className="bg-[#004f43] text-white p-4 shadow-md">
+                <div className="max-w-7xl mx-auto flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/select-section')} className="hover:bg-[#003d34] p-2 rounded-full transition">
+                            <ArrowLeft size={24} />
+                        </button>
+                        <div className="flex items-center gap-3">
+                            <Users size={28} />
+                            <h1 className="text-2xl font-bold font-serif">User Management</h1>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-white text-[#004f43] px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-gray-100 transition shadow-sm"
+                    >
+                        <Plus size={20} /> Create User
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-grow max-w-7xl mx-auto w-full p-6">
+                {loading ? (
+                    <div className="text-center py-20 text-gray-500">Loading users...</div>
+                ) : users.length === 0 ? (
+                    <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <Users size={48} className="mx-auto text-gray-300 mb-4" />
+                        <p className="text-gray-500 text-lg">No users found.</p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm uppercase tracking-wider">
+                                        <th className="p-4 font-semibold">User</th>
+                                        <th className="p-4 font-semibold">Email</th>
+                                        <th className="p-4 font-semibold">Role</th>
+                                        <th className="p-4 font-semibold">Status</th>
+                                        <th className="p-4 font-semibold">Last Login</th>
+                                        <th className="p-4 font-semibold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {users.map((user) => (
+                                        <tr key={user.user_id} className="hover:bg-gray-50 transition">
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user.role === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
+                                                        }`}>
+                                                        {user.role === 'admin' ? (
+                                                            <Shield className="text-purple-600" size={20} />
+                                                        ) : (
+                                                            <UserIcon className="text-blue-600" size={20} />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium text-gray-900">{user.full_name || user.username}</div>
+                                                        <div className="text-sm text-gray-500">@{user.username}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-gray-600">{user.email}</td>
+                                            <td className="p-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
+                                                        ? 'bg-purple-100 text-purple-700'
+                                                        : 'bg-blue-100 text-blue-700'
+                                                    }`}>
+                                                    {user.role}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <button
+                                                    onClick={() => handleToggleActive(user.user_id, user.is_active)}
+                                                    className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition ${user.is_active
+                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                        }`}
+                                                >
+                                                    {user.is_active ? 'Active' : 'Inactive'}
+                                                </button>
+                                            </td>
+                                            <td className="p-4 text-gray-600 text-sm">
+                                                {user.last_login ? new Date(user.last_login).toLocaleDateString('en-IN') : 'Never'}
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedUser(user);
+                                                            setShowResetModal(true);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
+                                                        title="Reset Password"
+                                                    >
+                                                        <Key size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user.user_id, user.username)}
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+                                                        title="Delete User"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Create User Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New User</h2>
+                        <form onSubmit={handleCreateUser} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004f43] focus:border-transparent outline-none"
+                                    placeholder="john_doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004f43] focus:border-transparent outline-none"
+                                    placeholder="john@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.full_name}
+                                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004f43] focus:border-transparent outline-none"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Password * (min 8 characters)</label>
+                                <input
+                                    type="password"
+                                    required
+                                    minLength={8}
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004f43] focus:border-transparent outline-none"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                                <select
+                                    value={formData.role}
+                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004f43] focus:border-transparent outline-none"
+                                >
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        setFormData({ username: '', email: '', password: '', full_name: '', role: 'user' });
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-[#004f43] text-white rounded-lg hover:bg-[#003d34] transition font-medium"
+                                >
+                                    Create User
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Reset Password Modal */}
+            {showResetModal && selectedUser && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h2>
+                        <p className="text-gray-600 mb-6">Reset password for <strong>{selectedUser.username}</strong></p>
+                        <form onSubmit={handleResetPassword} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">New Password * (min 8 characters)</label>
+                                <input
+                                    type="password"
+                                    required
+                                    minLength={8}
+                                    value={resetPassword}
+                                    onChange={(e) => setResetPassword(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004f43] focus:border-transparent outline-none"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowResetModal(false);
+                                        setResetPassword('');
+                                        setSelectedUser(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-[#004f43] text-white rounded-lg hover:bg-[#003d34] transition font-medium"
+                                >
+                                    Reset Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            <Footer />
+        </div>
+    );
+}

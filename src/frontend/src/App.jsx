@@ -18,7 +18,9 @@ import Preview from "./Preview.jsx";
 import Ledger from "./Ledger.jsx";
 import Analytics from "./Analytics.jsx";
 import Quotation from "./Quotation.jsx";
+import QuotationsList from "./QuotationsList.jsx";
 import QuotationPreview from "./QuotationPreview.jsx";
+import UserManagement from "./UserManagement.jsx";
 
 function App() {
   return (
@@ -75,6 +77,7 @@ function App() {
               <Route path='/Preview' element={<Preview />} />
               <Route path='/QuotationPreview' element={<QuotationPreview />} />
               <Route path='/Ledger' element={<Ledger />} />
+              <Route path='/users' element={<UserManagement />} />
             </Route>
 
             {/* Root redirect */}

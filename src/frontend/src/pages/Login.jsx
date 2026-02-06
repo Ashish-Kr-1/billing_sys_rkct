@@ -149,23 +149,7 @@ export default function Login() {
                         </button>
                     </form>
 
-                    {/* Divider */}
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-4 bg-white text-gray-500">Don't have an account?</span>
-                        </div>
-                    </div>
 
-                    {/* Sign Up Link */}
-                    <Link
-                        to="/signup"
-                        className="block w-full text-center py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-blue-500 hover:text-blue-600 transition-all duration-200"
-                    >
-                        Create New Account
-                    </Link>
 
                     {/* Footer */}
                     <p className="text-center text-xs text-gray-500 mt-6">
