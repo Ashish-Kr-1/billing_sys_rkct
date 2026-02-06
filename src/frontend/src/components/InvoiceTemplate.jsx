@@ -74,7 +74,7 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
         <p style={{ fontWeight: "700" }}> Date : {invoice.InvoiceDate}</p>
         <p style={{ fontWeight: "700" }}> Place of Supply : {invoice.PlaceofSupply}</p>
         <p style={{ fontWeight: "700" }}> Eway Bill No. : {invoice.EwayBillNo}</p>
-        <p style={{ fontWeight: "700" }}> PO No. : {invoice.PONo}</p>
+        <p style={{ fontWeight: "700" }}> PO No. : {invoice.po_no}</p>
         <p style={{ fontWeight: "700" }}> PO Date : {invoice.PODate}</p>
         <p style={{ fontWeight: "700" }}> Vendor Code : {invoice.VendorCode}</p>
         <p style={{ fontWeight: "700", marginBottom: "6px" }}> GatePass/Challan No. : {invoice.ChallanNo}</p>
