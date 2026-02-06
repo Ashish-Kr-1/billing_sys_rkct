@@ -27,7 +27,9 @@ jobs:
              docker compose build
              
              # Run migrations (if backend container exists)
-             docker compose run --rm backend node migrations/add_user_roles.js || echo "Migration skipped or already applied"
+             # Run migrations
+             docker compose run --rm backend node migrations/add_user_roles.js || echo "User roles migration skipped/failed"
+             docker compose run --rm backend node migrations/add_invoice_cancellation.js || echo "Invoice cancellation migration skipped/failed"
              
              # Start containers
              docker compose up -d

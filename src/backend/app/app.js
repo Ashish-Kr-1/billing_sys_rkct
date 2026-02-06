@@ -1,4 +1,4 @@
-import express from 'express'; // Force deploy v2
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { dbManager } from "../db.js";
