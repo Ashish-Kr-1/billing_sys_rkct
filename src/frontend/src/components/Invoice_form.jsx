@@ -25,7 +25,7 @@ export default function InvoiceForm({ initialData }) {
       PODate: "",
       TrasnportBy: "",
       PlaceofSupply: "",
-      PONo: "",
+      po_no: "",
       VehicleNo: "",
       EwayBillNo: "",
       VendorCode: "",
@@ -375,10 +375,10 @@ export default function InvoiceForm({ initialData }) {
           />
           <input
             type="text"
-            name="PONo"
+            name="po_no"
             placeholder="PO Number"
             className="border p-2 rounded w-full"
-            value={invoice.PONo}
+            value={invoice.po_no}
             onChange={handleChange}
           />
           <input

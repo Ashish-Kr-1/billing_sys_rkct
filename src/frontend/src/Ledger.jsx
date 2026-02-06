@@ -379,7 +379,7 @@ export default function App() {
         InvoiceDate: formatDate(data.invoice.invoice_date),
         GSTIN0: data.invoice.gstin || '',
         GSTIN: data.invoice_details?.gstin || data.party?.gstin_no || '',
-        GSTIN2: data.invoice_details?.gstin2 || '',
+        GSTIN2: data.invoice_details?.gstin2 || data.party?.gstin_no || '',
 
         // Client/Party details
         clientName: data.invoice_details?.client_name || data.party?.party_name || '',
@@ -394,7 +394,7 @@ export default function App() {
         EwayBillNo: data.invoice_details?.eway_bill_no || '',
 
         // PO & Vendor
-        PONo: data.invoice_details?.po_no || '',
+        po_no: data.invoice_details?.po_no || '',
         PODate: data.invoice_details?.po_date ? formatDate(data.invoice_details.po_date) : '',
         VendorCode: data.invoice_details?.vendore_code || data.party?.vendore_code || '',
 

@@ -83,16 +83,16 @@ export default function Preview() {
         vehicle_no: invoice.VehicleNo,
         eway_bill_no: invoice.EwayBillNo,
         vendor_code: invoice.VendorCode,
-        po_no: invoice.PONo, // Fixed: Added missing po_no
+        po_no: invoice.po_no, // UPDATED: Matches Invoice_form state name
         po_date: invoice.PODate,
         challan_no: invoice.ChallanNo,
         challan_date: invoice.ChallanDate,
         client_name: invoice.clientName,
         client_address: invoice.clientAddress,
-        gstin: invoice.GSTIN, // Fixed: gstIn -> gstin
+        gstin: invoice.GSTIN, // FIXED: gstIn -> gstin
         client_name2: invoice.clientName2,
         client_address2: invoice.clientAddress2,
-        gstin2: invoice.GSTIN2, // Fixed: gstIn2 -> gstin2
+        gstin2: invoice.GSTIN2, // FIXED: gstIn2 -> gstin2
         account_name: invoice.AccountName,
         account_no: invoice.CurrentACCno,
         ifsc_code: invoice.IFSCcode,

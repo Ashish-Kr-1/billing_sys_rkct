@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { body, validationResult } from 'express-validator';
 import path from 'path';
 import { authRouter, companyRouter, analyticsRouter, quotationRouter } from '../routes/index.js';
+import { setupQuotationTables } from '../setup_quotation_tables.js';
 import { authenticateUser } from '../middleware/auth.js';
 
 dotenv.config()
@@ -907,8 +908,10 @@ async function getInvoiceDetailsHandler(req, res) {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`App has started on ${PORT}`);
+  // Initialize Quotation Tables (if missing)
+  await setupQuotationTables();
 });
 
 routerB.post('/', createItemHandler);
