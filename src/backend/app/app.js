@@ -1056,13 +1056,13 @@ async function deleteInvoiceHandler(req, res) {
   }
 }
 
-routerTransaction.delete('/:invoice_no(.*)', deleteInvoiceHandler);
+routerTransaction.delete('/:invoice_no', deleteInvoiceHandler);
 
-routerLedger.put('/cancel/:invoice_no(.*)', cancelInvoiceHandler);
+routerLedger.put('/cancel/:invoice_no', cancelInvoiceHandler);
 
 // Fallback route for cancellation (in case of path mapping issues)
 // This handles /api/ledger/cancel/... if mounted at root level accidentally
-app.put('/api/ledger/cancel/:invoice_no(.*)', cancelInvoiceHandler);
+app.put('/api/ledger/cancel/:invoice_no', cancelInvoiceHandler);
 
 console.log('🚀 BACKEND VERSION 2.0.0 - INVOICE CANCELLATION ENABLED');
 
