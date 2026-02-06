@@ -214,8 +214,8 @@ export default function Preview() {
         </div>
       ) : (
         <>
-          <div className="max-w-4xl mx-auto p-4 md:p-8">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+          <div className="overflow-auto pb-32">
+            <div className="min-w-[1024px] flex justify-center">
               <InvoiceTemplate
                 invoice={invoice}
                 subtotalAmount={subtotalAmount}
