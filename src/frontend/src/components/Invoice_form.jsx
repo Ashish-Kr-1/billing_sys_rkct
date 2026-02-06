@@ -116,17 +116,47 @@ export default function InvoiceForm({ initialData }) {
 
   useEffect(() => {
     console.log(import.meta.env.VITE_API_BASE_URL);
-    if (selectedCompany && !initialData) {
-      handleApiResponse(api.get('/createInvoice/invoiceNo'))
-        .then(data => {
-          console.log('📄 Invoice number:', data.InvoiceNo);
-          setInvoice(prev => ({
-            ...prev,
-            InvoiceNo: data.InvoiceNo
-          }))
-        })
-        .catch(err => console.error('Error fetching invoice number:', err));
-    }
+
+    const checkAndSetInvoiceNumber = async () => {
+      // If we have initialData with an invoice number, check if it exists in DB
+      const existingInvoiceNo = initialData?.invoice?.InvoiceNo;
+
+      if (selectedCompany && existingInvoiceNo) {
+        try {
+          // Check if this invoice exists in the database
+          console.log('🔍 Checking if invoice exists:', existingInvoiceNo);
+          const response = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(existingInvoiceNo)}`);
+
+          if (response.ok) {
+            // Invoice exists in DB - fetch next invoice number for a new invoice
+            console.log('✅ Invoice exists in DB, fetching next invoice number...');
+            const data = await handleApiResponse(api.get('/createInvoice/invoiceNo'));
+            console.log('📄 New invoice number:', data.InvoiceNo);
+            setInvoice(prev => ({
+              ...prev,
+              InvoiceNo: data.InvoiceNo
+            }));
+          } else {
+            // Invoice doesn't exist - keep the same number (user is just previewing before saving)
+            console.log('📄 Invoice not saved yet, keeping number:', existingInvoiceNo);
+          }
+        } catch (err) {
+          // If error (404 = not found), invoice doesn't exist, keep the same number
+          console.log('📄 Invoice not found in DB, keeping number:', existingInvoiceNo);
+        }
+      } else if (selectedCompany && !invoice.InvoiceNo) {
+        // No invoice number at all - fetch next available
+        console.log('📄 Fetching next invoice number...');
+        const data = await handleApiResponse(api.get('/createInvoice/invoiceNo'));
+        console.log('📄 Invoice number:', data.InvoiceNo);
+        setInvoice(prev => ({
+          ...prev,
+          InvoiceNo: data.InvoiceNo
+        }));
+      }
+    };
+
+    checkAndSetInvoiceNumber();
   }, [selectedCompany, initialData]);
 
   // Helper function to get the correct logo based on company

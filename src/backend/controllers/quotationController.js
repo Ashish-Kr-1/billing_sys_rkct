@@ -144,7 +144,7 @@ export const getNextQuotationNumber = async (req, res) => {
         const prefixMap = {
             1: 'QT/RKCT',
             2: 'QT/RKEP',
-            3: 'DT/GBH' // As requested
+            3: 'QT/GBH' // As requested
         };
         const basePrefix = prefixMap[companyId] || 'QT/RKCT';
 

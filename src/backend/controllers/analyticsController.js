@@ -36,25 +36,27 @@ export async function getCompanyAnalytics(req, res) {
  * Helper function to fetch all analytics data
  */
 async function fetchAnalyticsData(companyId) {
-    // Fetch transactions
+    // Fetch transactions (exclude cancelled)
     const transactions = await dbManager.query(
         companyId,
         `SELECT
-transaction_id,
-    transaction_date,
-    invoice_no,
-    transaction_type,
-    party_id,
-    sell_amount,
-    credit_amount,
-    taxable_amount,
-    igst_amount,
-    cgst_amount,
-    sgst_amount,
-    gst_percentage,
-    narration
-    FROM transactions
-    ORDER BY transaction_date DESC`
+            transaction_id,
+            transaction_date,
+            invoice_no,
+            transaction_type,
+            party_id,
+            sell_amount,
+            credit_amount,
+            taxable_amount,
+            igst_amount,
+            cgst_amount,
+            sgst_amount,
+            gst_percentage,
+            narration,
+            status
+        FROM transactions
+        WHERE (status IS NULL OR status != 'cancelled')
+        ORDER BY transaction_date DESC`
     );
 
     // Fetch parties
@@ -161,18 +163,20 @@ export async function getCompanySummary(req, res) {
 
         const [transactionsCount] = await dbManager.query(
             companyId,
-            'SELECT COUNT(*) as count FROM transactions'
+            `SELECT COUNT(*) as count FROM transactions 
+             WHERE (status IS NULL OR status != 'cancelled')`
         );
 
-        // Get revenue summary
+        // Get revenue summary (exclude cancelled invoices)
         const [revenueSummary] = await dbManager.query(
             companyId,
             `SELECT
-SUM(sell_amount) as total_revenue,
-    SUM(credit_amount) as total_collections,
-    SUM(sell_amount - credit_amount) as outstanding
-      FROM transactions
-      WHERE transaction_type = 'SALE'`
+                SUM(sell_amount) as total_revenue,
+                SUM(credit_amount) as total_collections,
+                SUM(sell_amount - credit_amount) as outstanding
+            FROM transactions
+            WHERE transaction_type = 'SALE' 
+              AND (status IS NULL OR status != 'cancelled')`
         );
 
         return res.status(200).json({

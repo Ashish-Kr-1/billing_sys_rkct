@@ -571,6 +571,8 @@ async function ledgerData(req, res) {
         t.transaction_date,
         t.invoice_no,
         t.transaction_type,
+        t.status,
+        t.party_id,
         p.party_name,
         COALESCE(t.sell_amount, 0)   AS debit,
         (
@@ -589,10 +591,12 @@ async function ledgerData(req, res) {
       date: formatLedgerDate(r.transaction_date),
       invoice: r.invoice_no,
       client: r.party_name,
+      party_id: r.party_id,
       debit: Number(r.debit),
       credit: Number(r.credit),
       transaction_type: r.transaction_type,
-      transaction_id: r.transaction_id
+      transaction_id: r.transaction_id,
+      status: r.status || 'active'
     }));
 
     res.json({ ledger });
@@ -933,6 +937,128 @@ routerItems.get('/:id', itemDetails);
 routerLedger.get('/', ledgerData);
 routerLedger.post('/payment', createPaymentHandler);
 routerLedger.get("/payments", getInvoiceHistoryHandler);
+
+// Cancel invoice endpoint
+async function cancelInvoiceHandler(req, res) {
+  const { invoice_no } = req.params;
+  const user_id = req.user?.user_id; // From auth middleware
+
+  if (!invoice_no) {
+    return res.status(400).json({ error: 'Invoice number is required' });
+  }
+
+  const client = await req.db.getConnection();
+
+  try {
+    await client.beginTransaction();
+
+    // Check if invoice exists and is not already cancelled
+    const [existing] = await client.query(
+      `SELECT status, invoice_no FROM transactions 
+       WHERE invoice_no = ? AND transaction_type = 'SALE' LIMIT 1`,
+      [invoice_no]
+    );
+
+    if (existing.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (existing[0].status === 'cancelled') {
+      await client.rollback();
+      return res.status(400).json({ error: 'Invoice is already cancelled' });
+    }
+
+    // Update invoice status to cancelled
+    await client.query(
+      `UPDATE transactions 
+       SET status = 'cancelled', 
+           cancelled_at = NOW(), 
+           cancelled_by = ?
+       WHERE invoice_no = ? AND transaction_type = 'SALE'`,
+      [user_id, invoice_no]
+    );
+
+    await client.commit();
+
+    res.json({
+      success: true,
+      message: 'Invoice cancelled successfully',
+      invoice_no
+    });
+
+  } catch (err) {
+    await client.rollback();
+    console.error('Cancel invoice error:', err);
+    return res.status(500).json({ error: 'Failed to cancel invoice' });
+  } finally {
+    client.release();
+  }
+}
+
+// Delete Invoice Handler
+async function deleteInvoiceHandler(req, res) {
+  const { invoice_no } = req.params;
+
+  if (!invoice_no) {
+    return res.status(400).json({ error: 'Invoice number is required' });
+  }
+
+  const client = await req.db.getConnection();
+
+  try {
+    await client.beginTransaction();
+
+    // Check if invoice exists
+    const [existing] = await client.query(
+      `SELECT invoice_no FROM transactions 
+       WHERE invoice_no = ? AND transaction_type = 'SALE' LIMIT 1`,
+      [invoice_no]
+    );
+
+    if (existing.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    // Delete from sell_summary first (foreign key constraint)
+    await client.query(
+      `DELETE FROM sell_summary WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+
+    // Delete from invoice_details
+    await client.query(
+      `DELETE FROM invoice_details WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+
+    // Delete all transactions with this invoice number (SALE and RECEIPT)
+    await client.query(
+      `DELETE FROM transactions WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+
+    await client.commit();
+
+    res.json({
+      success: true,
+      message: 'Invoice deleted successfully',
+      invoice_no
+    });
+
+  } catch (err) {
+    await client.rollback();
+    console.error('Delete invoice error:', err);
+    return res.status(500).json({ error: 'Failed to delete invoice' });
+  } finally {
+    client.release();
+  }
+}
+
+routerTransaction.delete('/:invoice_no', deleteInvoiceHandler);
+
+routerLedger.put('/cancel/:invoice_no', cancelInvoiceHandler);
 
 app.use('/parties', routerParty);
 app.use('/ledger', routerLedger);

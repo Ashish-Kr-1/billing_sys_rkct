@@ -474,6 +474,34 @@ export default function App() {
     }
   };
 
+  /**
+   * Cancel Invoice Handler
+   */
+  const handleCancelInvoice = async (invoice_no, clientName) => {
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to cancel invoice "${invoice_no}" for ${clientName}?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await api.put(`/ledger/cancel/${encodeURIComponent(invoice_no)}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Invoice ${invoice_no} has been cancelled successfully.`);
+        // Refresh ledger data
+        fetchLedgerData();
+      } else {
+        alert(data.error || 'Failed to cancel invoice');
+      }
+    } catch (error) {
+      console.error('Cancel invoice error:', error);
+      alert('Failed to cancel invoice. Please try again.');
+    }
+  };
+
 
 
   return (
@@ -568,36 +596,61 @@ export default function App() {
                   {filteredData.map((row, index) => {
                     const due = getRowDueAmount(row);
                     const status = getPaymentStatus(row);
+                    const isCancelled = row.status === 'cancelled';
                     return (
-                      <tr key={index} className="hover:bg-slate-50">
-                        <td className="py-5 px-6 text-slate-500">{row.date}</td>
+                      <tr key={index} className={`hover:bg-slate-50 ${isCancelled ? 'bg-red-50/30' : ''}`}>
+                        <td className={`py-5 px-6 text-slate-500 ${isCancelled ? 'line-through opacity-50' : ''}`}>{row.date}</td>
                         <td className="px-4">
-                          <button onClick={() => openInvoicePopup(row)} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-mono text-xs border font-bold">
-                            {row.invoice}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => !isCancelled && openInvoicePopup(row)}
+                              className={`bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-mono text-xs border font-bold ${isCancelled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={isCancelled}
+                            >
+                              {row.invoice}
+                            </button>
+                            {isCancelled && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">
+                                Cancelled
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-4 font-bold">{row.client}</td>
-                        <td className="text-right px-4">{row.debit > 0 ? `₹${row.debit.toLocaleString()}` : "—"}</td>
-                        <td className="text-right px-4 text-emerald-600">{row.credit > 0 ? `₹${row.credit.toLocaleString()}` : "—"}</td>
-                        <td className="text-right px-4 font-bold">{due > 0 ? `₹${due.toLocaleString()}` : "—"}</td>
+                        <td className={`px-4 font-bold ${isCancelled ? 'line-through opacity-50' : ''}`}>{row.client}</td>
+                        <td className={`text-right px-4 ${isCancelled ? 'line-through opacity-50' : ''}`}>{row.debit > 0 ? `₹${row.debit.toLocaleString()}` : "—"}</td>
+                        <td className={`text-right px-4 text-emerald-600 ${isCancelled ? 'line-through opacity-50' : ''}`}>{row.credit > 0 ? `₹${row.credit.toLocaleString()}` : "—"}</td>
+                        <td className={`text-right px-4 font-bold ${isCancelled ? 'line-through opacity-50' : ''}`}>{due > 0 ? `₹${due.toLocaleString()}` : "—"}</td>
                         <td className="text-right px-6">
-                          <button onClick={() => openInvoicePopup(row)}>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}>
-                              {status.label}
+                          <button onClick={() => !isCancelled && openInvoicePopup(row)} disabled={isCancelled}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${isCancelled ? 'bg-gray-100 text-gray-400 border-gray-200' : status.color}`}>
+                              {isCancelled ? 'Cancelled' : status.label}
                             </span>
                           </button>
                         </td>
                         <td className="text-center px-4">
-                          <button
-                            onClick={() => handlePreviewInvoice(row.invoice)}
-                            className="text-slate-400 hover:text-indigo-600 transition-colors"
-                            title="Preview Invoice"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg>
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handlePreviewInvoice(row.invoice)}
+                              className="text-slate-400 hover:text-indigo-600 transition-colors"
+                              title={isCancelled ? "Preview Cancelled Invoice" : "Preview Invoice"}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                              </svg>
+                            </button>
+                            {!isCancelled && (
+                              <button
+                                onClick={() => handleCancelInvoice(row.invoice, row.client)}
+                                className="text-slate-400 hover:text-red-600 transition-colors"
+                                title="Cancel Invoice"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
