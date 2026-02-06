@@ -378,7 +378,7 @@ export default function App() {
         InvoiceNo: data.invoice.invoice_no || invoice_no,
         InvoiceDate: formatDate(data.invoice.invoice_date),
         GSTIN0: data.invoice.gstin || '',
-        GSTIN: data.party?.gstin_no || data.invoice_details?.gstin || '',
+        GSTIN: data.invoice_details?.gstin || data.party?.gstin_no || '',
         GSTIN2: data.invoice_details?.gstin2 || '',
 
         // Client/Party details
