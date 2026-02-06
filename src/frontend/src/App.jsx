@@ -18,7 +18,6 @@ import Preview from "./Preview.jsx";
 import Ledger from "./Ledger.jsx";
 import Analytics from "./Analytics.jsx";
 import Quotation from "./Quotation.jsx";
-import QuotationsList from "./QuotationsList.jsx";
 import QuotationPreview from "./QuotationPreview.jsx";
 import UserManagement from "./UserManagement.jsx";
 

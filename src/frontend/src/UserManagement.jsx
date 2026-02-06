@@ -183,8 +183,7 @@ export default function UserManagement() {
                                         <tr key={user.user_id} className="hover:bg-gray-50 transition">
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user.role === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
-                                                        }`}>
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user.role === 'admin' ? 'bg-purple-100' : 'bg-blue-100'}`}>
                                                         {user.role === 'admin' ? (
                                                             <Shield className="text-purple-600" size={20} />
                                                         ) : (
@@ -199,20 +198,14 @@ export default function UserManagement() {
                                             </td>
                                             <td className="p-4 text-gray-600">{user.email}</td>
                                             <td className="p-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
-                                                        ? 'bg-purple-100 text-purple-700'
-                                                        : 'bg-blue-100 text-blue-700'
-                                                    }`}>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                                                     {user.role}
                                                 </span>
                                             </td>
                                             <td className="p-4">
                                                 <button
                                                     onClick={() => handleToggleActive(user.user_id, user.is_active)}
-                                                    className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition ${user.is_active
-                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                            : 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                        }`}
+                                                    className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition ${user.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
                                                 >
                                                     {user.is_active ? 'Active' : 'Inactive'}
                                                 </button>
