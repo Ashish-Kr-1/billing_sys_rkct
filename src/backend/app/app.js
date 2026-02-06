@@ -65,10 +65,6 @@ app.use('/auth', authRouter);
 // Protect all subsequent routes
 app.use(authenticateUser);
 
-app.use('/companies', companyRouter);
-app.use('/analytics', analyticsRouter);
-app.use('/createQuotation', quotationRouter); // Mounting at /createQuotation to match frontend ease, or cleaner /quotations
-
 // Middleware to select database pool based on Company ID
 app.use((req, res, next) => {
   const companyId = req.headers['x-company-id'] || req.query.companyId;
@@ -89,6 +85,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+app.use('/companies', companyRouter);
+app.use('/analytics', analyticsRouter);
+app.use('/createQuotation', quotationRouter); // Mounting at /createQuotation to match frontend ease, or cleaner /quotations
 
 //endpoint for api status
 app.get('/health', async (req, res) => res.json({ status: 'ok' }));

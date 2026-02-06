@@ -192,7 +192,7 @@ export const getNextQuotationNumber = async (req, res) => {
     } catch (err) {
         await client.rollback();
         console.error("nextQuotationNumber error:", err);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal error" });
     } finally {
         client.release();
     }
