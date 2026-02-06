@@ -260,7 +260,22 @@ async function getNextInvoiceNumber(req, res) {
     };
 
     const invoicePrefix = prefixMap[req.companyId] || 'RKCT';
-    const financialYear = '2025-26';
+
+    // Dynamic Financial Year
+    const today = new Date();
+    const month = today.getMonth(); // 0-11
+    const year = today.getFullYear();
+
+    let fyStart = year;
+    if (month < 3) { // Jan, Feb, Mar belong to previous financial year start
+      fyStart = year - 1;
+    }
+
+    // Format: "25-26" (short year) or "2025-26" (long year)
+    // Existing format was "2025-26", let's keep it consistent.
+    const fyEnd = (fyStart + 1).toString().slice(-2);
+    const financialYear = `${fyStart}-${fyEnd}`;
+
     const prefix = `${invoicePrefix}/${financialYear}`;
 
     const [rows] = await client.query(`
@@ -275,8 +290,12 @@ async function getNextInvoiceNumber(req, res) {
 
     if (rows.length > 0) {
       const lastInvoiceNo = rows[0].invoice_no; // RKCT/2025-26/012
-      const lastNumber = parseInt(lastInvoiceNo.split('/')[2], 10);
-      nextNumber = lastNumber + 1;
+      const parts = lastInvoiceNo.split('/');
+      const lastSegment = parts[parts.length - 1]; // ALWAYS take the last part
+      const lastNumber = parseInt(lastSegment, 10);
+      if (!isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1;
+      }
     }
 
     const formatted = `${prefix}/${String(nextNumber).padStart(3, '0')}`;

@@ -140,15 +140,31 @@ export const getNextQuotationNumber = async (req, res) => {
     try {
         await client.beginTransaction();
 
+        // 1. Determine Prefix based on Company
         const prefixMap = {
-            1: 'RKCT',
-            2: 'RKEP',
-            3: 'GBH'
+            1: 'QT/RKCT',
+            2: 'QT/RKEP',
+            3: 'DT/GBH' // As requested
         };
-        const prefix = prefixMap[companyId] || 'QT';
-        const year = '2025-26'; // Hardcoded for now, can be dynamic
-        const fullPrefix = `${prefix}/${year}`;
+        const basePrefix = prefixMap[companyId] || 'QT/RKCT';
 
+        // 2. Calculate Dynamic Financial Year
+        const today = new Date();
+        const month = today.getMonth(); // 0-11
+        const year = today.getFullYear();
+
+        let fyStart = year;
+        if (month < 3) { // Jan, Feb, Mar belong to previous financial year start
+            fyStart = year - 1;
+        }
+
+        const fyEnd = (fyStart + 1).toString().slice(-2); // "26" for 2026
+        const financialYear = `${fyStart}-${fyEnd}`; // "2025-26"
+
+        // Full Prefix: QT/RKCT/2025-26
+        const fullPrefix = `${basePrefix}/${financialYear}`;
+
+        // 3. Find the last number
         const [rows] = await client.query(`
             SELECT quotation_no FROM quotations 
             WHERE quotation_no LIKE ? 
@@ -157,10 +173,14 @@ export const getNextQuotationNumber = async (req, res) => {
 
         let nextNum = 1;
         if (rows.length > 0) {
-            const lastNo = rows[0].quotation_no;
+            const lastNo = rows[0].quotation_no; // e.g. QT/RKCT/2025-26/045
             const parts = lastNo.split('/');
-            if (parts.length >= 3) {
-                nextNum = parseInt(parts[2]) + 1;
+            // Expecting [QT, RKCT, 2025-26, 045] -> length 4
+            // But DT/GBH might be same length.
+            // Safest way is to take the LAST segment
+            const lastSegment = parts[parts.length - 1];
+            if (!isNaN(lastSegment)) {
+                nextNum = parseInt(lastSegment) + 1;
             }
         }
 
