@@ -6,10 +6,127 @@ import { api, handleApiResponse } from "../config/apiClient.js";
 import { useCompany } from "../context/CompanyContext.jsx";
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
-import RKCastingLogo from '../assets/logo-rk-casting.png'; // Updated Logo
 
 export default function QuotationForm({ initialData }) {
-    // ... (lines 10-131 remain same)
+    console.log("QuotationForm initialData:", initialData);
+    console.log("Tax Values:", { sgst: initialData?.sgst, cgst: initialData?.cgst, igst: initialData?.igst });
+
+    const { selectedCompany } = useCompany();
+    const navigate = useNavigate();
+
+    const [quotation, setQuotation] = useState(
+        initialData?.quotation || {
+            clientName: "",
+            clientName2: "",
+            clientAddress2: "",
+            clientAddress: "",
+            GSTIN2: "",
+            GSTIN: "",
+            GSTIN0: "20DAMPK8203A1ZB",
+            QuotationDate: "",
+            QuotationNo: "",
+            PODate: "",
+            TrasnportBy: "",
+            PlaceofSupply: "",
+            PONo: "",
+            VehicleNo: "",
+            EwayBillNo: "",
+            VendorCode: "",
+            ChallanNo: "",
+            ChallanDate: "",
+            Terms: "",
+            AccountName: "",
+            CurrentACCno: "",
+            IFSCcode: "",
+            Branch: "",
+            items: [{ description: "", HSNCode: "", quantity: '', price: "" }],
+            party_id: "",
+            validity_days: "",
+            rfq_no: "",
+            rfq_date: "",
+            contact_person: "",
+            contact_no: "",
+            email: ""
+        });
+
+    const [parties, setParties] = useState([]);
+    const [itemsList, setItemsList] = useState([]);
+    const [selectedPartyId, setSelectedPartyId] = useState("");
+    const [companyConfig, setCompanyConfig] = useState(null);
+
+
+    //`${API_BASE}/parties`
+    useEffect(() => {
+        handleApiResponse(api.get('/parties'))
+            .then(data => setParties(data))
+            .catch(err => console.error('Error fetching parties:', err));
+    }, [selectedCompany]);
+
+    useEffect(() => {
+        handleApiResponse(api.get('/itemNames'))
+            .then(data => setItemsList(data))
+            .catch(err => console.error('Error fetching items:', err));
+    }, [selectedCompany]);
+
+    // Fetch company configuration and reset quotation state when company changes
+    useEffect(() => {
+        if (selectedCompany) {
+            console.log('🔄 Company changed to:', selectedCompany);
+
+            handleApiResponse(api.get(`/companies/${selectedCompany.id}/config`))
+                .then(data => {
+                    console.log('✅ Company config loaded:', data.config);
+                    setCompanyConfig(data.config);
+
+                    if (!initialData) {
+                        // Reset party selection when company changes
+                        setSelectedPartyId("");
+
+                        // Reset and update quotation state with company-specific defaults
+                        setQuotation(prev => ({
+                            ...prev,
+                            GSTIN0: data.config.gstin || '',
+                            // Bank Details
+                            AccountName: data.config.account_name || prev.AccountName,
+                            CurrentACCno: data.config.account_no || prev.CurrentACCno,
+                            IFSCcode: data.config.ifsc_code || prev.IFSCcode,
+                            Branch: data.config.branch || prev.Branch,
+
+                            // Clear party-related fields when changing company
+                            clientName: '',
+                            clientName2: '',
+                            clientAddress: '',
+                            clientAddress2: '',
+                            GSTIN: '',
+                            GSTIN2: '',
+                            party_id: ''
+                        }));
+                    } else {
+                        // Preserve existing data if returning from preview
+                        setQuotation(prev => ({
+                            ...prev,
+                            GSTIN0: data.config.gstin || prev.GSTIN0
+                        }));
+                    }
+                })
+                .catch(err => console.error('Error fetching company config:', err));
+        }
+    }, [selectedCompany, initialData]);
+
+
+    useEffect(() => {
+        if (selectedCompany && !initialData) {
+            handleApiResponse(api.get('/createQuotation/quotationNo'))
+                .then(data => {
+                    console.log('📄 Quotation number:', data.QuotationNo);
+                    setQuotation(prev => ({
+                        ...prev,
+                        QuotationNo: data.QuotationNo
+                    }))
+                })
+                .catch(err => console.error('Error fetching quotation number:', err));
+        }
+    }, [selectedCompany, initialData]);
 
     // Helper function to get the correct logo based on company
     const getCompanyLogo = () => {
@@ -17,16 +134,11 @@ export default function QuotationForm({ initialData }) {
         if (selectedCompany?.id === 3) {
             return GlobalBharatLogo;
         }
-        // Company 1 is RK Casting
-        if (selectedCompany?.id === 1) {
-            return RKCastingLogo;
-        }
-
         // Check if config has logo_url with global-bharat
         if (companyConfig?.logo_url?.includes('global-bharat')) {
             return GlobalBharatLogo;
         }
-        // Default logo
+        // Default logo for Company 1 and 2 (RK Casting and RK Engineering)
         return DefaultLogo;
     };
 
