@@ -1,5 +1,6 @@
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
+import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
 export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig }) {
@@ -12,6 +13,10 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
     // Company 3 is Global Bharat
     if (companyConfig.company_id === 3) {
       return GlobalBharatLogo;
+    }
+    // Company 1 is RK Casting (using new logo)
+    if (companyConfig.company_id === 1) {
+      return RkCastingLogo;
     }
     // Check if logo_url contains global-bharat
     if (companyConfig.logo_url?.includes('global-bharat')) {

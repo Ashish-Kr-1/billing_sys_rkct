@@ -6,6 +6,7 @@ import { api, handleApiResponse } from "../config/apiClient.js";
 import { useCompany } from "../context/CompanyContext.jsx";
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
+import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 
 export default function InvoiceForm({ initialData }) {
   const { selectedCompany } = useCompany();
@@ -165,11 +166,16 @@ export default function InvoiceForm({ initialData }) {
     if (selectedCompany?.id === 3) {
       return GlobalBharatLogo;
     }
+    // Company 1 is RK Casting (using new logo)
+    if (selectedCompany?.id === 1) {
+      return RkCastingLogo;
+    }
+
     // Check if config has logo_url with global-bharat
     if (companyConfig?.logo_url?.includes('global-bharat')) {
       return GlobalBharatLogo;
     }
-    // Default logo for Company 1 and 2 (RK Casting and RK Engineering)
+    // Default logo for others
     return DefaultLogo;
   };
 

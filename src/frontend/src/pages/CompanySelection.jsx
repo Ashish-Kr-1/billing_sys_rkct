@@ -6,6 +6,7 @@ import { api, handleApiResponse } from '../config/apiClient';
 import { ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle, Users } from 'lucide-react';
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
+import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 
 
 
@@ -134,7 +135,7 @@ export default function CompanySelection() {
                             <div className={`h-40 bg-gradient-to-br ${colors.bg} ${isConnected ? colors.hover : ''} transition-all duration-300 flex items-center justify-center relative`}>
                                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md p-3">
                                     <img
-                                        src={company.id === 3 ? GlobalBharatLogo : DefaultLogo}
+                                        src={company.id === 3 ? GlobalBharatLogo : (company.id === 1 ? RkCastingLogo : DefaultLogo)}
                                         alt={company.name}
                                         className="w-full h-full object-contain"
                                     />

@@ -1,5 +1,6 @@
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
+import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
 
@@ -14,6 +15,11 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
         if (companyConfig.company_id === 3) {
             return GlobalBharatLogo;
         }
+        // Company 1 is RK Casting (using new logo as per user request)
+        if (companyConfig.company_id === 1) {
+            return RkCastingLogo;
+        }
+
         // Check if logo_url contains global-bharat
         if (companyConfig.logo_url?.includes('global-bharat')) {
             return GlobalBharatLogo;
