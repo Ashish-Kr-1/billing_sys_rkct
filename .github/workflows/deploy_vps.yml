@@ -35,6 +35,7 @@ jobs:
              # Run migrations
              docker compose run --rm backend node migrations/add_user_roles.js || echo "User roles migration skipped/failed"
              docker compose run --rm backend node migrations/add_invoice_cancellation.js || echo "Invoice cancellation migration skipped/failed"
+             docker compose run --rm backend node migrations/add_user_company_access.js || echo "User company access migration skipped/failed"
              
              # Start containers
              docker compose up -d

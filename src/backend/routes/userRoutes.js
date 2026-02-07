@@ -5,7 +5,9 @@ import {
     createUser,
     updateUser,
     deleteUser,
-    resetUserPassword
+    resetUserPassword,
+    getUserCompanyAccess,
+    updateUserCompanyAccess
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -27,5 +29,11 @@ router.delete('/:id', deleteUser);
 
 // POST /users/:id/reset-password - Reset user password
 router.post('/:id/reset-password', resetUserPassword);
+
+// GET /users/:id/company-access - Get user's company access
+router.get('/:id/company-access', getUserCompanyAccess);
+
+// PUT /users/:id/company-access - Update user's company access
+router.put('/:id/company-access', updateUserCompanyAccess);
 
 export default router;

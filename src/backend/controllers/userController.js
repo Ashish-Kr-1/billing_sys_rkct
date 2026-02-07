@@ -265,3 +265,90 @@ export async function resetUserPassword(req, res) {
         client.release();
     }
 }
+
+/**
+ * Get user's company access (Admin only)
+ */
+export async function getUserCompanyAccess(req, res) {
+    const { id } = req.params;
+
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
+
+    try {
+        const [access] = await client.query(
+            'SELECT company_id FROM user_company_access WHERE user_id = ?',
+            [id]
+        );
+
+        const companyIds = access.map(row => row.company_id);
+
+        return res.status(200).json({ 
+            user_id: parseInt(id),
+            company_ids: companyIds 
+        });
+
+    } catch (error) {
+        console.error('Get user company access error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Update user's company access (Admin only)
+ */
+export async function updateUserCompanyAccess(req, res) {
+    const { id } = req.params;
+    const { company_ids } = req.body;
+    const created_by = req.user.user_id;
+
+    if (!Array.isArray(company_ids)) {
+        return res.status(400).json({ error: 'company_ids must be an array' });
+    }
+
+    const validCompanyIds = [1, 2, 3];
+    const invalidIds = company_ids.filter(id => !validCompanyIds.includes(id));
+    
+    if (invalidIds.length > 0) {
+        return res.status(400).json({ error: `Invalid company IDs: ${invalidIds.join(', ')}` });
+    }
+
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
+
+    try {
+        await client.beginTransaction();
+
+        const [users] = await client.query('SELECT user_id FROM users WHERE user_id = ?', [id]);
+        
+        if (users.length === 0) {
+            await client.rollback();
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        await client.query('DELETE FROM user_company_access WHERE user_id = ?', [id]);
+
+        if (company_ids.length > 0) {
+            const values = company_ids.map(companyId => [id, companyId, created_by]);
+            await client.query(
+                'INSERT INTO user_company_access (user_id, company_id, created_by) VALUES ?',
+                [values]
+            );
+        }
+
+        await client.commit();
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Company access updated successfully',
+            company_ids
+        });
+
+    } catch (error) {
+        await client.rollback();
+        console.error('Update user company access error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+}

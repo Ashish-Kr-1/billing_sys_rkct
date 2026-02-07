@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from './config/apiClient';
-import { Users, Plus, Trash2, Key, Edit2, ArrowLeft, Shield, User as UserIcon } from 'lucide-react';
+import { Users, Plus, Trash2, Key, Edit2, ArrowLeft, Shield, User as UserIcon, Building2 } from 'lucide-react';
 import Footer from './components/Footer';
 import { notify } from './components/Notification';
 import ConfirmModal from './components/ConfirmModal';
@@ -14,8 +14,16 @@ export default function UserManagement() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
+    const [showCompanyAccessModal, setShowCompanyAccessModal] = useState(false);
+    const [companyAccess, setCompanyAccess] = useState([]);
 
     const navigate = useNavigate();
+
+    const companies = [
+        { id: 1, name: 'RK Casting and Engineering Works' },
+        { id: 2, name: 'RKCASTING ENGINEERING PVT. LTD.' },
+        { id: 3, name: 'Global Bharat' }
+    ];
 
     const [formData, setFormData] = useState({
         username: '',
@@ -142,8 +150,49 @@ export default function UserManagement() {
                 notify(data.error || 'Failed to update user status', 'error');
             }
         } catch (error) {
-            console.error('Error updating user:', error);
-            notify('Failed to update user', 'error');
+            console.error('Error toggling user status:', error);
+            notify('Failed to update user status', 'error');
+        }
+    };
+
+    const handleOpenCompanyAccess = async (user) => {
+        setSelectedUser(user);
+        try {
+            const response = await api.get(`/users/${user.user_id}/company-access`);
+            const data = await response.json();
+            setCompanyAccess(data.company_ids || []);
+            setShowCompanyAccessModal(true);
+        } catch (error) {
+            console.error('Error fetching company access:', error);
+            notify('Failed to load company access', 'error');
+        }
+    };
+
+    const handleToggleCompanyAccess = (companyId) => {
+        setCompanyAccess(prev =>
+            prev.includes(companyId)
+                ? prev.filter(id => id !== companyId)
+                : [...prev, companyId]
+        );
+    };
+
+    const handleSaveCompanyAccess = async () => {
+        try {
+            const response = await api.put(`/users/${selectedUser.user_id}/company-access`, {
+                company_ids: companyAccess
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                notify('Company access updated successfully!', 'success');
+                setShowCompanyAccessModal(false);
+                setSelectedUser(null);
+            } else {
+                notify(data.error || 'Failed to update company access', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating company access:', error);
+            notify('Failed to update company access', 'error');
         }
     };
 
@@ -229,6 +278,13 @@ export default function UserManagement() {
                                             </td>
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenCompanyAccess(user)}
+                                                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-full transition"
+                                                        title="Manage Company Access"
+                                                    >
+                                                        <Building2 size={18} />
+                                                    </button>
                                                     <button
                                                         onClick={() => {
                                                             setSelectedUser(user);
@@ -380,6 +436,57 @@ export default function UserManagement() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Company Access Modal */}
+            {showCompanyAccessModal && selectedUser && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Manage Company Access</h2>
+                        <p className="text-gray-600 mb-6">Select companies for <strong>{selectedUser.username}</strong></p>
+
+                        <div className="space-y-3 mb-6">
+                            {companies.map(company => (
+                                <label
+                                    key={company.id}
+                                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={companyAccess.includes(company.id)}
+                                        onChange={() => handleToggleCompanyAccess(company.id)}
+                                        className="w-5 h-5 text-[#004f43] rounded focus:ring-2 focus:ring-[#004f43] cursor-pointer"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-gray-900">{company.name}</div>
+                                        <div className="text-xs text-gray-500">Company ID: {company.id}</div>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowCompanyAccessModal(false);
+                                    setSelectedUser(null);
+                                    setCompanyAccess([]);
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveCompanyAccess}
+                                className="flex-1 px-4 py-2 bg-[#004f43] text-white rounded-lg hover:bg-[#003d34] transition font-medium"
+                            >
+                                Save Access
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
