@@ -49,15 +49,18 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     };
   }
 
-  // Filter out cancelled transactions/invoices
-  // Assuming 'status' or 'invoice_status' field exists in the transaction object from the backend query
-  // If not explicitly present, we might need to rely on the backend to filter it.
-  // However, usually it is passed. Let's filter where status is not 'Cancelled'.
-  // We'll use a case-insensitive check just in case.
-  const validTransactions = RAW_TRANSACTIONS.filter(t => {
-    const status = t.invoice_status || t.status;
-    return status?.toLowerCase() !== 'cancelled';
+  // Filter out cancelled/rejected invoices and their associated payments
+  // 1. Identify all invoice numbers that are marked as cancelled or rejected
+  const cancelledInvoiceNos = new Set();
+  RAW_TRANSACTIONS.forEach(t => {
+    const status = (t.invoice_status || t.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'rejected') {
+      cancelledInvoiceNos.add(t.invoice_no);
+    }
   });
+
+  // 2. Filter out ALL transactions (including payments) associated with those invoices
+  const validTransactions = RAW_TRANSACTIONS.filter(t => !cancelledInvoiceNos.has(t.invoice_no));
 
   // Create lookup maps for efficient joins
   const partiesMap = {};
