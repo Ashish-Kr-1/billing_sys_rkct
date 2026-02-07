@@ -71,7 +71,7 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
             <div className="text-sm grid grid-cols-2 md:grid-cols-4 gap-2 border-b-2 mt-2 pb-2">
                 <div><span className="font-bold">Quotation No:</span> {quotation.QuotationNo}</div>
                 <div><span className="font-bold">Date:</span> {quotation.QuotationDate}</div>
-                <div><span className="font-bold">Validity:</span> {quotation.validity_days}</div>
+                <div><span className="font-bold">Validity:</span> {quotation.validity_days} days</div>
                 <div><span className="font-bold">RFQ No:</span> {quotation.rfq_no}</div>
 
                 <div><span className="font-bold">Enquiry Date:</span> {quotation.rfq_date}</div>
