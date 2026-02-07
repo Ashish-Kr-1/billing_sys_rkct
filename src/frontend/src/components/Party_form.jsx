@@ -97,7 +97,22 @@ function Party_form() {
         />
       </div>
       <div className='flex justify-end space-x-4'>
-        <Button text="Save" color="green" onClick={() => { notify("Party Created Successfully!", "success"); Link(party); }} />
+        <Button
+          text="Save"
+          color="green"
+          onClick={async () => {
+            try {
+              if (!party.party_name || !party.type) {
+                notify("Party Name and Type are required", "warning");
+                return;
+              }
+              await Link(party);
+              notify("Party Created Successfully!", "success");
+            } catch (error) {
+              notify(error.message || "Failed to create party", "error");
+            }
+          }}
+        />
         <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
       </div>
     </div>

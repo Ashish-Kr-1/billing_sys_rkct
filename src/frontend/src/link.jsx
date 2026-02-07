@@ -10,6 +10,6 @@ export default async function createParty(data) {
         console.log("Party created:", result.party);
     } catch (err) {
         console.error("Network error:", err);
-        alert("Network error: " + err.message);
+        throw err;
     }
 }

@@ -9,6 +9,6 @@ export default async function createItem(data) {
         console.log("Item created:", result.item);
     } catch (err) {
         console.error("Network error:", err);
-        alert("Network error: " + err.message);
+        throw err;
     }
 }

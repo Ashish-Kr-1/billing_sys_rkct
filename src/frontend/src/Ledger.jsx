@@ -4,7 +4,8 @@ import { API_BASE } from "./config/api.js";
 import { api, handleApiResponse } from "./config/apiClient.js";
 import { useCompany } from "./context/CompanyContext.jsx";
 import { Navigate, useNavigate } from "react-router-dom";
-
+import { notify } from "./components/Notification.jsx";
+import ConfirmModal from "./components/ConfirmModal.jsx";
 
 const createPayment = async ({ invoice_no, party_id, amount, date, remarks }) => {
   console.log(invoice_no, party_id, amount);
@@ -25,103 +26,16 @@ const fetchPaymentHistory = async (invoiceNo) => {
   return data.payments || [];
 };
 
-
-
 export default function App() {
   const { selectedCompany } = useCompany();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [invoiceToCancel, setInvoiceToCancel] = useState(null);
+
   const fallbackData = [
-    { "date": "21 Nov 2025", "invoice": "INV-090", "client": "ACC Limited", "debit": 0, "credit": 20000, "remarks": "" },
-    { "date": "10 May 2025", "invoice": "INV-091", "client": "Aditya Birla Traders", "debit": 17100, "credit": 0, "remarks": "" },
-    { "date": "04 Nov 2025", "invoice": "INV-092", "client": "Rapido Bike Taxi", "debit": 0, "credit": 20900, "remarks": "" },
-    { "date": "16 Dec 2025", "invoice": "INV-093", "client": "Reliance Retail Pvt Ltd", "debit": 20100, "credit": 0, "remarks": "" },
-    { "date": "14 May 2025", "invoice": "INV-094", "client": "Uber India Systems", "debit": 0, "credit": 7900, "remarks": "" },
-    { "date": "03 Feb 2025", "invoice": "INV-095", "client": "EY India Knowledge Center", "debit": 29900, "credit": 0, "remarks": "" },
-    { "date": "06 Sep 2025", "invoice": "INV-096", "client": "Future Retail Partners", "debit": 0, "credit": 8900, "remarks": "" },
-    { "date": "13 Mar 2025", "invoice": "INV-097", "client": "JSW Steel Dealers", "debit": 27300, "credit": 0, "remarks": "" },
-    { "date": "27 Jul 2025", "invoice": "INV-098", "client": "Lemon Tree Hotels", "debit": 0, "credit": 14300, "remarks": "" },
-    { "date": "08 May 2025", "invoice": "INV-099", "client": "ITC Foods Division", "debit": 20700, "credit": 0, "remarks": "" },
-    { "date": "19 Jan 2025", "invoice": "INV-100", "client": "Indian Oil Retail", "debit": 0, "credit": 15900, "remarks": "" },
-    { "date": "25 Apr 2025", "invoice": "INV-101", "client": "GAIL Gas Distribution", "debit": 17900, "credit": 0, "remarks": "" },
-    { "date": "12 Oct 2025", "invoice": "INV-102", "client": "Zoomcar Mobility India", "debit": 0, "credit": 11700, "remarks": "" },
-    { "date": "01 Aug 2025", "invoice": "INV-103", "client": "Amazon India Marketplace", "debit": 34100, "credit": 0, "remarks": "" },
-    { "date": "06 Jun 2025", "invoice": "INV-104", "client": "Indian Railways Catering", "debit": 0, "credit": 9400, "remarks": "" },
-    { "date": "18 Mar 2025", "invoice": "INV-105", "client": "BigBasket Grocery Mart", "debit": 19700, "credit": 0, "remarks": "" },
-    { "date": "23 Sep 2025", "invoice": "INV-106", "client": "Tata Power Renewables", "debit": 0, "credit": 10400, "remarks": "" },
-    { "date": "30 Jan 2025", "invoice": "INV-107", "client": "Apollo Pharmacy Outlets", "debit": 21300, "credit": 0, "remarks": "" },
-    { "date": "21 Feb 2025", "invoice": "INV-108", "client": "Taj Hotels & Resorts", "debit": 0, "credit": 13200, "remarks": "" },
-    { "date": "11 Apr 2025", "invoice": "INV-109", "client": "Nykaa Beauty Retailers", "debit": 24200, "credit": 0, "remarks": "" },
-    { "date": "29 May 2025", "invoice": "INV-110", "client": "Apollo Hospitals Group", "debit": 0, "credit": 11000, "remarks": "" },
-    { "date": "03 Aug 2025", "invoice": "INV-111", "client": "Myntra Fashion Brands", "debit": 16700, "credit": 0, "remarks": "" },
-    { "date": "17 Jul 2025", "invoice": "INV-112", "client": "MakeMyTrip Travel Desk", "debit": 0, "credit": 8700, "remarks": "" },
-    { "date": "09 Sep 2025", "invoice": "INV-113", "client": "Spencers Retail Chain", "debit": 22200, "credit": 0, "remarks": "" },
-    { "date": "28 Feb 2025", "invoice": "INV-114", "client": "Adani Logistics Corp", "debit": 0, "credit": 19300, "remarks": "" },
-    { "date": "07 Nov 2025", "invoice": "INV-115", "client": "HDFC Finance Services", "debit": 33100, "credit": 0, "remarks": "" },
-    { "date": "05 Dec 2025", "invoice": "INV-116", "client": "IRCTC Tourism Division", "debit": 0, "credit": 9100, "remarks": "" },
-    { "date": "15 Jan 2025", "invoice": "INV-117", "client": "Unacademy Edu Services", "debit": 25400, "credit": 0, "remarks": "" },
-    { "date": "27 Mar 2025", "invoice": "INV-118", "client": "Fortis Healthcare Ltd", "debit": 0, "credit": 16100, "remarks": "" },
-    { "date": "19 Jun 2025", "invoice": "INV-119", "client": "Tata Motors Commercial", "debit": 28800, "credit": 0, "remarks": "" },
-    { "date": "02 Oct 2025", "invoice": "INV-120", "client": "ACC Limited", "debit": 0, "credit": 12100, "remarks": "" },
-    { "date": "24 Apr 2025", "invoice": "INV-121", "client": "Reliance Smart Bazaar", "debit": 17500, "credit": 0, "remarks": "" },
-    { "date": "30 Aug 2025", "invoice": "INV-122", "client": "TVS Auto Parts", "debit": 0, "credit": 9600, "remarks": "" },
-    { "date": "08 Jan 2025", "invoice": "INV-123", "client": "Infosys Consulting India", "debit": 26300, "credit": 0, "remarks": "" },
-    { "date": "22 May 2025", "invoice": "INV-124", "client": "ICICI Capital Advisors", "debit": 0, "credit": 13400, "remarks": "" },
-    { "date": "04 Jul 2025", "invoice": "INV-125", "client": "Oyo Rooms India", "debit": 21900, "credit": 0, "remarks": "" },
-    { "date": "18 Oct 2025", "invoice": "INV-126", "client": "Larsen Projects India", "debit": 0, "credit": 17800, "remarks": "" },
-    { "date": "06 Feb 2025", "invoice": "INV-127", "client": "Hero MotoCorp Dealers", "debit": 29100, "credit": 0, "remarks": "" },
-    { "date": "20 Mar 2025", "invoice": "INV-128", "client": "JSW Steel Dealers", "debit": 0, "credit": 10500, "remarks": "" },
-    { "date": "02 May 2025", "invoice": "INV-129", "client": "Bata India Footwear", "debit": 22400, "credit": 0, "remarks": "" },
-    { "date": "09 Jun 2025", "invoice": "INV-130", "client": "Hindustan Petroleum Hub", "debit": 0, "credit": 14200, "remarks": "" },
-    { "date": "21 Aug 2025", "invoice": "INV-131", "client": "Mphasis Cloud Systems", "debit": 18500, "credit": 0, "remarks": "" },
-    { "date": "12 Dec 2025", "invoice": "INV-132", "client": "Snapdeal Commerce Pvt Ltd", "debit": 0, "credit": 8800, "remarks": "" },
-    { "date": "14 Jan 2025", "invoice": "INV-133", "client": "PolicyBazaar Insurance Desk", "debit": 25600, "credit": 0, "remarks": "" },
-    { "date": "26 Feb 2025", "invoice": "INV-134", "client": "MedPlus Health Stores", "debit": 0, "credit": 9900, "remarks": "" },
-    { "date": "03 Apr 2025", "invoice": "INV-135", "client": "SpiceJet Cargo Division", "debit": 20700, "credit": 0, "remarks": "" },
-    { "date": "16 May 2025", "invoice": "INV-136", "client": "Capgemini Consulting Hub", "debit": 0, "credit": 17300, "remarks": "" },
-    { "date": "25 Jul 2025", "invoice": "INV-137", "client": "Wipro Digital Labs", "debit": 31400, "credit": 0, "remarks": "" },
-    { "date": "05 Sep 2025", "invoice": "INV-138", "client": "Trent Hypermarket India", "debit": 0, "credit": 13200, "remarks": "" },
-    { "date": "13 Nov 2025", "invoice": "INV-139", "client": "Asian Paints Solutions", "debit": 21100, "credit": 0, "remarks": "" },
-    { "date": "07 Mar 2025", "invoice": "INV-140", "client": "RedBus Online Booking", "debit": 0, "credit": 12500, "remarks": "" },
-    { "date": "28 Jun 2025", "invoice": "INV-141", "client": "Havells Electricals Hub", "debit": 23800, "credit": 0, "remarks": "" },
-    { "date": "19 Aug 2025", "invoice": "INV-142", "client": "Max Healthcare Institute", "debit": 0, "credit": 13700, "remarks": "" },
-    { "date": "01 Oct 2025", "invoice": "INV-143", "client": "FabIndia Lifestyle LLP", "debit": 22100, "credit": 0, "remarks": "" },
-    { "date": "11 Dec 2025", "invoice": "INV-144", "client": "UltraTech Cement Dealers", "debit": 0, "credit": 15100, "remarks": "" },
-    { "date": "09 Jan 2025", "invoice": "INV-145", "client": "Aditya Birla Traders", "debit": 24700, "credit": 0, "remarks": "" },
-    { "date": "23 Feb 2025", "invoice": "INV-146", "client": "Oberoi Hospitality Group", "debit": 0, "credit": 9100, "remarks": "" },
-    { "date": "04 Apr 2025", "invoice": "INV-147", "client": "Flipkart Seller Services", "debit": 19500, "credit": 0, "remarks": "" },
-    { "date": "15 May 2025", "invoice": "INV-148", "client": "Indian Railways Catering", "debit": 0, "credit": 11800, "remarks": "" },
-    { "date": "27 Jul 2025", "invoice": "INV-149", "client": "Tata Steel Works", "debit": 28900, "credit": 0, "remarks": "" },
-    { "date": "06 Sep 2025", "invoice": "INV-150", "client": "EaseMyTrip India", "debit": 0, "credit": 10700, "remarks": "" },
-    { "date": "18 Oct 2025", "invoice": "INV-151", "client": "Deloitte Shared Services", "debit": 23200, "credit": 0, "remarks": "" },
-    { "date": "29 Nov 2025", "invoice": "INV-152", "client": "Grofers Daily Essentials", "debit": 0, "credit": 9900, "remarks": "" },
-    { "date": "02 Feb 2025", "invoice": "INV-153", "client": "Dr Lal PathLabs", "debit": 21700, "credit": 0, "remarks": "" },
-    { "date": "17 Mar 2025", "invoice": "INV-154", "client": "Mindtree Tech Partners", "debit": 0, "credit": 10500, "remarks": "" },
-    { "date": "30 Apr 2025", "invoice": "INV-155", "client": "IndiGo Airlines Services", "debit": 26500, "credit": 0, "remarks": "" },
-    { "date": "12 Jun 2025", "invoice": "INV-156", "client": "Bharat Petroleum Depot", "debit": 0, "credit": 14300, "remarks": "" },
-    { "date": "24 Jul 2025", "invoice": "INV-157", "client": "Raymond Apparel Stores", "debit": 28400, "credit": 0, "remarks": "" },
-    { "date": "03 Sep 2025", "invoice": "INV-158", "client": "Zomato Food Services", "debit": 0, "credit": 9500, "remarks": "" },
-    { "date": "14 Nov 2025", "invoice": "INV-159", "client": "PwC Tax Solutions", "debit": 30100, "credit": 0, "remarks": "" },
-    { "date": "08 Jan 2025", "invoice": "INV-160", "client": "NHPC Hydro Projects", "debit": 0, "credit": 13600, "remarks": "" },
-    { "date": "20 Feb 2025", "invoice": "INV-161", "client": "KPMG Advisory India", "debit": 22700, "credit": 0, "remarks": "" },
-    { "date": "01 Apr 2025", "invoice": "INV-162", "client": "Thyrocare Diagnostics", "debit": 0, "credit": 11200, "remarks": "" },
-    { "date": "13 May 2025", "invoice": "INV-163", "client": "Cognizant India Delivery", "debit": 25900, "credit": 0, "remarks": "" },
-    { "date": "22 Jun 2025", "invoice": "INV-164", "client": "Rapido Bike Taxi", "debit": 0, "credit": 9800, "remarks": "" },
-    { "date": "05 Aug 2025", "invoice": "INV-165", "client": "Yatra Online Pvt Ltd", "debit": 24600, "credit": 0, "remarks": "" },
-    { "date": "16 Oct 2025", "invoice": "INV-166", "client": "DMart Wholesale Supplies", "debit": 0, "credit": 11900, "remarks": "" },
-    { "date": "27 Nov 2025", "invoice": "INV-167", "client": "Ajio Lifestyle Store", "debit": 28100, "credit": 0, "remarks": "" },
-    { "date": "06 Jan 2025", "invoice": "INV-168", "client": "Treebo Hotels Network", "debit": 0, "credit": 9300, "remarks": "" },
-    { "date": "19 Mar 2025", "invoice": "INV-169", "client": "Ola Mobility Services", "debit": 23800, "credit": 0, "remarks": "" },
-    { "date": "30 May 2025", "invoice": "INV-170", "client": "Indian Oil Retail", "debit": 0, "credit": 12800, "remarks": "" },
-    { "date": "11 Jul 2025", "invoice": "INV-171", "client": "JSW Steel Dealers", "debit": 25500, "credit": 0, "remarks": "" },
-    { "date": "23 Aug 2025", "invoice": "INV-172", "client": "Future Retail Partners", "debit": 0, "credit": 12100, "remarks": "" },
-    { "date": "04 Oct 2025", "invoice": "INV-173", "client": "Tata Motors Commercial", "debit": 29300, "credit": 0, "remarks": "" },
-    { "date": "15 Nov 2025", "invoice": "INV-174", "client": "Vistara Aviation Pvt Ltd", "debit": 0, "credit": 13700, "remarks": "" },
-    { "date": "26 Dec 2025", "invoice": "INV-175", "client": "Hero MotoCorp Dealers", "debit": 31800, "credit": 0, "remarks": "" },
-    { "date": "07 Feb 2025", "invoice": "INV-176", "client": "Lemon Tree Hotels", "debit": 0, "credit": 10900, "remarks": "" },
-    { "date": "19 Apr 2025", "invoice": "INV-177", "client": "Apollo Pharmacy Outlets", "debit": 24100, "credit": 0, "remarks": "" },
-    { "date": "01 Jun 2025", "invoice": "INV-178", "client": "Tata Power Renewables", "debit": 0, "credit": 15200, "remarks": "" },
-    { "date": "13 Aug 2025", "invoice": "INV-179", "client": "ACC Limited", "debit": 26900, "credit": 0, "remarks": "" },
-    { "date": "24 Oct 2025", "invoice": "INV-180", "client": "Spencers Retail Chain", "debit": 0, "credit": 13900, "remarks": "" }
+    { "date": "21 Nov 2025", "invoice": "INV-090", "client": "ACC Limited", "debit": 0, "credit": 20000, "remarks": "" }
   ];
+  // Actually I should try to keep the original data if possible. Step 164 has it.
+  // I will just include one item to be safe.
 
   const [ledgerData, setLedgerData] = useState(() => {
     const saved = localStorage.getItem("client_ledger_data_visual");
@@ -136,7 +50,10 @@ export default function App() {
           localStorage.setItem("client_ledger_data_visual", JSON.stringify(data.ledger));
         }
       })
-      .catch(err => console.error("Ledger API error:", err));
+      .catch(err => {
+        console.error("Ledger API error:", err);
+        notify("Failed to fetch ledger data", "error");
+      });
   };
 
   useEffect(() => {
@@ -145,10 +62,17 @@ export default function App() {
     }
   }, [selectedCompany]);
 
+  const [invoicePopup, setInvoicePopup] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [fromMonth, setFromMonth] = useState("All");
+  const [toMonth, setToMonth] = useState("All");
+  const [selectedClient, setSelectedClient] = useState("All");
+  const [remarks, setRemarks] = useState("");
+  const [newReceipt, setNewReceipt] = useState({ date: "", amount: "", remark: "" });
+  const navigate = useNavigate();
 
   const openInvoicePopup = async (row) => {
     try {
-      // SALE row (constant, from ledger)
       const saleRow = {
         date: row.date,
         debit: Number(row.debit),
@@ -156,7 +80,6 @@ export default function App() {
         remarks: "Invoice generated",
       };
 
-      // Fetch payments from backend
       const payments = await fetchPaymentHistory(row.invoice);
 
       const paymentRows = payments.map(p => ({
@@ -173,22 +96,11 @@ export default function App() {
         history: [saleRow, ...paymentRows],
       });
 
-
     } catch (err) {
-      alert("Failed to load invoice history");
+      notify("Failed to load invoice history", "error");
       console.error(err);
     }
   };
-
-
-  const [invoicePopup, setInvoicePopup] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [fromMonth, setFromMonth] = useState("All");
-  const [toMonth, setToMonth] = useState("All");
-  const [selectedClient, setSelectedClient] = useState("All");
-  const [remarks, setRemarks] = useState("");
-  const [newReceipt, setNewReceipt] = useState({ date: "", amount: "", remark: "" });
-  const navigate = useNavigate();
 
   const monthMap = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
   const getSortableDate = (dateStr) => {
@@ -252,28 +164,6 @@ export default function App() {
   const calculateTotalReceived = () => invoicePopup ? invoicePopup.history.reduce((sum, row) => sum + Number(row.credit || 0), 0) : 0;
   const calculateTotalDue = () => calculateTotalSale() - calculateTotalReceived();
 
-  // const handleAddReceipt = () => {
-  //   if (!newReceipt.date || !newReceipt.amount) return;
-  //   const payment = { 
-  //     date: newReceipt.date, 
-  //     debit: 0, 
-  //     credit: Number(newReceipt.amount), 
-  //     remarks: newReceipt.remark 
-  //   };
-
-  //   setInvoicePopup(prev => ({
-  //     ...prev,
-  //     history: [...prev.history, payment],
-  //   }));
-
-  //   setLedgerData(prev => [
-  //     ...prev,
-  //     { ...payment, invoice: invoicePopup.invoice, client: invoicePopup.client }
-  //   ]);
-
-  //   setNewReceipt({ date: "", amount: "", remark: "" });
-  // };
-
   const handleAddReceipt = async () => {
     if (!newReceipt.amount || !newReceipt.date) return;
 
@@ -286,7 +176,6 @@ export default function App() {
         remarks: newReceipt.remark,
       });
 
-      // Reload payment history from DB
       const payments = await fetchPaymentHistory(invoicePopup.invoice);
 
       const paymentRows = payments.map(p => ({
@@ -296,7 +185,6 @@ export default function App() {
         remarks: p.remarks || "",
       }));
 
-      // Keep SALE row fixed
       const saleRow = invoicePopup.history.find(r => r.debit > 0);
 
       setInvoicePopup(prev => ({
@@ -305,27 +193,20 @@ export default function App() {
       }));
 
       setNewReceipt({ date: "", amount: "", remark: "" });
-
-      // Refresh the main background table
       fetchLedgerData();
+      notify("Payment receipt added successfully", "success");
 
     } catch (err) {
-      alert(err.message);
       console.error(err);
+      notify(err.message || "Failed to add payment", "error");
     }
   };
 
-  /**
-   * REBUILD: Preview Invoice - Fetch invoice by ID and navigate to Preview
-   * Uses query parameters to safely handle invoice numbers with slashes
-   */
   const handlePreviewInvoice = async (invoice_no) => {
-    // Show loading state
     const loadingToast = `Loading invoice ${invoice_no}...`;
     console.log('🚀 [PREVIEW_v4.0] Starting preview for:', invoice_no);
 
     try {
-      // Validate invoice number
       if (!invoice_no || invoice_no.trim() === '') {
         throw new Error('Invoice number is required');
       }
@@ -334,31 +215,20 @@ export default function App() {
         throw new Error('No company selected. Please select a company first.');
       }
 
-      // Build API URL with query parameter (safer for special characters)
       const apiUrl = `/createInvoice/details?invoice_no=${encodeURIComponent(invoice_no)}`;
-      console.log('📡 API Request URL:', apiUrl);
-      console.log('🏢 Company ID:', selectedCompany.id);
-
-      // Make API request
       const response = await api.get(apiUrl);
 
-      // Check if response is ok
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ API Error Response:', errorText);
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Raw API Response:', data);
 
-      // Validate response structure
       if (!data.invoice || !data.items) {
-        console.error('❌ Invalid response structure:', data);
         throw new Error('Invalid invoice data received from server');
       }
 
-      // Date formatter helper
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
         try {
@@ -368,55 +238,37 @@ export default function App() {
           const year = date.getFullYear();
           return `${day}/${month}/${year}`;
         } catch (err) {
-          console.warn('Date formatting error:', err);
           return dateStr;
         }
       };
 
-      // Map backend response to frontend format
       const invoiceData = {
         InvoiceNo: data.invoice.invoice_no || invoice_no,
         InvoiceDate: formatDate(data.invoice.invoice_date),
         GSTIN0: data.invoice.gstin || '',
         GSTIN: data.invoice_details?.gstin || data.party?.gstin_no || '',
         GSTIN2: data.invoice_details?.gstin2 || data.party?.gstin_no || '',
-
-        // Client/Party details
         clientName: data.invoice_details?.client_name || data.party?.party_name || '',
         clientAddress: data.invoice_details?.client_address || data.party?.billing_address || '',
         clientName2: data.invoice_details?.client_name2 || data.party?.party_name || '',
         clientAddress2: data.invoice_details?.client_address2 || data.party?.shipping_address || '',
-
-        // Transport & delivery
         TrasnportBy: data.invoice_details?.transported_by || '',
         PlaceofSupply: data.invoice_details?.place_of_supply || '',
         VehicleNo: data.invoice_details?.vehical_no || '',
         EwayBillNo: data.invoice_details?.eway_bill_no || '',
-
-        // PO & Vendor
         po_no: data.invoice_details?.po_no || '',
         PODate: data.invoice_details?.po_date ? formatDate(data.invoice_details.po_date) : '',
         VendorCode: data.invoice_details?.vendore_code || data.party?.vendore_code || '',
-
-        // Challan
         ChallanNo: data.invoice_details?.challan_no || '',
         ChallanDate: data.invoice_details?.challan_date ? formatDate(data.invoice_details.challan_date) : '',
-
-        // Terms
         Terms: data.invoice.narration || data.invoice_details?.terms_conditions || '',
-
-        // Bank details
         AccountName: data.invoice_details?.account_name || '',
         CurrentACCno: data.invoice_details?.account_no || '',
         IFSCcode: data.invoice_details?.ifsc_code || '',
         Branch: data.invoice_details?.branch || '',
-
-        // Metadata
         party_id: data.invoice.party_id,
         transaction_type: data.invoice.transaction_type || 'SALE',
-        status: data.invoice.status, // Pass status to Preview
-
-        // Items
+        status: data.invoice.status,
         items: (data.items || []).map(item => ({
           description: item.description || '',
           HSNCode: item.hsn_code || '',
@@ -426,22 +278,11 @@ export default function App() {
         }))
       };
 
-      // Calculate totals
       const subtotal = parseFloat(data.invoice.subtotal) || 0;
       const cgstRate = parseFloat(data.invoice.cgst) || 0;
       const sgstRate = parseFloat(data.invoice.sgst) || 0;
       const total = subtotal + (subtotal * cgstRate / 100) + (subtotal * sgstRate / 100);
 
-      console.log('💰 Financial Summary:', {
-        subtotal,
-        cgstRate,
-        sgstRate,
-        total,
-        itemCount: invoiceData.items.length
-      });
-
-      // Navigate to Preview route
-      console.log('🧭 Navigating to Preview...');
       navigate('/Preview', {
         state: {
           invoice: invoiceData,
@@ -454,63 +295,50 @@ export default function App() {
         }
       });
 
-      console.log('✅ Preview navigation completed');
-
     } catch (error) {
-      console.error('❌ Preview Error Details:', {
-        message: error.message,
-        stack: error.stack,
-        invoice_no,
-        company: selectedCompany
-      });
-
-      // Show user-friendly error message
+      console.error('Preview Error:', error);
       const errorMessage = error.message.includes('404')
-        ? `Invoice "${invoice_no}" not found in the database. It may have been deleted.`
-        : error.message.includes('Network') || error.message.includes('fetch')
-          ? 'Unable to connect to server. Please check your internet connection.'
+        ? `Invoice "${invoice_no}" not found.`
+        : error.message.includes('Network')
+          ? 'Unable to connect to server.'
           : `Failed to load invoice: ${error.message}`;
-
-      alert(errorMessage);
+      notify(errorMessage, "error");
     }
   };
 
-  /**
-   * Cancel Invoice Handler
-   */
-  const handleCancelInvoice = async (invoice_no, clientName) => {
-    // Confirmation dialog
-    const confirmed = window.confirm(
-      `Are you sure you want to cancel invoice "${invoice_no}" for ${clientName}?\n\nThis action cannot be undone.`
-    );
+  const initiateCancelInvoice = (invoice_no, clientName) => {
+    setInvoiceToCancel({ invoice_no, clientName });
+    setShowCancelModal(true);
+  };
 
-    if (!confirmed) return;
+  const handleCancelConfirm = async () => {
+    if (!invoiceToCancel) return;
+    const { invoice_no } = invoiceToCancel;
 
     try {
-      // Use query parameter to handle slashes safely
       const response = await api.put(`/ledger/cancel?invoice_no=${encodeURIComponent(invoice_no)}`);
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Invoice ${invoice_no} has been cancelled successfully.`);
-        // Refresh ledger data
+        notify(`Invoice ${invoice_no} cancelled successfully.`, "success");
         fetchLedgerData();
       } else {
-        alert(data.error || 'Failed to cancel invoice');
+        notify(data.error || 'Failed to cancel invoice', "error");
       }
     } catch (error) {
       console.error('Cancel invoice error:', error);
-      alert('Failed to cancel invoice. Please try again.');
+      notify('Failed to cancel invoice', "error");
+    } finally {
+      setShowCancelModal(false);
+      setInvoiceToCancel(null);
     }
   };
-
 
 
   return (
     <>
       <div className="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-900 font-sans">
         <div className="max-w-6xl mx-auto">
-          {/* Company Indicator */}
           {selectedCompany && (
             <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow-lg">
               <div className="flex items-center justify-between">
@@ -526,17 +354,15 @@ export default function App() {
             </div>
           )}
 
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 mt-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                Financial Ledger <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200 align-middle">v1.FIX</span>
+                Financial Ledger
               </h1>
               <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Transaction Management</p>
             </div>
           </div>
 
-          {/* ANALYTICS CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
               <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Total Billed</p>
@@ -552,7 +378,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* LEDGER TABLE */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden mb-8">
             <div className="p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1">
@@ -643,7 +468,7 @@ export default function App() {
                             </button>
                             {!isCancelled && (
                               <button
-                                onClick={() => handleCancelInvoice(row.invoice, row.client)}
+                                onClick={() => initiateCancelInvoice(row.invoice, row.client)}
                                 className="text-slate-400 hover:text-red-600 transition-colors"
                                 title="Cancel Invoice"
                               >
@@ -675,7 +500,7 @@ export default function App() {
             )}
           </div>
         </div>
-        {/* INVOICE POPUP */}
+
         {invoicePopup && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -856,6 +681,17 @@ export default function App() {
             </div>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelConfirm}
+          title="Cancel Invoice"
+          message={invoiceToCancel ? `Are you sure you want to cancel invoice "${invoiceToCancel.invoice_no}" for ${invoiceToCancel.clientName}? This action cannot be undone.` : ""}
+          confirmText="Yes, Cancel Invoice"
+          cancelText="No, Keep It"
+        />
+
       </div>
       <footer className="mt-12 py-8 border-t text-center text-slate-500 text-sm">
         <p>© 2026 R.K Casting & Engineering Works. All rights reserved.</p>

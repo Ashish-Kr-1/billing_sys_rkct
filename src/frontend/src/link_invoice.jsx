@@ -15,6 +15,6 @@ export default async function createInvoice(data) {
         // console.log("Invoice created:", result);
     } catch (err) {
         console.error("Network error:", err);
-        alert("Network error: " + err.message);
+        throw err;
     }
 }

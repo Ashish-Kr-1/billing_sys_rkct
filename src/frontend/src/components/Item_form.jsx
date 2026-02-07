@@ -1,11 +1,11 @@
 import React from 'react'
 import { useState } from 'react'
 import Button from './Button.jsx'
-import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import LinkItem from "../link_item.jsx"
+import { notify } from './Notification.jsx';
 
-function item_form() {
+function Item_form() {
   const [item, setItem] = useState({
     item_name: "",
     hsn_code: "",
@@ -13,11 +13,10 @@ function item_form() {
     rate: ""
   });
 
-  const notify = () => toast("Item Created Successfully!");
   const navigate = useNavigate();
 
   return (
-    <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md mt-28'>
+    <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md mt-8'>
       <h1 className="text-2xl font-bold mb-6">Create Item</h1>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <input
@@ -50,12 +49,26 @@ function item_form() {
         />
       </div>
       <div className='flex justify-end space-x-4'>
-        <Button text="Save" color="green" onClick={() => { notify(); LinkItem(item); }} />
-        <ToastContainer className={"font-bold"} />
+        <Button
+          text="Save"
+          color="green"
+          onClick={async () => {
+            try {
+              if (!item.item_name) {
+                notify("Item Name is required", "warning");
+                return;
+              }
+              await LinkItem(item);
+              notify("Item Created Successfully!", "success");
+            } catch (error) {
+              notify(error.message || "Failed to create item", "error");
+            }
+          }}
+        />
         <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
       </div>
     </div>
   )
 }
 
-export default item_form
+export default Item_form

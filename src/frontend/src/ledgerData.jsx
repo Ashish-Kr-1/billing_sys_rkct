@@ -6,6 +6,6 @@ export default async function ledgerData() {
         return data;
     } catch (err) {
         console.error("Network error:", err);
-        alert("Network error: " + err.message);
+        throw err;
     }
 }
