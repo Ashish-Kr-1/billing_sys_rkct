@@ -1,4 +1,5 @@
-import api from './config/apiClient';
+import { api } from './config/apiClient';
+import { notify } from './components/Notification';
 
 /** Sample data
 {
@@ -20,7 +21,7 @@ export default async function getPartyDetails(id) {
     return data;
   } catch (err) {
     console.error("Network error:", err);
-    alert("Network error: " + err.message);
+    notify("Network error: " + err.message, "error");
     throw err;
   }
 }

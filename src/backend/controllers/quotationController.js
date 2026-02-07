@@ -243,3 +243,37 @@ export const deleteQuotation = async (req, res) => {
         client.release();
     }
 };
+
+export const updateQuotationStatus = async (req, res) => {
+    // Use body instead of params to safely handle IDs with slashes (e.g. QT/RKCT/...)
+    const { quotation_no, status } = req.body;
+    const companyId = req.companyId;
+
+    if (!quotation_no || !status) {
+        return res.status(400).json({ error: "quotation_no and status are required" });
+    }
+
+    const client = await getClient(companyId);
+
+    try {
+        await client.beginTransaction();
+        const [result] = await client.query(
+            "UPDATE quotations SET status = ? WHERE quotation_no = ?",
+            [status, quotation_no]
+        );
+
+        if (result.affectedRows === 0) {
+            await client.rollback();
+            return res.status(404).json({ error: "Quotation not found" });
+        }
+
+        await client.commit();
+        res.json({ success: true, message: "Status updated successfully" });
+    } catch (err) {
+        await client.rollback();
+        console.error("updateQuotationStatus error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    } finally {
+        client.release();
+    }
+};

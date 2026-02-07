@@ -165,7 +165,10 @@ export default function App() {
   const calculateTotalDue = () => calculateTotalSale() - calculateTotalReceived();
 
   const handleAddReceipt = async () => {
-    if (!newReceipt.amount || !newReceipt.date) return;
+    if (!newReceipt.amount || !newReceipt.date) {
+      notify("Please enter both date and amount", "warning");
+      return;
+    }
 
     try {
       await createPayment({

@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 export const notify = (message, type = 'info') => {
     const options = {
         position: "top-center",
-        autoClose: 11000,
+        autoClose: 1000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
@@ -39,7 +39,7 @@ export const NotificationContainer = () => {
     return (
         <ToastContainer
             position="top-center"
-            autoClose={11000}
+            autoClose={1000}
             hideProgressBar={false}
             newestOnTop={false}
             closeOnClick

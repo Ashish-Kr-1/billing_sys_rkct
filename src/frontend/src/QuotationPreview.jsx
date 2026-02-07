@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import QuotationTemplate from "./components/QuotationTemplate";
 import { api, handleApiResponse } from "./config/apiClient";
 import { useCompany } from "./context/CompanyContext";
+import { notify } from "./components/Notification";
 
 export default function QuotationPreview() {
 
@@ -116,11 +117,11 @@ export default function QuotationPreview() {
             let data;
             if (state?.isEditMode) {
                 // Assuming we implement PUT later
-                alert("Update not implemented yet for Quotations.");
+                notify("Update not implemented yet for Quotations.", "info");
                 // data = await handleApiResponse(api.put(`/createQuotation/${quotation.QuotationNo}`, payload));
             } else {
                 data = await handleApiResponse(api.post('/createQuotation', payload));
-                alert("Quotation Created Successfully!");
+                notify("Quotation Created Successfully!", "success");
             }
             console.log("Quotation transaction result:", data);
         } catch (err) {
@@ -128,9 +129,9 @@ export default function QuotationPreview() {
             // If duplicate key error on 'Create', it means it's already saved.
             if (!state?.isEditMode && err.message && err.message.includes("exists")) {
                 console.log("Quotation already exists (idempotent save).");
-                alert("Quotation already exists.");
+                notify("Quotation already exists.", "warning");
             } else {
-                alert(`Error saving quotation: ${err.message}`);
+                notify(`Error saving quotation: ${err.message}`, "error");
             }
         }
     }

@@ -170,12 +170,12 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
               </div>
 
               <div className="flex justify-around mb-2">
-                <span>SGST ({sgst}%)</span>
+                <span>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</span>
                 <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
               </div>
 
               <div className="flex justify-around mb-2">
-                <span>CGST ({cgst}%)</span>
+                <span>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</span>
                 <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
               </div>
 

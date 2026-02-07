@@ -194,7 +194,7 @@ export default function Preview() {
         // Invoice doesn't exist - just go back to edit normally
         navigate("/Invoice", {
           state: {
-            invoice,
+            invoice: { ...invoice, status: '' },
             subtotalAmount,
             totalAmount,
             sgst,
@@ -209,7 +209,7 @@ export default function Preview() {
       console.log('Invoice not found in DB, proceeding to edit');
       navigate("/Invoice", {
         state: {
-          invoice,
+          invoice: { ...invoice, status: '' },
           subtotalAmount,
           totalAmount,
           sgst,
