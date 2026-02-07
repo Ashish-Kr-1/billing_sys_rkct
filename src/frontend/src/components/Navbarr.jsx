@@ -16,6 +16,7 @@ export default function Navbar() {
   const { selectedCompany } = useCompany();
   const [isOpen, setIsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [sectionAccess, setSectionAccess] = useState([]);
   const [companyConfig, setCompanyConfig] = useState(null);
 
   const isActive = (path) => location.pathname === path;
@@ -29,18 +30,31 @@ export default function Navbar() {
     }
   }, [selectedCompany]);
 
+  // Fetch section access for navigation filtering
+  useEffect(() => {
+    if (user) {
+      handleApiResponse(api.get(`/users/${user.user_id}/section-access`))
+        .then(data => setSectionAccess(data.sections || []))
+        .catch(err => {
+          console.error('Error fetching section access:', err);
+          setSectionAccess([]);
+        });
+    }
+  }, [user]);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
   const navLinks = [
-    { name: 'New Invoice', path: '/Invoice', icon: FileText },
-    { name: 'Quotations', path: '/QuotationLedger', icon: FileText },
-    { name: 'Analytics', path: '/Analytics', icon: BarChart2 },
-    { name: 'Ledger', path: '/Ledger', icon: BookOpen },
-    { name: 'Parties', path: '/Create_Party', icon: Users },
-  ];
+    { name: 'New Invoice', path: '/Invoice', icon: FileText, show: sectionAccess.includes('invoice') },
+    { name: 'Quotation', path: '/Quotation', icon: FileText, show: sectionAccess.includes('quotation') },
+    { name: 'Quotation Ledger', path: '/QuotationLedger', icon: BookOpen, show: sectionAccess.includes('quotation_ledger') },
+    { name: 'Analytics', path: '/Analytics', icon: BarChart2, show: sectionAccess.includes('analytics') },
+    { name: 'Ledger', path: '/Ledger', icon: BookOpen, show: sectionAccess.includes('ledger') },
+    { name: 'Parties', path: '/Create_Party', icon: Users, show: sectionAccess.includes('party') },
+  ].filter(link => link.show);
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-xl">

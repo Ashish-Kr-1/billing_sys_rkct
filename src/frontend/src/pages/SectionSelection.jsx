@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
-import { BarChart3, FileText, ArrowLeft, LogOut, CreditCard } from 'lucide-react';
+import { BarChart3, FileText, ArrowLeft, LogOut, CreditCard, Book, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, handleApiResponse } from '../config/apiClient';
 
@@ -15,8 +15,7 @@ export default function SectionSelection() {
     useEffect(() => {
         if (!selectedCompany) {
             navigate('/select-company');
-        } else {
-            fetchUserSectionAccess();
+            return;
         }
     }, [selectedCompany, navigate]);
 
@@ -33,6 +32,12 @@ export default function SectionSelection() {
         }
     };
 
+    useEffect(() => {
+        if (user?.user_id) {
+            fetchUserSectionAccess();
+        }
+    }, [user]);
+
     const handleSelectSection = (section) => {
         if (section === 'analytics') {
             navigate('/Analytics');
@@ -40,8 +45,12 @@ export default function SectionSelection() {
             navigate('/Invoice');
         } else if (section === 'quotation') {
             navigate('/Quotation');
+        } else if (section === 'quotation_ledger') {
+            navigate('/QuotationLedger');
         } else if (section === 'ledger') {
             navigate('/Ledger');
+        } else if (section === 'party') {
+            navigate('/Create_Party');
         }
     };
 
@@ -170,6 +179,45 @@ export default function SectionSelection() {
                     </button>
                 )}
 
+                {/* Party Management Section */}
+                {accessibleSections.includes('party') && (
+                    <button
+                        onClick={() => handleSelectSection('party')}
+                        className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden p-8"
+                    >
+                        {/* Gradient Background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-pink-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+
+                        {/* Icon */}
+                        <div className="relative mb-6">
+                            <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <Users className="w-10 h-10 text-white" />
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="relative text-left">
+                            <h2 className="text-3xl font-bold text-gray-900 mb-3 group-hover:text-rose-600 transition-colors">
+                                Party Management
+                            </h2>
+                            <p className="text-gray-600 mb-4">
+                                Add, edit, and manage client details and contact information for {selectedCompany.shortName}.
+                            </p>
+
+                            <div className="flex items-center gap-2 text-rose-600 font-semibold">
+                                <span>Manage Parties</span>
+                                <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Decorative Elements */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-pink-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
+                    </button>
+                )}
+
                 {/* Quotation Section */}
                 {accessibleSections.includes('quotation') && (
                     <button
@@ -206,6 +254,45 @@ export default function SectionSelection() {
                         {/* Decorative Elements */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
+                    </button>
+                )}
+
+                {/* Quotation Ledger Section */}
+                {accessibleSections.includes('quotation_ledger') && (
+                    <button
+                        onClick={() => handleSelectSection('quotation_ledger')}
+                        className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden p-8"
+                    >
+                        {/* Gradient Background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-sky-500 to-blue-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+
+                        {/* Icon */}
+                        <div className="relative mb-6">
+                            <div className="w-20 h-20 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <Book className="w-10 h-10 text-white" />
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="relative text-left">
+                            <h2 className="text-3xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                                Quotation Ledger
+                            </h2>
+                            <p className="text-gray-600 mb-4">
+                                View quotation history, track status, and manage past quotations for {selectedCompany.shortName}.
+                            </p>
+
+                            <div className="flex items-center gap-2 text-blue-600 font-semibold">
+                                <span>View Ledger</span>
+                                <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Decorative Elements */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-sky-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-200 rounded-full -ml-12 -mb-12 opacity-20"></div>
                     </button>
                 )}
 

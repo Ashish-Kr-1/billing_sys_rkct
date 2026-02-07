@@ -31,7 +31,9 @@ export default function UserManagement() {
         { id: 'invoice', name: 'Invoice Management', description: 'Create and manage invoices' },
         { id: 'analytics', name: 'Analytics Dashboard', description: 'View business analytics and reports' },
         { id: 'ledger', name: 'Ledger', description: 'View and manage ledger entries' },
-        { id: 'quotation', name: 'Quotation', description: 'Create and manage quotations' }
+        { id: 'quotation', name: 'Quotation', description: 'Create and manage quotations' },
+        { id: 'quotation_ledger', name: 'Quotation Ledger', description: 'View quotation history and ledger' },
+        { id: 'party', name: 'Party Management', description: 'Create and manage parties' }
     ];
 
     const [formData, setFormData] = useState({
