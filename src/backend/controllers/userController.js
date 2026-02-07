@@ -372,9 +372,9 @@ export async function getUserSectionAccess(req, res) {
 
         const sections = access.map(row => row.section_name);
 
-        return res.status(200).json({ 
+        return res.status(200).json({
             user_id: parseInt(id),
-            sections 
+            sections
         });
 
     } catch (error) {
@@ -397,9 +397,9 @@ export async function updateUserSectionAccess(req, res) {
         return res.status(400).json({ error: 'sections must be an array' });
     }
 
-    const validSections = ['invoice', 'analytics', 'ledger', 'quotation'];
+    const validSections = ['invoice', 'analytics', 'ledger', 'quotation', 'quotation_ledger', 'party'];
     const invalidSections = sections.filter(s => !validSections.includes(s));
-    
+
     if (invalidSections.length > 0) {
         return res.status(400).json({ error: `Invalid sections: ${invalidSections.join(', ')}` });
     }
@@ -410,7 +410,7 @@ export async function updateUserSectionAccess(req, res) {
         await client.beginTransaction();
 
         const [users] = await client.query('SELECT user_id FROM users WHERE user_id = ?', [id]);
-        
+
         if (users.length === 0) {
             await client.rollback();
             return res.status(404).json({ error: 'User not found' });
@@ -429,8 +429,8 @@ export async function updateUserSectionAccess(req, res) {
 
         await client.commit();
 
-        return res.status(200).json({ 
-            success: true, 
+        return res.status(200).json({
+            success: true,
             message: 'Section access updated successfully',
             sections
         });
