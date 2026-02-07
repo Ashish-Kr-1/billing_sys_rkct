@@ -33,20 +33,15 @@ export default function CompanySelection() {
             const data = await handleApiResponse(api.get('/companies'));
             const allCompanies = data.companies || [];
 
-            // If user is admin, show all companies
-            if (user?.role === 'admin') {
-                setCompanies(allCompanies);
-            } else {
-                // Fetch user's company access
-                const accessData = await handleApiResponse(api.get(`/users/${user.user_id}/company-access`));
-                const accessibleCompanyIds = accessData.company_ids || [];
+            // Fetch user's company access
+            const accessData = await handleApiResponse(api.get(`/users/${user.user_id}/company-access`));
+            const accessibleCompanyIds = accessData.company_ids || [];
 
-                // Filter companies based on access
-                const filteredCompanies = allCompanies.filter(company =>
-                    accessibleCompanyIds.includes(company.id)
-                );
-                setCompanies(filteredCompanies);
-            }
+            // Filter companies based on access
+            const filteredCompanies = allCompanies.filter(company =>
+                accessibleCompanyIds.includes(company.id)
+            );
+            setCompanies(filteredCompanies);
         } catch (err) {
             setError(err.message);
             if (err.message.includes('401') || err.message.includes('Unauthorized')) {
@@ -91,13 +86,15 @@ export default function CompanySelection() {
                         <h1 className="text-4xl font-bold text-gray-900 mb-2">Select Your Company</h1>
                         <p className="text-gray-600">Welcome back, <span className="font-semibold">{user?.full_name || user?.username}</span></p>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-red-600 transition-colors"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span>Logout</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-red-600 transition-colors"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -179,6 +176,33 @@ export default function CompanySelection() {
                         </button>
                     );
                 })}
+
+                {/* User Management Card - Admin Only */}
+                {user?.role === 'admin' && (
+                    <button
+                        onClick={handleUserManagement}
+                        className="group relative bg-white rounded-2xl shadow-lg transition-all duration-300 overflow-hidden hover:shadow-2xl transform hover:scale-105 cursor-pointer"
+                    >
+                        <div className="h-40 bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center relative">
+                            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg p-3">
+                                <Users className="w-10 h-10 text-white" />
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-2">
+                            <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                User Management
+                            </h3>
+                            <div className="flex items-center justify-between text-sm text-gray-600">
+                                <span className="font-medium">Manage Users & Access</span>
+                                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                            </div>
+                        </div>
+
+                        {/* Hover Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    </button>
+                )}
             </div>
 
             {/* Info Section */}

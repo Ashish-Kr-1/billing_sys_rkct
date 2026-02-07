@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from './config/apiClient';
-import { Users, Plus, Trash2, Key, Edit2, ArrowLeft, Shield, User as UserIcon, Building2 } from 'lucide-react';
+import { Users, Plus, Trash2, Key, Edit2, ArrowLeft, Shield, User as UserIcon, Building2, Layers } from 'lucide-react';
 import Footer from './components/Footer';
 import { notify } from './components/Notification';
 import ConfirmModal from './components/ConfirmModal';
@@ -16,6 +16,8 @@ export default function UserManagement() {
     const [userToDelete, setUserToDelete] = useState(null);
     const [showCompanyAccessModal, setShowCompanyAccessModal] = useState(false);
     const [companyAccess, setCompanyAccess] = useState([]);
+    const [showSectionAccessModal, setShowSectionAccessModal] = useState(false);
+    const [sectionAccess, setSectionAccess] = useState([]);
 
     const navigate = useNavigate();
 
@@ -23,6 +25,13 @@ export default function UserManagement() {
         { id: 1, name: 'RK Casting and Engineering Works' },
         { id: 2, name: 'RKCASTING ENGINEERING PVT. LTD.' },
         { id: 3, name: 'Global Bharat' }
+    ];
+
+    const sections = [
+        { id: 'invoice', name: 'Invoice Management', description: 'Create and manage invoices' },
+        { id: 'analytics', name: 'Analytics Dashboard', description: 'View business analytics and reports' },
+        { id: 'ledger', name: 'Ledger', description: 'View and manage ledger entries' },
+        { id: 'quotation', name: 'Quotation', description: 'Create and manage quotations' }
     ];
 
     const [formData, setFormData] = useState({
@@ -196,6 +205,47 @@ export default function UserManagement() {
         }
     };
 
+    const handleOpenSectionAccess = async (user) => {
+        setSelectedUser(user);
+        try {
+            const response = await api.get(`/users/${user.user_id}/section-access`);
+            const data = await response.json();
+            setSectionAccess(data.sections || []);
+            setShowSectionAccessModal(true);
+        } catch (error) {
+            console.error('Error fetching section access:', error);
+            notify('Failed to load section access', 'error');
+        }
+    };
+
+    const handleToggleSectionAccess = (sectionId) => {
+        setSectionAccess(prev =>
+            prev.includes(sectionId)
+                ? prev.filter(id => id !== sectionId)
+                : [...prev, sectionId]
+        );
+    };
+
+    const handleSaveSectionAccess = async () => {
+        try {
+            const response = await api.put(`/users/${selectedUser.user_id}/section-access`, {
+                sections: sectionAccess
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                notify('Section access updated successfully!', 'success');
+                setShowSectionAccessModal(false);
+                setSelectedUser(null);
+            } else {
+                notify(data.error || 'Failed to update section access', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating section access:', error);
+            notify('Failed to update section access', 'error');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Header */}
@@ -284,6 +334,13 @@ export default function UserManagement() {
                                                         title="Manage Company Access"
                                                     >
                                                         <Building2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenSectionAccess(user)}
+                                                        className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-full transition"
+                                                        title="Manage Section Access"
+                                                    >
+                                                        <Layers size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => {
@@ -482,6 +539,57 @@ export default function UserManagement() {
                             <button
                                 type="button"
                                 onClick={handleSaveCompanyAccess}
+                                className="flex-1 px-4 py-2 bg-[#004f43] text-white rounded-lg hover:bg-[#003d34] transition font-medium"
+                            >
+                                Save Access
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Section Access Modal */}
+            {showSectionAccessModal && selectedUser && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Manage Section Access</h2>
+                        <p className="text-gray-600 mb-6">Select sections for <strong>{selectedUser.username}</strong></p>
+
+                        <div className="space-y-3 mb-6">
+                            {sections.map(section => (
+                                <label
+                                    key={section.id}
+                                    className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={sectionAccess.includes(section.id)}
+                                        onChange={() => handleToggleSectionAccess(section.id)}
+                                        className="w-5 h-5 text-[#004f43] rounded focus:ring-2 focus:ring-[#004f43] cursor-pointer mt-0.5"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-gray-900">{section.name}</div>
+                                        <div className="text-xs text-gray-500">{section.description}</div>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowSectionAccessModal(false);
+                                    setSelectedUser(null);
+                                    setSectionAccess([]);
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveSectionAccess}
                                 className="flex-1 px-4 py-2 bg-[#004f43] text-white rounded-lg hover:bg-[#003d34] transition font-medium"
                             >
                                 Save Access
