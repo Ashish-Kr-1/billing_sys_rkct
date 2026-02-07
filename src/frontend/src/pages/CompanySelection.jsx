@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
 import { api, handleApiResponse } from '../config/apiClient';
-import { ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ChevronRight, LogOut, CheckCircle, XCircle, AlertCircle, Users } from 'lucide-react';
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 
@@ -31,11 +31,26 @@ export default function CompanySelection() {
     const fetchCompanies = async () => {
         try {
             const data = await handleApiResponse(api.get('/companies'));
-            setCompanies(data.companies || []);
+            const allCompanies = data.companies || [];
+
+            // If user is admin, show all companies
+            if (user?.role === 'admin') {
+                setCompanies(allCompanies);
+            } else {
+                // Fetch user's company access
+                const accessData = await handleApiResponse(api.get(`/users/${user.user_id}/company-access`));
+                const accessibleCompanyIds = accessData.company_ids || [];
+
+                // Filter companies based on access
+                const filteredCompanies = allCompanies.filter(company =>
+                    accessibleCompanyIds.includes(company.id)
+                );
+                setCompanies(filteredCompanies);
+            }
         } catch (err) {
             setError(err.message);
             if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-                logout(); // Logout if token is invalid
+                logout();
             }
         } finally {
             setLoading(false);
@@ -50,6 +65,10 @@ export default function CompanySelection() {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const handleUserManagement = () => {
+        navigate('/users');
     };
 
     if (loading) {

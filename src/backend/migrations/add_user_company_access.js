@@ -12,7 +12,7 @@ async function addUserCompanyAccess() {
             const client = await dbManager.getPool(companyId).getConnection();
 
             try {
-                // Create user_company_access table
+                // Create user_company_access table (no FK since users are in AUTH_DB only)
                 await client.query(`
                     CREATE TABLE IF NOT EXISTS user_company_access (
                         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -21,19 +21,22 @@ async function addUserCompanyAccess() {
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         created_by INT NULL,
                         UNIQUE KEY unique_user_company (user_id, company_id),
-                        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                        INDEX idx_user_id (user_id)
                     )
                 `);
 
                 console.log(`   ✅ user_company_access table created/verified`);
 
                 // Grant all existing users access to their current company by default
-                await client.query(`
-                    INSERT IGNORE INTO user_company_access (user_id, company_id)
-                    SELECT user_id, ? FROM users
-                `, [companyId]);
+                // Only do this for Company 1 where the users table exists
+                if (companyId === 1) {
+                    await client.query(`
+                        INSERT IGNORE INTO user_company_access (user_id, company_id)
+                        SELECT user_id, ? FROM users
+                    `, [companyId]);
 
-                console.log(`   ✅ Granted existing users access to Company ${companyId}`);
+                    console.log(`   ✅ Granted existing users access to Company ${companyId}`);
+                }
 
             } finally {
                 client.release();

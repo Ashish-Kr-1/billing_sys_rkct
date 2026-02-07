@@ -282,9 +282,9 @@ export async function getUserCompanyAccess(req, res) {
 
         const companyIds = access.map(row => row.company_id);
 
-        return res.status(200).json({ 
+        return res.status(200).json({
             user_id: parseInt(id),
-            company_ids: companyIds 
+            company_ids: companyIds
         });
 
     } catch (error) {
@@ -309,7 +309,7 @@ export async function updateUserCompanyAccess(req, res) {
 
     const validCompanyIds = [1, 2, 3];
     const invalidIds = company_ids.filter(id => !validCompanyIds.includes(id));
-    
+
     if (invalidIds.length > 0) {
         return res.status(400).json({ error: `Invalid company IDs: ${invalidIds.join(', ')}` });
     }
@@ -320,7 +320,7 @@ export async function updateUserCompanyAccess(req, res) {
         await client.beginTransaction();
 
         const [users] = await client.query('SELECT user_id FROM users WHERE user_id = ?', [id]);
-        
+
         if (users.length === 0) {
             await client.rollback();
             return res.status(404).json({ error: 'User not found' });
@@ -328,18 +328,21 @@ export async function updateUserCompanyAccess(req, res) {
 
         await client.query('DELETE FROM user_company_access WHERE user_id = ?', [id]);
 
+
         if (company_ids.length > 0) {
-            const values = company_ids.map(companyId => [id, companyId, created_by]);
-            await client.query(
-                'INSERT INTO user_company_access (user_id, company_id, created_by) VALUES ?',
-                [values]
-            );
+            // Insert each company access individually
+            for (const companyId of company_ids) {
+                await client.query(
+                    'INSERT INTO user_company_access (user_id, company_id, created_by) VALUES (?, ?, ?)',
+                    [id, companyId, created_by]
+                );
+            }
         }
 
         await client.commit();
 
-        return res.status(200).json({ 
-            success: true, 
+        return res.status(200).json({
+            success: true,
             message: 'Company access updated successfully',
             company_ids
         });
