@@ -4,6 +4,7 @@ import Button from './Button.jsx'
 import { useNavigate } from 'react-router-dom';
 import Link from "../link.jsx"
 import { notify } from './Notification.jsx';
+import { INDIAN_STATES } from '../constants/indian_states.js';
 
 function Party_form() {
   const [party, setParty] = useState({
@@ -46,13 +47,19 @@ function Party_form() {
           value={party.shipping_address}
           onChange={(e) => setParty({ ...party, shipping_address: e.target.value })}
         />
-        <input
+        <select
           name='supply_state_code'
-          placeholder="State"
-          className="border p-2 rounded"
+          className="border p-2 rounded bg-white"
           value={party.supply_state_code}
           onChange={(e) => setParty({ ...party, supply_state_code: e.target.value })}
-        />
+        >
+          <option value="">Select State Code</option>
+          {INDIAN_STATES.map((state) => (
+            <option key={state.code} value={state.code}>
+              {state.code} - {state.name}
+            </option>
+          ))}
+        </select>
         <input
           name="pin_code"
           placeholder="Pin Code"
@@ -88,13 +95,17 @@ function Party_form() {
           value={party.vendore_code}
           onChange={(e) => setParty({ ...party, vendore_code: e.target.value })}
         />
-        <input
+        <select
           name="type"
-          placeholder="Type"
-          className="border p-2 rounded shadow-md"
+          className="border p-2 rounded shadow-md bg-white"
           value={party.type}
           onChange={(e) => setParty({ ...party, type: e.target.value })}
-        />
+        >
+          <option value="">Select Type</option>
+          <option value="customer">Customer</option>
+          <option value="vendor">Vendor</option>
+          <option value="both">Both</option>
+        </select>
       </div>
       <div className='flex justify-end space-x-4'>
         <Button
@@ -102,8 +113,8 @@ function Party_form() {
           color="green"
           onClick={async () => {
             try {
-              if (!party.party_name || !party.type) {
-                notify("Party Name and Type are required", "warning");
+              if (!party.party_name || !party.type || !party.supply_state_code) {
+                notify("Party Name, Type, and State Code are required", "warning");
                 return;
               }
               await Link(party);

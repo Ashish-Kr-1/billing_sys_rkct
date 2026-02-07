@@ -494,17 +494,29 @@ async function createPartyHandler(req, res) {
     mobile_no = null
   } = req.body;
 
-  if (!party_name || !type) {
-    return res.status(400).json({ error: 'party_name and type are required' });
+  if (!party_name || !type || !supply_state_code) {
+    return res.status(400).json({ error: 'Party Name, Type, and State Code are required' });
   }
+
+  // VALIDATION
+  if (party_name.length > 255) return res.status(400).json({ error: 'Party Name too long (max 255)' });
+  if (gstin_no && gstin_no.length > 20) return res.status(400).json({ error: 'GSTIN too long (max 20)' });
+  if (type.length > 50) return res.status(400).json({ error: 'Type too long (max 50)' });
+  if (supply_state_code && supply_state_code.length > 10) return res.status(400).json({ error: 'State Code too long (max 10)' });
+  if (vendore_code && vendore_code.length > 50) return res.status(400).json({ error: 'Vendor Code too long (max 50)' });
+  if (contact_person && contact_person.length > 150) return res.status(400).json({ error: 'Contact Person too long (max 150)' });
+  if (mobile_no && mobile_no.length > 20) return res.status(400).json({ error: 'Mobile No too long (max 20)' });
+
+  if (pin_code && (isNaN(pin_code) || pin_code.toString().length > 6)) return res.status(400).json({ error: 'Invalid Pin Code' });
 
   //const idempotencyKey = req.headers['idempotency-key']?.trim() || null;
 
   const client = await req.db.getConnection();
   try {
+    // ... transaction code ...
     await client.beginTransaction();
 
-    // If you want to prevent duplicates by GSTIN:
+    // If you want to prevent duplicates by GSTIN: 
     if (gstin_no) {
       const [dup] = await client.query('SELECT party_id FROM parties WHERE gstin_no = ?', [gstin_no]);
       if (dup.length > 0) {
@@ -543,7 +555,7 @@ async function createPartyHandler(req, res) {
     if (err.errno === 1062) {
       return res.status(409).json({ error: 'Duplicate key' });
     }
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error: ' + err.message });
   } finally {
     client.release();
   }
