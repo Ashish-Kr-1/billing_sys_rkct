@@ -7,33 +7,35 @@ import {
     deleteUser,
     resetUserPassword,
     getUserCompanyAccess,
-    updateUserCompanyAccess
+    updateUserCompanyAccess,
+    getUserSectionAccess,
+    updateUserSectionAccess
 } from '../controllers/userController.js';
 
 const router = express.Router();
 
-// All routes require admin privileges
-router.use(requireAdmin);
+// Middleware to check if user is admin or accessing their own data
+const requireAdminOrSelf = (req, res, next) => {
+    const requestedId = parseInt(req.params.id);
+    if (req.user.role === 'admin' || req.user.user_id === requestedId) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Access denied' });
+    }
+};
 
-// GET /users - List all users
-router.get('/', getAllUsers);
+// Admin only routes
+router.get('/', requireAdmin, getAllUsers);
+router.post('/', requireAdmin, createUser);
+router.put('/:id', requireAdmin, updateUser); // Only admin can update user details for now
+router.delete('/:id', requireAdmin, deleteUser);
+router.post('/:id/reset-password', requireAdmin, resetUserPassword);
 
-// POST /users - Create new user
-router.post('/', createUser);
+// Access control routes
+router.get('/:id/company-access', requireAdminOrSelf, getUserCompanyAccess);
+router.put('/:id/company-access', requireAdmin, updateUserCompanyAccess); // Only admin can grant access
 
-// PUT /users/:id - Update user
-router.put('/:id', updateUser);
-
-// DELETE /users/:id - Delete user
-router.delete('/:id', deleteUser);
-
-// POST /users/:id/reset-password - Reset user password
-router.post('/:id/reset-password', resetUserPassword);
-
-// GET /users/:id/company-access - Get user's company access
-router.get('/:id/company-access', getUserCompanyAccess);
-
-// PUT /users/:id/company-access - Update user's company access
-router.put('/:id/company-access', updateUserCompanyAccess);
+router.get('/:id/section-access', requireAdminOrSelf, getUserSectionAccess);
+router.put('/:id/section-access', requireAdmin, updateUserSectionAccess); // Only admin can grant access
 
 export default router;

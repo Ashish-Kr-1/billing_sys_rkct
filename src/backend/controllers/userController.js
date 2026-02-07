@@ -355,3 +355,91 @@ export async function updateUserCompanyAccess(req, res) {
         client.release();
     }
 }
+
+/**
+ * Get user's section access (Admin only)
+ */
+export async function getUserSectionAccess(req, res) {
+    const { id } = req.params;
+
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
+
+    try {
+        const [access] = await client.query(
+            'SELECT section_name FROM user_section_access WHERE user_id = ?',
+            [id]
+        );
+
+        const sections = access.map(row => row.section_name);
+
+        return res.status(200).json({ 
+            user_id: parseInt(id),
+            sections 
+        });
+
+    } catch (error) {
+        console.error('Get user section access error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Update user's section access (Admin only)
+ */
+export async function updateUserSectionAccess(req, res) {
+    const { id } = req.params;
+    const { sections } = req.body;
+    const created_by = req.user.user_id;
+
+    if (!Array.isArray(sections)) {
+        return res.status(400).json({ error: 'sections must be an array' });
+    }
+
+    const validSections = ['invoice', 'analytics', 'ledger', 'quotation'];
+    const invalidSections = sections.filter(s => !validSections.includes(s));
+    
+    if (invalidSections.length > 0) {
+        return res.status(400).json({ error: `Invalid sections: ${invalidSections.join(', ')}` });
+    }
+
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
+
+    try {
+        await client.beginTransaction();
+
+        const [users] = await client.query('SELECT user_id FROM users WHERE user_id = ?', [id]);
+        
+        if (users.length === 0) {
+            await client.rollback();
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        await client.query('DELETE FROM user_section_access WHERE user_id = ?', [id]);
+
+        if (sections.length > 0) {
+            for (const section of sections) {
+                await client.query(
+                    'INSERT INTO user_section_access (user_id, section_name, created_by) VALUES (?, ?, ?)',
+                    [id, section, created_by]
+                );
+            }
+        }
+
+        await client.commit();
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Section access updated successfully',
+            sections
+        });
+
+    } catch (error) {
+        await client.rollback();
+        console.error('Update user section access error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+}
