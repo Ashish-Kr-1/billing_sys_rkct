@@ -131,14 +131,17 @@ export default function App() {
   }, [ledgerData, fromMonth, toMonth, selectedClient, searchTerm]);
 
   const stats = useMemo(() => {
-    const totalDebit = filteredData.reduce((sum, row) => sum + Number(row.debit), 0);
-    const totalCredit = filteredData.reduce((sum, row) => sum + Number(row.credit), 0);
+    // Exclude cancelled invoices from totals
+    const activeRows = filteredData.filter(row => row.status !== 'cancelled');
+    const totalDebit = activeRows.reduce((sum, row) => sum + Number(row.debit), 0);
+    const totalCredit = activeRows.reduce((sum, row) => sum + Number(row.credit), 0);
     return { totalDebit, totalCredit, outstanding: totalDebit - totalCredit };
   }, [filteredData]);
 
   const clientSummaryStats = useMemo(() => {
     if (selectedClient === "All") return null;
-    const clientRows = ledgerData.filter(row => row.client === selectedClient);
+    // Exclude cancelled invoices from client summary
+    const clientRows = ledgerData.filter(row => row.client === selectedClient && row.status !== 'cancelled');
     const totalDebit = clientRows.reduce((sum, row) => sum + Number(row.debit), 0);
     const totalCredit = clientRows.reduce((sum, row) => sum + Number(row.credit), 0);
     return { totalDebit, totalCredit, outstanding: totalDebit - totalCredit };

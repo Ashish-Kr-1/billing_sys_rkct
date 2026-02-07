@@ -49,6 +49,16 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     };
   }
 
+  // Filter out cancelled transactions/invoices
+  // Assuming 'status' or 'invoice_status' field exists in the transaction object from the backend query
+  // If not explicitly present, we might need to rely on the backend to filter it.
+  // However, usually it is passed. Let's filter where status is not 'Cancelled'.
+  // We'll use a case-insensitive check just in case.
+  const validTransactions = RAW_TRANSACTIONS.filter(t => {
+    const status = t.invoice_status || t.status;
+    return status?.toLowerCase() !== 'cancelled';
+  });
+
   // Create lookup maps for efficient joins
   const partiesMap = {};
   PARTIES.forEach(p => { partiesMap[p.party_id] = p; });
@@ -57,7 +67,7 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   ITEMS.forEach(i => { itemsMap[i.item_id] = i; });
 
   // Enrich transactions with derived fields
-  const enrichedTransactions = RAW_TRANSACTIONS.map(t => {
+  const enrichedTransactions = validTransactions.map(t => {
     const party = partiesMap[t.party_id] || {};
     const txDate = new Date(t.transaction_date);
     const month = txDate.getMonth(); // 0-11
