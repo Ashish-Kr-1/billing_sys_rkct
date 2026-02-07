@@ -42,10 +42,10 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
       {(invoice.status?.toLowerCase() === 'cancelled') && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
           <div
-            className="border-[10px] text-8xl font-black uppercase tracking-widest transform -rotate-45 p-8 rounded-xl"
+            className="border-[10px] text-8xl font-black uppercase tracking-widest transform -rotate-45 p-8 rounded-xl opacity-25"
             style={{
-              borderColor: 'rgba(239, 68, 68, 0.4)',
-              color: 'rgba(239, 68, 68, 0.4)'
+              borderColor: '#ef4444',
+              color: '#ef4444'
             }}
           >
             CANCELLED

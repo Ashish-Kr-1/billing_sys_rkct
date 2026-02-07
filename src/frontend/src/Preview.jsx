@@ -145,22 +145,35 @@ export default function Preview() {
 
 
     try {
+      // Check if invoice exists before trying to create a new one (Prevent Duplicate)
+      if (!state?.isEditMode) {
+        try {
+          const checkRes = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoice.InvoiceNo)}`);
+          if (checkRes.ok) {
+            notify("Invoice is already saved!", "info");
+            return;
+          }
+        } catch (e) {
+          // Ignore error (e.g. 404 Not Found), proceed to creation
+        }
+      }
+
       // Use handleApiResponse to manage token headers and error checking
       let data;
       if (state?.isEditMode) {
         data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
-        notify("Invoice Updated Successfully!", "success");
+        notify("Invoice Saved Successfully!", "success");
       } else {
         data = await handleApiResponse(api.post('/createInvoice', payload));
-        notify("Invoice Created Successfully!", "success");
+        notify("Invoice Saved Successfully!", "success");
       }
       console.log("Invoice transaction result:", data);
     } catch (err) {
       console.error("Save invoice error:", err);
-      // If duplicate key error on 'Create', it means it's already saved. Not a fatal error for 'Download'.
+      // If duplicate key error on 'Create' (fallback if pre-check fails appropriately)
       if (!state?.isEditMode && err.message && err.message.includes("exists")) {
         console.log("Invoice already exists (idempotent save).");
-        notify("Invoice already exists.", "info");
+        notify("Invoice is already saved!", "info");
       } else {
         notify(`Error saving invoice: ${err.message}`, "error");
       }
@@ -220,7 +233,7 @@ export default function Preview() {
         // Navigate to edit mode - invoice number will be fetched fresh
         navigate("/Invoice", {
           state: {
-            invoice: { ...invoice, InvoiceNo: '' }, // Clear invoice number to get a new one
+            invoice: { ...invoice, InvoiceNo: '', status: '' }, // Clear invoice number and status
             subtotalAmount,
             totalAmount,
             sgst,

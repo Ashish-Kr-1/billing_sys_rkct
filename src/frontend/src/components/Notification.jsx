@@ -15,7 +15,9 @@ export const notify = (message, type = 'info') => {
         theme: "colored",
     };
 
-    switch (type) {
+    const normalizedType = (type || 'info').toLowerCase();
+
+    switch (normalizedType) {
         case 'success':
             toast.success(message, options);
             break;
@@ -46,6 +48,8 @@ export const NotificationContainer = () => {
             draggable
             pauseOnHover
             theme="colored"
+            limit={3}
+            style={{ zIndex: 999999 }}
         />
     );
 };
