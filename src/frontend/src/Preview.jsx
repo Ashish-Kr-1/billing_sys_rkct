@@ -6,6 +6,8 @@ import jsPDF from "jspdf";
 import InvoiceTemplate from "./components/InvoiceTemplate";
 import { api, handleApiResponse } from "./config/apiClient";
 import { useCompany } from "./context/CompanyContext";
+import { notify } from "./components/Notification";
+import ConfirmModal from "./components/ConfirmModal";
 
 export default function Preview() {
 
@@ -14,6 +16,15 @@ export default function Preview() {
   const { selectedCompany } = useCompany();
   const [companyConfig, setCompanyConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Guard clause if state is missing
+  if (!state || !state.invoice) {
+    useEffect(() => {
+      navigate('/Invoice');
+    }, [navigate]);
+    return null;
+  }
 
   const invoice = state.invoice;
   const subtotalAmount = state.subtotalAmount;
@@ -37,6 +48,7 @@ export default function Preview() {
         }
       } catch (error) {
         console.error('Error fetching company config:', error);
+        notify("Failed to load company configuration", "error");
       } finally {
         setLoading(false);
       }
@@ -82,6 +94,7 @@ export default function Preview() {
     pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
 
     pdf.save(`Invoice-${invoice.InvoiceNo || 'draft'}.pdf`);
+    notify("PDF Downloaded Successfully!", "success");
   }
 
   async function saveInvoiceToDB() {
@@ -136,14 +149,10 @@ export default function Preview() {
       let data;
       if (state?.isEditMode) {
         data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
-        alert("Invoice Updated Successfully!");
+        notify("Invoice Updated Successfully!", "success");
       } else {
         data = await handleApiResponse(api.post('/createInvoice', payload));
-        // Only alert if it's a new creation, to be polite. Or just silent.
-        // But user complained "not working", so Feedback is key.
-        // However, on Download, silent is better usually. 
-        // But for now, let's log it.
-        alert("Invoice Created Successfully!");
+        notify("Invoice Created Successfully!", "success");
       }
       console.log("Invoice transaction result:", data);
     } catch (err) {
@@ -151,13 +160,14 @@ export default function Preview() {
       // If duplicate key error on 'Create', it means it's already saved. Not a fatal error for 'Download'.
       if (!state?.isEditMode && err.message && err.message.includes("exists")) {
         console.log("Invoice already exists (idempotent save).");
+        notify("Invoice already exists.", "info");
       } else {
-        alert(`Error saving invoice: ${err.message}`);
+        notify(`Error saving invoice: ${err.message}`, "error");
       }
     }
   }
 
-  async function handleBackToEdit() {
+  async function checkInvoiceAndNavigate() {
     const invoiceNo = invoice.InvoiceNo;
 
     try {
@@ -165,37 +175,8 @@ export default function Preview() {
       const response = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoiceNo)}`);
 
       if (response.ok) {
-        // Invoice exists - show warning and ask for confirmation
-        const confirmed = window.confirm(
-          `⚠️ Warning: Invoice "${invoiceNo}" is already saved in the database.\n\n` +
-          `Clicking "OK" will DELETE this invoice and allow you to create a new one with the same details.\n\n` +
-          `Are you sure you want to delete invoice "${invoiceNo}" and create a new one?`
-        );
-
-        if (!confirmed) {
-          return; // User canceled
-        }
-
-        // User confirmed - delete the invoice
-        const deleteResponse = await api.delete(`/createInvoice?invoice_no=${encodeURIComponent(invoiceNo)}`);
-
-        if (deleteResponse.ok) {
-          alert(`✅ Invoice "${invoiceNo}" has been deleted. You can now create a new invoice.`);
-          // Navigate to edit mode - invoice number will be fetched fresh
-          navigate("/Invoice", {
-            state: {
-              invoice: { ...invoice, InvoiceNo: '' }, // Clear invoice number to get a new one
-              subtotalAmount,
-              totalAmount,
-              sgst,
-              cgst,
-              isEditMode: false, // Treat as new invoice
-              company_id: state?.company_id
-            }
-          });
-        } else {
-          alert('❌ Failed to delete invoice. Please try again.');
-        }
+        // Invoice exists - show confirm modal
+        setShowDeleteModal(true);
       } else {
         // Invoice doesn't exist - just go back to edit normally
         navigate("/Invoice", {
@@ -227,6 +208,38 @@ export default function Preview() {
     }
   }
 
+  const performDeleteAndNavigate = async () => {
+    const invoiceNo = invoice.InvoiceNo;
+    try {
+      const deleteResponse = await api.delete(`/createInvoice?invoice_no=${encodeURIComponent(invoiceNo)}`);
+
+      if (deleteResponse.ok) {
+        notify(`Invoice "${invoiceNo}" deleted. You can create a new one.`, "success");
+        setShowDeleteModal(false);
+
+        // Navigate to edit mode - invoice number will be fetched fresh
+        navigate("/Invoice", {
+          state: {
+            invoice: { ...invoice, InvoiceNo: '' }, // Clear invoice number to get a new one
+            subtotalAmount,
+            totalAmount,
+            sgst,
+            cgst,
+            isEditMode: false, // Treat as new invoice
+            company_id: state?.company_id
+          }
+        });
+      } else {
+        notify('Failed to delete invoice. Please try again.', "error");
+        setShowDeleteModal(false);
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      notify("An error occurred while deleting the invoice.", "error");
+      setShowDeleteModal(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-24">
       {loading ? (
@@ -251,7 +264,7 @@ export default function Preview() {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-4 flex flex-wrap justify-center gap-2 md:gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50">
             <button
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition-colors text-sm"
-              onClick={handleBackToEdit}
+              onClick={checkInvoiceAndNavigate}
             >
               Back to Edit
             </button>
@@ -279,6 +292,16 @@ export default function Preview() {
               New
             </button>
           </div>
+
+          <ConfirmModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirm={performDeleteAndNavigate}
+            title="Warning: Invoice Already Saved"
+            message={`Invoice "${invoice.InvoiceNo}" is already saved in the database.\n\nGoing back to edit will DELETE this invoice so you can create a new version.\n\nAre you sure?`}
+            confirmText="Delete & Edit"
+            cancelText="Cancel"
+          />
         </>
       )}
     </div>

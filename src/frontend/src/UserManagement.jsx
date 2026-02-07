@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from './config/apiClient';
 import { Users, Plus, Trash2, Key, Edit2, ArrowLeft, Shield, User as UserIcon } from 'lucide-react';
 import Footer from './components/Footer';
+import { notify } from './components/Notification';
+import ConfirmModal from './components/ConfirmModal';
 
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
@@ -10,6 +12,9 @@ export default function UserManagement() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showResetModal, setShowResetModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -34,7 +39,7 @@ export default function UserManagement() {
         } catch (error) {
             console.error('Error fetching users:', error);
             if (error.message.includes('403')) {
-                alert('Access denied. Admin privileges required.');
+                notify('Access denied. Admin privileges required.', 'error');
                 navigate('/select-section');
             }
         } finally {
@@ -46,7 +51,7 @@ export default function UserManagement() {
         e.preventDefault();
 
         if (formData.password.length < 8) {
-            alert('Password must be at least 8 characters');
+            notify('Password must be at least 8 characters', 'warning');
             return;
         }
 
@@ -55,43 +60,51 @@ export default function UserManagement() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('User created successfully!');
+                notify('User created successfully!', 'success');
                 setShowCreateModal(false);
                 setFormData({ username: '', email: '', password: '', full_name: '', role: 'user' });
                 fetchUsers();
             } else {
-                alert(data.error || 'Failed to create user');
+                notify(data.error || 'Failed to create user', 'error');
             }
         } catch (error) {
             console.error('Error creating user:', error);
-            alert('Failed to create user');
+            notify('Failed to create user', 'error');
         }
     };
 
-    const handleDeleteUser = async (userId, username) => {
-        if (!window.confirm(`Are you sure you want to delete user "${username}"?`)) return;
+    const confirmDeleteUser = async () => {
+        if (!userToDelete) return;
 
         try {
-            const response = await api.delete(`/users/${userId}`);
+            const response = await api.delete(`/users/${userToDelete.id}`);
             const data = await response.json();
 
             if (response.ok) {
-                alert('User deleted successfully');
+                notify('User deleted successfully', 'success');
                 fetchUsers();
             } else {
-                alert(data.error || 'Failed to delete user');
+                notify(data.error || 'Failed to delete user', 'error');
             }
         } catch (error) {
             console.error('Error deleting user:', error);
-            alert('Failed to delete user');
+            notify('Failed to delete user', 'error');
+        } finally {
+            setShowDeleteModal(false);
+            setUserToDelete(null);
         }
+    };
+
+    const handleDeleteUserCheck = (userId, username) => {
+        setUserToDelete({ id: userId, username });
+        setShowDeleteModal(true);
     };
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
 
         if (resetPassword.length < 8) {
-            alert('Password must be at least 8 characters');
+            notify('Password must be at least 8 characters', 'warning');
             return;
         }
 
@@ -102,16 +115,16 @@ export default function UserManagement() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Password reset successfully!');
+                notify('Password reset successfully!', 'success');
                 setShowResetModal(false);
                 setResetPassword('');
                 setSelectedUser(null);
             } else {
-                alert(data.error || 'Failed to reset password');
+                notify(data.error || 'Failed to reset password', 'error');
             }
         } catch (error) {
             console.error('Error resetting password:', error);
-            alert('Failed to reset password');
+            notify('Failed to reset password', 'error');
         }
     };
 
@@ -123,13 +136,14 @@ export default function UserManagement() {
             const data = await response.json();
 
             if (response.ok) {
+                notify(`User ${currentStatus ? 'deactivated' : 'activated'} successfully`, 'success');
                 fetchUsers();
             } else {
-                alert(data.error || 'Failed to update user status');
+                notify(data.error || 'Failed to update user status', 'error');
             }
         } catch (error) {
             console.error('Error updating user:', error);
-            alert('Failed to update user');
+            notify('Failed to update user', 'error');
         }
     };
 
@@ -226,7 +240,7 @@ export default function UserManagement() {
                                                         <Key size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDeleteUser(user.user_id, user.username)}
+                                                        onClick={() => handleDeleteUserCheck(user.user_id, user.username)}
                                                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
                                                         title="Delete User"
                                                     >
@@ -369,6 +383,16 @@ export default function UserManagement() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={confirmDeleteUser}
+                title="Delete User"
+                message={`Are you sure you want to delete user "${userToDelete?.username}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
 
             <Footer />
         </div>

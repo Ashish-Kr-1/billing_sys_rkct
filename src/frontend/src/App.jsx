@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import { CompanyProvider } from "./context/CompanyContext.jsx";
 import { ProtectedRoute, PublicRoute } from "./components/ProtectedRoute.jsx";
 import Layout from "./components/Layout.jsx";
+import { NotificationContainer } from "./components/Notification.jsx";
 
 // Auth Pages
 import Login from "./pages/Login.jsx";
@@ -26,6 +27,7 @@ function App() {
     <AuthProvider>
       <CompanyProvider>
         <BrowserRouter>
+          <NotificationContainer />
           <Routes>
             {/* Public Routes - Redirect to company selection if already logged in */}
             <Route

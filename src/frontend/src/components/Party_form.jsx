@@ -1,9 +1,9 @@
 import React from 'react'
 import { useState } from 'react'
 import Button from './Button.jsx'
-import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import Link from "../link.jsx"
+import { notify } from './Notification.jsx';
 
 function Party_form() {
   const [party, setParty] = useState({
@@ -18,7 +18,7 @@ function Party_form() {
     contact_person: "",
     mobile_no: "",
   });
-  const notify = () => toast("Party Created Successfully!");
+
   const navigate = useNavigate();
 
   return (
@@ -97,8 +97,7 @@ function Party_form() {
         />
       </div>
       <div className='flex justify-end space-x-4'>
-        <Button text="Save" color="green" onClick={() => { notify(); Link(party); }} />
-        <ToastContainer className={"font-bold"} />
+        <Button text="Save" color="green" onClick={() => { notify("Party Created Successfully!", "success"); Link(party); }} />
         <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
       </div>
     </div>
