@@ -97,8 +97,9 @@ export const createQuotationHandler = async (req, res) => {
                 account_name, account_no, ifsc_code, branch, 
                 terms_conditions, 
                 client_name, client_address, gstin, 
-                client_name2, client_address2, gstin2
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                client_name2, client_address2, gstin2,
+                validity_days, rfq_no, rfq_date, contact_person, contact_no, email
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             QuotationNo,
             quotation_details.transported_by || null,
@@ -120,7 +121,13 @@ export const createQuotationHandler = async (req, res) => {
             quotation_details.gstin || null,
             quotation_details.client_name2 || null,
             quotation_details.client_address2 || null,
-            quotation_details.gstin2 || null
+            quotation_details.gstin2 || null,
+            quotation_details.validity_days || null,
+            quotation_details.rfq_no || null,
+            quotation_details.rfq_date || null,
+            quotation_details.contact_person || null,
+            quotation_details.contact_no || null,
+            quotation_details.email || null
         ]);
 
         // 3. Insert into quotation_items

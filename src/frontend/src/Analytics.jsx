@@ -202,8 +202,22 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     .map(([state, val]) => ({ state, value: val }));
 
   // IGST indicates interstate
-  const interstateTotal = enrichedTransactions.filter(t => t.igst_amount > 0).reduce((s, t) => s + t.sell_amount, 0);
-  const intrastate = totalRevenue - interstateTotal;
+  // Robust Interstate vs Intrastate Logic
+  // Interstate: Has IGST
+  const interstateTotal = enrichedTransactions
+    .filter(t => t.igst_amount > 0)
+    .reduce((s, t) => s + t.sell_amount, 0);
+
+  // Intrastate: Has CGST or SGST
+  const intrastate = enrichedTransactions
+    .filter(t => t.cgst_amount > 0 || t.sgst_amount > 0)
+    .reduce((s, t) => s + t.sell_amount, 0);
+
+  // Note: Exempt sales/0 tax invoices are currently not counted in either above bucket to be precise, 
+  // or could be treated as intrastate default. 
+  // If totalRevenue > (interstate + intrastate), the difference is non-taxable/exempt.
+  // For the PIE chart, we might want to split into 3 if significant, but for now lets stick to the user req.
+  // The User wanted "Robust", so explicit checks are better than subtraction.
 
   // KPI-19–20: Quotations Analysis
   const QUOTATIONS = data?.quotations || [];
@@ -852,10 +866,12 @@ const GeographyTab = ({ KPIs }) => (
             <PieChart>
               <Pie data={[
                 { name: "Interstate", value: KPIs.interstateTotal },
-                { name: "Intrastate", value: KPIs.intrastate }
-              ]} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                { name: "Intrastate", value: KPIs.intrastate },
+                { name: "Exempt/Other", value: Math.max(0, KPIs.totalRevenue - (KPIs.interstateTotal + KPIs.intrastate)) }
+              ].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                 <Cell fill={COLORS.sky} />
                 <Cell fill={COLORS.teal} />
+                <Cell fill="#e2e8f0" />
               </Pie>
               <Tooltip formatter={(v) => fmt(v)} />
             </PieChart>
@@ -870,6 +886,12 @@ const GeographyTab = ({ KPIs }) => (
             <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.teal }} /><span style={{ color: "#64748b" }}>Intrastate (CGST+SGST)</span></span>
             <span className="font-bold" style={{ color: COLORS.primary }}>{fmt(KPIs.intrastate)}</span>
           </div>
+          {(KPIs.totalRevenue - (KPIs.interstateTotal + KPIs.intrastate)) > 1 && (
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#e2e8f0" }} /><span style={{ color: "#64748b" }}>Exempt/Other</span></span>
+              <span className="font-bold" style={{ color: COLORS.primary }}>{fmt(KPIs.totalRevenue - (KPIs.interstateTotal + KPIs.intrastate))}</span>
+            </div>
+          )}
         </div>
       </CardShell>
     </div>

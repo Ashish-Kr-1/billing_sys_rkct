@@ -68,18 +68,18 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
                 </div>
             </div>
             {/*Upper section*/}
-            <div className="text-sm grid grid-cols-3 gap-0.5 border-b-2 mt-2">
-                <p style={{ fontWeight: "700" }}>Quotation Number : {quotation.QuotationNo}</p>
-                <p style={{ fontWeight: "700" }}>Transported By : {quotation.TrasnportBy}</p>
-                <p style={{ fontWeight: "700" }}> Vehicle Number : {quotation.VehicleNo}</p>
-                <p style={{ fontWeight: "700" }}> Date : {quotation.QuotationDate}</p>
-                <p style={{ fontWeight: "700" }}> Place of Supply : {quotation.PlaceofSupply}</p>
-                <p style={{ fontWeight: "700" }}> Eway Bill No. : {quotation.EwayBillNo}</p>
-                <p style={{ fontWeight: "700" }}> PO No. : {quotation.PONo}</p>
-                <p style={{ fontWeight: "700" }}> PO Date : {quotation.PODate}</p>
-                <p style={{ fontWeight: "700" }}> Vendor Code : {quotation.VendorCode}</p>
-                <p style={{ fontWeight: "700", marginBottom: "6px" }}> GatePass/Challan No. : {quotation.ChallanNo}</p>
-                <p style={{ marginBottom: "6px" }}> {quotation.ChallanDate}</p>
+            <div className="text-sm grid grid-cols-2 md:grid-cols-4 gap-2 border-b-2 mt-2 pb-2">
+                <div><span className="font-bold">Quotation No:</span> {quotation.QuotationNo}</div>
+                <div><span className="font-bold">Date:</span> {quotation.QuotationDate}</div>
+                <div><span className="font-bold">Validity:</span> {quotation.validity_days}</div>
+                <div><span className="font-bold">RFQ No:</span> {quotation.rfq_no}</div>
+
+                <div><span className="font-bold">Enquiry Date:</span> {quotation.rfq_date}</div>
+                <div><span className="font-bold">Contact Person:</span> {quotation.contact_person}</div>
+                <div><span className="font-bold">Contact No:</span> {quotation.contact_no}</div>
+                <div><span className="font-bold">Email:</span> {quotation.email}</div>
+
+                <div><span className="font-bold">Vendor Code:</span> {quotation.VendorCode}</div>
             </div>
 
 

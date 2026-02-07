@@ -101,6 +101,12 @@ export default function QuotationPreview() {
                 ifsc_code: quotation.IFSCcode,
                 branch: quotation.Branch,
                 terms_conditions: quotation.Terms,
+                validity_days: quotation.validity_days,
+                rfq_no: quotation.rfq_no,
+                rfq_date: quotation.rfq_date,
+                contact_person: quotation.contact_person,
+                contact_no: quotation.contact_no,
+                email: quotation.email
             },
 
             items: quotation.items,

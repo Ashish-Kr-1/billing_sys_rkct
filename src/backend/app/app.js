@@ -8,6 +8,7 @@ import path from 'path';
 import { authRouter, companyRouter, analyticsRouter, quotationRouter, userRouter } from '../routes/index.js';
 import { setupQuotationTables } from '../setup_quotation_tables.js';
 import { authenticateUser } from '../middleware/auth.js';
+import { validateParty, validateItem } from '../middleware/validators.js';
 
 dotenv.config()
 
@@ -956,9 +957,9 @@ app.listen(PORT, async () => {
   await setupQuotationTables();
 });
 
-routerB.post('/', createItemHandler);
+routerB.post('/', validateItem, createItemHandler);
 
-router.post('/', createPartyHandler);
+router.post('/', validateParty, createPartyHandler);
 
 routerTransaction.post("/", createTransactionHandler);
 routerTransaction.get("/invoiceNo", getNextInvoiceNumber);

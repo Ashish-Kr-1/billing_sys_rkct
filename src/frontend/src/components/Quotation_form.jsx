@@ -40,7 +40,13 @@ export default function QuotationForm({ initialData }) {
             IFSCcode: "",
             Branch: "",
             items: [{ description: "", HSNCode: "", quantity: '', price: "" }],
-            party_id: ""
+            party_id: "",
+            validity_days: "",
+            rfq_no: "",
+            rfq_date: "",
+            contact_person: "",
+            contact_no: "",
+            email: ""
         });
 
     const [parties, setParties] = useState([]);
@@ -158,7 +164,10 @@ export default function QuotationForm({ initialData }) {
                     clientAddress2: p.shipping_address,
                     GSTIN: p.gstin_no,
                     GSTIN2: p.gstin_no,
-                    VendorCode: p.vendore_code || ''
+                    VendorCode: p.vendore_code || '',
+                    contact_person: p.contact_person || '',
+                    contact_no: p.mobile_no || '',
+                    email: p.email || ''
                 }));
 
                 // Auto-Set Tax Rates based on State Code
@@ -330,128 +339,133 @@ export default function QuotationForm({ initialData }) {
                     </div>
 
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <input
-                        type="text"
-                        name="QuotationNo"
-                        placeholder="Quotation Number "
-                        className="border p-2 rounded w-full"
-                        value={quotation.QuotationNo}
-                        onChange={handleChange}
-                        readOnly
-                    />
-                    <input
-                        type="text"
-                        name="TrasnportBy"
-                        placeholder="Transport By"
-                        className="border p-2 rounded w-full"
-                        value={quotation.TrasnportBy}
-                        onChange={handleChange}
-                    />
-                    <div className="flex flex-col border rounded p-1">
-                        <label className="text-xs font-bold text-gray-500 ml-1">Quotation Date</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {/* Row 1 */}
+                    <div className="flex flex-col border rounded p-1 shadow-sm">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Quotation No</label>
+                        <input
+                            type="text"
+                            name="QuotationNo"
+                            className="w-full px-1 py-1 outline-none font-semibold text-gray-700 bg-gray-50"
+                            value={quotation.QuotationNo}
+                            readOnly
+                        />
+                    </div>
+
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Quotation Validity Days</label>
+                        <input
+                            type="text"
+                            name="validity_days"
+                            placeholder="e.g. 30 Days"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.validity_days}
+                            onChange={handleChange}
+                        />
+                    </div>
+
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Quotation Date</label>
                         <input
                             type="date"
                             name="QuotationDate"
-                            placeholder="Quotation Date"
-                            className="w-full rounded px-1 py-1 outline-none"
+                            className="w-full px-1 py-1 outline-none font-medium cursor-pointer"
                             value={quotation.QuotationDate}
                             onChange={handleChange}
                         />
                     </div>
 
-                    <input
-                        type="text"
-                        name="VehicleNo"
-                        placeholder="Vehicle Number"
-                        className="border p-2 rounded w-full"
-                        value={quotation.VehicleNo}
-                        onChange={handleChange}
-                    />
-                    <input
-                        type="text"
-                        name="PlaceofSupply"
-                        placeholder="Place of Supply"
-                        className="border p-2 rounded w-full"
-                        value={quotation.PlaceofSupply}
-                        onChange={handleChange}
-                    />
-                    <input
-                        type="text"
-                        name="EwayBillNo"
-                        placeholder="Eway Bill Number"
-                        className="border p-2 rounded w-full"
-                        value={quotation.EwayBillNo}
-                        onChange={handleChange}
-                    />
-                    <input
-                        type="text"
-                        name="PONo"
-                        placeholder="PO Number"
-                        className="border p-2 rounded w-full"
-                        value={quotation.PONo}
-                        onChange={handleChange}
-                    />
-                    <input
-                        type="text"
-                        name="VendorCode"
-                        placeholder="Vendor Code"
-                        className="border p-2 rounded w-full"
-                        value={quotation.VendorCode}
-                        onChange={handleChange}
-                    />
-                    <div className="flex flex-col border rounded p-1">
-                        <label className="text-xs font-bold text-gray-500 ml-1">PO Date</label>
-                        <input
-                            type="date"
-                            name="PODate"
-                            placeholder="PO Date"
-                            className="w-full rounded px-1 py-1 outline-none"
-                            value={quotation.PODate}
-                            onChange={handleChange}
-                        />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2 sm:col-span-2 lg:col-span-1 border rounded p-1">
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">RFQ / Enquiry No</label>
                         <input
                             type="text"
-                            name="ChallanNo"
-                            placeholder="Challan Number"
-                            className="flex-1 w-full outline-none p-1"
-                            value={quotation.ChallanNo}
-                            onChange={handleChange}
-                        />
-                        <div className="w-px bg-gray-300 hidden sm:block"></div>
-                        <input
-                            type="date"
-                            name="ChallanDate"
-                            placeholder="Challan Date"
-                            className="flex-1 w-full outline-none p-1"
-                            value={quotation.ChallanDate}
+                            name="rfq_no"
+                            placeholder="Reference No"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.rfq_no}
                             onChange={handleChange}
                         />
                     </div>
 
+                    {/* Row 2 */}
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Enquiry Date</label>
+                        <input
+                            type="date"
+                            name="rfq_date"
+                            className="w-full px-1 py-1 outline-none font-medium cursor-pointer"
+                            value={quotation.rfq_date}
+                            onChange={handleChange}
+                        />
+                    </div>
+
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Contact Person</label>
+                        <input
+                            type="text"
+                            name="contact_person"
+                            placeholder="Name"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.contact_person}
+                            onChange={handleChange}
+                        />
+                    </div>
+
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Contact No.</label>
+                        <input
+                            type="text"
+                            name="contact_no"
+                            placeholder="Phone Number"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.contact_no}
+                            onChange={handleChange}
+                        />
+                    </div>
+
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Email Id:</label>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Email Address"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.email}
+                            onChange={handleChange}
+                        />
+                    </div>
+
+                    {/* Row 3 - Party Selection & Vendor Code */}
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400 col-span-1 md:col-span-2">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Enquiry Received From</label>
+                        <select
+                            value={selectedPartyId}
+                            onChange={(e) => handlePartySelect(e.target.value)}
+                            className="w-full px-1 py-1 outline-none bg-white font-medium cursor-pointer"
+                        >
+                            <option value="">-- Select Party --</option>
+                            {parties.map(party => (
+                                <option key={party.party_id} value={party.party_id}>
+                                    {party.party_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400 col-span-1 md:col-span-2">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Vendor Code</label>
+                        <input
+                            type="text"
+                            name="VendorCode"
+                            placeholder="Vendor Code"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.VendorCode}
+                            onChange={handleChange}
+                        />
+                    </div>
                 </div>
                 <h1 className="text-2xl mb-3 font-bold ">Bill To Party</h1>
                 {/* BASIC INFO */}
-                <div className="mb-4">
-                    <label className="font-bold block mb-1">Select Party</label>
-                    <select
-                        value={selectedPartyId}
-                        onChange={(e) => handlePartySelect(e.target.value)}
-                        className="border p-2 rounded w-full"
-                    >
-                        <option value="">-- Select Party --</option>
-                        {parties.map(party => (
-                            <option key={party.party_id} value={party.party_id}>
-                                {party.party_name}
-                            </option>
-                        ))}
-
-                    </select>
-                </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <input
                         name="clientName"
