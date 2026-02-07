@@ -40,15 +40,19 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
 
       {/* CANCELLED WATERMARK */}
       {(invoice.status?.toLowerCase() === 'cancelled') && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-hidden">
           <div
-            className="border-[10px] text-8xl font-black uppercase tracking-widest transform -rotate-45 p-8 rounded-xl opacity-25"
+            className="text-[6rem] font-black uppercase tracking-widest transform -rotate-[30deg] opacity-20 whitespace-nowrap select-none"
             style={{
-              borderColor: '#ef4444',
-              color: '#ef4444'
+              color: '#ef4444',
+              textShadow: '0 0 5px rgba(255, 255, 255, 0.5)'
             }}
           >
-            CANCELLED
+            {"CANCELLED".split('').map((char, index) => (
+              <span key={index} className="inline-block" style={{ transform: 'rotate(325deg)' }}>
+                {char}
+              </span>
+            ))}
           </div>
         </div>
       )}

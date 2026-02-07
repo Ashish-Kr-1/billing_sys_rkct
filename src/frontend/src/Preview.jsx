@@ -221,13 +221,14 @@ export default function Preview() {
     }
   }
 
-  const performDeleteAndNavigate = async () => {
+  const performCancelAndNavigate = async () => {
     const invoiceNo = invoice.InvoiceNo;
     try {
-      const deleteResponse = await api.delete(`/createInvoice?invoice_no=${encodeURIComponent(invoiceNo)}`);
+      const response = await api.put('/api/ledger/cancel', { invoice_no: invoiceNo });
+      const data = await response.json();
 
-      if (deleteResponse.ok) {
-        notify(`Invoice "${invoiceNo}" deleted. You can create a new one.`, "success");
+      if (response.ok) {
+        notify(`Invoice "${invoiceNo}" cancelled. You can create a new one.`, "success");
         setShowDeleteModal(false);
 
         // Navigate to edit mode - invoice number will be fetched fresh
@@ -243,12 +244,12 @@ export default function Preview() {
           }
         });
       } else {
-        notify('Failed to delete invoice. Please try again.', "error");
+        notify(data.error || 'Failed to cancel invoice. Please try again.', "error");
         setShowDeleteModal(false);
       }
     } catch (err) {
-      console.error("Delete error:", err);
-      notify("An error occurred while deleting the invoice.", "error");
+      console.error("Cancel error:", err);
+      notify("An error occurred while canceling the invoice.", "error");
       setShowDeleteModal(false);
     }
   };
@@ -309,11 +310,11 @@ export default function Preview() {
           <ConfirmModal
             isOpen={showDeleteModal}
             onClose={() => setShowDeleteModal(false)}
-            onConfirm={performDeleteAndNavigate}
+            onConfirm={performCancelAndNavigate}
             title="Warning: Invoice Already Saved"
-            message={`Invoice "${invoice.InvoiceNo}" is already saved in the database.\n\nGoing back to edit will DELETE this invoice so you can create a new version.\n\nAre you sure?`}
-            confirmText="Delete & Edit"
-            cancelText="Cancel"
+            message={`Invoice "${invoice.InvoiceNo}" is already saved in the database.\n\nGoing back to edit will CANCEL this invoice so you can create a new version.\n\nAre you sure?`}
+            confirmText="Cancel Invoice & Edit"
+            cancelText="Keep Invoice"
           />
         </>
       )}
