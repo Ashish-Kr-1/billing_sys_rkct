@@ -144,15 +144,26 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
                             <span>₹{(subtotalAmount.toFixed(2))}</span>
                         </div>
 
-                        <div className="flex justify-around mb-2">
-                            <span>SGST ({sgst}%)</span>
-                            <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
-                        </div>
 
-                        <div className="flex justify-around mb-2">
-                            <span>CGST ({cgst}%)</span>
-                            <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
-                        </div>
+
+                        {(igst > 0) ? (
+                            <div className="flex justify-around mb-2">
+                                <span>IGST ({igst}%)</span>
+                                <span>₹{((subtotalAmount * igst) / 100).toFixed(2)}</span>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-around mb-2">
+                                    <span>SGST ({sgst}%)</span>
+                                    <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
+                                </div>
+
+                                <div className="flex justify-around mb-2">
+                                    <span>CGST ({cgst}%)</span>
+                                    <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
+                                </div>
+                            </>
+                        )}
 
                         <div
                             className="flex justify-around mt-3 pt-3 border-t-2"
@@ -174,6 +185,6 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
                     {quotation.Terms || "No terms and conditions specified."}
                 </p>
             </div>
-        </div>
+        </div >
     );
 }

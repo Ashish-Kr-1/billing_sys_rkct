@@ -39,8 +39,6 @@ export const createQuotationHandler = async (req, res) => {
         );
 
         if (dup.length > 0) {
-            // If editing, handle update (not implemented fully for simplicity, assume new or overwrite)
-            // For now, if duplicate, return error
             await client.rollback();
             return res.status(409).json({
                 error: "Quotation with this number already exists",
@@ -48,11 +46,34 @@ export const createQuotationHandler = async (req, res) => {
             });
         }
 
-        const cgst_amount = (subtotal * Number(cgst)) / 100;
-        const sgst_amount = (subtotal * Number(sgst)) / 100;
-        const igst_amount = 0; // Assuming intra-state for now as per invoice form default
-        const total_amount = subtotal + cgst_amount + sgst_amount;
-        const gst_percentage = Number(cgst) + Number(sgst);
+        // ✅ Fetch Party State Code for Auto-Tax Calculation
+        const [partyRows] = await client.query("SELECT supply_state_code FROM parties WHERE party_id = ?", [party_id]);
+
+        if (partyRows.length === 0) {
+            await client.rollback();
+            return res.status(404).json({ error: "Party not found" });
+        }
+
+        const stateCode = partyRows[0].supply_state_code;
+        let cgstRate = 0, sgstRate = 0, igstRate = 0;
+
+        // RULE: If State Code is '20' (Jharkhand), CGST=9%, SGST=9%. Else IGST=18%.
+        const sc = String(stateCode || '').trim();
+        if (sc === '20') {
+            cgstRate = 9;
+            sgstRate = 9;
+            igstRate = 0;
+        } else {
+            cgstRate = 0;
+            sgstRate = 0;
+            igstRate = 18;
+        }
+
+        const cgst_amount = (subtotal * cgstRate) / 100;
+        const sgst_amount = (subtotal * sgstRate) / 100;
+        const igst_amount = (subtotal * igstRate) / 100;
+        const total_amount = subtotal + cgst_amount + sgst_amount + igst_amount;
+        const gst_percentage = cgstRate + sgstRate + igstRate;
 
         // 1. Insert into quotations
         const [qResult] = await client.query(`

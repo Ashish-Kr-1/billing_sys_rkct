@@ -21,6 +21,7 @@ export default function QuotationPreview() {
     const totalAmount = state.totalAmount;
     const sgst = state.sgst;
     const cgst = state.cgst;
+    const igst = state.igst;
 
     // Fetch company configuration
     useEffect(() => {
@@ -74,6 +75,7 @@ export default function QuotationPreview() {
                 subtotal: subtotalAmount,
                 cgst,
                 sgst,
+                igst,
                 Terms: quotation.Terms,
                 status: 'Pending' // Default status
             },
@@ -107,6 +109,7 @@ export default function QuotationPreview() {
                 subtotal: subtotalAmount,
                 cgst,
                 sgst,
+                igst,
                 totalAmount
             }
         };
@@ -156,6 +159,7 @@ export default function QuotationPreview() {
                                 totalAmount={totalAmount}
                                 sgst={sgst}
                                 cgst={cgst}
+                                igst={igst}
                                 companyConfig={companyConfig}
                             />
                         </div>
@@ -171,6 +175,7 @@ export default function QuotationPreview() {
                                     totalAmount,
                                     sgst,
                                     cgst,
+                                    igst,
                                     isEditMode: state?.isEditMode,
                                     company_id: state?.company_id
                                 }

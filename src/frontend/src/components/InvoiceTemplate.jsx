@@ -2,7 +2,7 @@ import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
-export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst, companyConfig }) {
+export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig }) {
   const navigate = useNavigate();
 
   // Helper function to get company logo
@@ -173,15 +173,24 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
                 <span>₹{(subtotalAmount.toFixed(2))}</span>
               </div>
 
-              <div className="flex justify-around mb-2">
-                <span>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</span>
-                <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
-              </div>
+              {(igst > 0) ? (
+                <div className="flex justify-around mb-2">
+                  <span>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</span>
+                  <span>₹{((subtotalAmount * igst) / 100).toFixed(2)}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-around mb-2">
+                    <span>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</span>
+                    <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
+                  </div>
 
-              <div className="flex justify-around mb-2">
-                <span>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</span>
-                <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
-              </div>
+                  <div className="flex justify-around mb-2">
+                    <span>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</span>
+                    <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
+                  </div>
+                </>
+              )}
 
               <div
                 className="flex justify-around mt-3 pt-3 border-t-2"

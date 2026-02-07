@@ -31,6 +31,7 @@ export default function Preview() {
   const totalAmount = state.totalAmount;
   const sgst = state.sgst;
   const cgst = state.cgst;
+  const igst = state.igst;
 
   // Fetch company configuration
   useEffect(() => {
@@ -108,6 +109,7 @@ export default function Preview() {
         subtotal: subtotalAmount,
         cgst,
         sgst,
+        igst,
         Terms: invoice.Terms,
       },
 
@@ -140,6 +142,7 @@ export default function Preview() {
         subtotal: subtotalAmount,
         cgst,
         sgst,
+        igst,
       }
     };
 
@@ -199,6 +202,7 @@ export default function Preview() {
             totalAmount,
             sgst,
             cgst,
+            igst,
             isEditMode: state?.isEditMode,
             company_id: state?.company_id
           }
@@ -214,6 +218,7 @@ export default function Preview() {
           totalAmount,
           sgst,
           cgst,
+          igst,
           isEditMode: state?.isEditMode,
           company_id: state?.company_id
         }
@@ -239,6 +244,7 @@ export default function Preview() {
             totalAmount,
             sgst,
             cgst,
+            igst,
             isEditMode: false, // Treat as new invoice
             company_id: state?.company_id
           }
@@ -270,6 +276,7 @@ export default function Preview() {
                 totalAmount={totalAmount}
                 sgst={sgst}
                 cgst={cgst}
+                igst={igst}
                 companyConfig={companyConfig}
               />
             </div>

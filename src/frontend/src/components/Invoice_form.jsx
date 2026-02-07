@@ -197,6 +197,18 @@ export default function InvoiceForm({ initialData }) {
           GSTIN2: p.gstin_no,
           VendorCode: p.vendore_code || ''
         }));
+
+        // Auto-Set Tax Rates based on State Code
+        const sc = String(p.supply_state_code || '').trim();
+        if (sc === '20') {
+          setSgst(9);
+          setCgst(9);
+          setIgst(0);
+        } else {
+          setSgst(0);
+          setCgst(0);
+          setIgst(18);
+        }
       })
       .catch(err => console.error('Error fetching party details:', err));
   }
@@ -265,9 +277,10 @@ export default function InvoiceForm({ initialData }) {
   // TOTAL CALCULATION
   const [sgst, setSgst] = useState(initialData?.sgst || 0);
   const [cgst, setCgst] = useState(initialData?.cgst || 0);
+  const [igst, setIgst] = useState(initialData?.igst || 0);
 
 
-  const totalAmount = subtotalAmount + (subtotalAmount * sgst) / 100 + (subtotalAmount * cgst) / 100;
+  const totalAmount = subtotalAmount + (subtotalAmount * sgst) / 100 + (subtotalAmount * cgst) / 100 + (subtotalAmount * igst) / 100;
 
 
 
@@ -597,24 +610,36 @@ export default function InvoiceForm({ initialData }) {
 
         {/* TOTAL */}
         <div className="mt-3">
-          <div className="flex justify-end items-center ">
-            <h2 className="font-bold mr-3.5"> SGST</h2>
-            <input type="number"
-              name="sgst"
-              min={0}
-              onChange={(e) => setSgst(e.target.value)}
-              placeholder="SGST %"
-              className="border p-1 rounded w-24" />
-          </div>
-          <div className="flex justify-end items-center ">
-            <h2 className="font-bold mr-3.5"> CGST</h2>
-            <input type="number"
-              name="cgst"
-              placeholder="CGST %"
-              min={0}
-              onChange={(e) => setCgst(e.target.value)}
-              className="border p-1 rounded w-24" />
-          </div>
+          {(igst > 0) ? (
+            <div className="flex justify-end items-center ">
+              <h2 className="font-bold mr-3.5"> IGST ({igst}%)</h2>
+              <input type="number"
+                name="igst"
+                value={igst}
+                readOnly
+                className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-end items-center ">
+                <h2 className="font-bold mr-3.5"> SGST ({sgst}%)</h2>
+                <input type="number"
+                  name="sgst"
+                  value={sgst}
+                  readOnly
+                  className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+              </div>
+              <div className="flex justify-end items-center ">
+                <h2 className="font-bold mr-3.5"> CGST ({cgst}%)</h2>
+                <input type="number"
+                  name="cgst"
+                  value={cgst}
+                  readOnly
+                  className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+              </div>
+            </>
+          )}
+
           <div className="flex justify-end mt-6 items-center">
             <h1 className="text-xl font-bold  mr-3.5">Subtotal</h1>
             <p className="text-xl font-bold">₹ {subtotalAmount}</p>
@@ -691,7 +716,7 @@ export default function InvoiceForm({ initialData }) {
         </div>
 
         <div className=" max-w-3xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
-          <button className="w-full md:w-64 block mx-auto rounded-md font-bold cursor-progress py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors" onClick={() => navigate("/Preview", { state: { invoice, subtotalAmount, totalAmount, sgst, cgst, } })}> Preview </button>
+          <button className="w-full md:w-64 block mx-auto rounded-md font-bold cursor-progress py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors" onClick={() => navigate("/Preview", { state: { invoice, subtotalAmount, totalAmount, sgst, cgst, igst } })}> Preview </button>
         </div>
       </div>
     </div>

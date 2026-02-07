@@ -150,7 +150,7 @@ async function partyList(req, res) {
   const client = await req.db.getConnection(); // MySQL
   try {
     await client.beginTransaction();
-    const [rows] = await client.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    const [rows] = await client.query("SELECT party_id, party_name, supply_state_code FROM parties ORDER BY party_name");
     res.json(rows);
     await client.commit();
   } catch (err) {
@@ -184,7 +184,8 @@ async function partyDetails(req, res) {
         shipping_address,
         vendore_code,
         mobile_no,
-        contact_person
+        contact_person,
+        supply_state_code
       FROM parties
       WHERE party_id = ?
       `,
@@ -663,16 +664,39 @@ async function createTransactionHandler(req, res) {
       });
     }
 
+    // ✅ Fetch Party State Code for Auto-Tax Calculation
+    const [partyRows] = await client.query("SELECT supply_state_code FROM parties WHERE party_id = ?", [party_id]);
+
+    if (partyRows.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: "Party not found" });
+    }
+
+    const stateCode = partyRows[0].supply_state_code;
+    let cgstRate = 0, sgstRate = 0, igstRate = 0;
+
+    // RULE: If State Code is '20' (Jharkhand), CGST=9%, SGST=9%. Else IGST=18%.
+    const sc = String(stateCode || '').trim();
+    if (sc === '20') {
+      cgstRate = 9;
+      sgstRate = 9;
+      igstRate = 0;
+    } else {
+      cgstRate = 0;
+      sgstRate = 0;
+      igstRate = 18;
+    }
+
     // ✅ GST calculations
-    const cgst_amount = (subtotal * Number(cgst)) / 100;
-    const sgst_amount = (subtotal * Number(sgst)) / 100;
-    const igst_amount = 0;
+    const cgst_amount = (subtotal * cgstRate) / 100;
+    const sgst_amount = (subtotal * sgstRate) / 100;
+    const igst_amount = (subtotal * igstRate) / 100;
 
     const taxable_amount = subtotal;
-    const gst_percentage = Number(cgst) + Number(sgst);
+    const gst_percentage = cgstRate + sgstRate + igstRate;
 
     const total_amount =
-      taxable_amount + cgst_amount + sgst_amount;
+      taxable_amount + cgst_amount + sgst_amount + igst_amount;
 
     const round_off = Math.round(total_amount) - total_amount;
 
