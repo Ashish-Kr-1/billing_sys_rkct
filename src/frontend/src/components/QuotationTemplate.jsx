@@ -3,7 +3,7 @@ import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
 
-export default function QuotationTemplate({ quotation, subtotalAmount, totalAmount, sgst, cgst, companyConfig }) {
+export default function QuotationTemplate({ quotation, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig }) {
     const navigate = useNavigate();
 
     // Helper function to get company logo
