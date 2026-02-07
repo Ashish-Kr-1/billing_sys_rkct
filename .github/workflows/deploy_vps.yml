@@ -23,8 +23,13 @@ jobs:
              # Stop containers
              docker compose down
              
-             # Build fresh
-             docker compose build
+             # Clear frontend build cache to ensure fresh deployment
+             rm -rf src/frontend/dist
+             rm -rf src/frontend/node_modules/.vite
+             
+             # Build fresh (no-cache for frontend to force rebuild)
+             docker compose build --no-cache frontend
+             docker compose build backend
              
              # Run migrations (if backend container exists)
              # Run migrations
