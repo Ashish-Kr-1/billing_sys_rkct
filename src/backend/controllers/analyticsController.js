@@ -71,6 +71,7 @@ party_id,
     supply_state_code,
     mobile_no
     FROM parties
+    WHERE is_deleted = 0
     ORDER BY party_name`
     );
 
@@ -84,6 +85,7 @@ item_id,
     unit,
     rate
     FROM items
+    WHERE is_deleted = 0
     ORDER BY item_name`
     );
 
@@ -153,12 +155,12 @@ export async function getCompanySummary(req, res) {
         // Get counts
         const [partiesCount] = await dbManager.query(
             companyId,
-            'SELECT COUNT(*) as count FROM parties'
+            'SELECT COUNT(*) as count FROM parties WHERE is_deleted = 0'
         );
 
         const [itemsCount] = await dbManager.query(
             companyId,
-            'SELECT COUNT(*) as count FROM items'
+            'SELECT COUNT(*) as count FROM items WHERE is_deleted = 0'
         );
 
         const [transactionsCount] = await dbManager.query(
