@@ -1,56 +1,89 @@
-import React from 'react'
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Button from './Button.jsx'
 import { useNavigate } from 'react-router-dom';
 import LinkItem from "../link_item.jsx"
 import { notify } from './Notification.jsx';
+import { api, handleApiResponse } from '../config/apiClient.js';
 
-function Item_form() {
-  const [item, setItem] = useState({
+function Item_form({ initialData = null, onSuccess, onCancel }) {
+  const isEditMode = !!initialData;
+
+  const initialItemState = {
     item_name: "",
     hsn_code: "",
     unit: "",
     rate: ""
-  });
+  };
+
+  const [item, setItem] = useState(initialItemState);
+
+  useEffect(() => {
+    if (initialData) {
+      setItem(initialData);
+    } else {
+      setItem(initialItemState);
+    }
+  }, [initialData]);
 
   const navigate = useNavigate();
 
+  const LOCKED_FIELDS = ['item_name', 'hsn_code'];
+
+  const isFieldLocked = (fieldName) => isEditMode && LOCKED_FIELDS.includes(fieldName);
+
+  const getInputClass = (fieldName) => {
+    const baseClass = "border p-2 rounded w-full";
+    return isFieldLocked(fieldName)
+      ? `${baseClass} bg-gray-100 cursor-not-allowed text-gray-500`
+      : `${baseClass} bg-white`;
+  };
+
   return (
-    <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md mt-8'>
-      <h1 className="text-2xl font-bold mb-6">Create Item</h1>
+    <div className='max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-md mt-8 relative'>
+      {isEditMode && (
+        <button
+          onClick={onCancel}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
+          Cancel Edit
+        </button>
+      )}
+      <h1 className="text-2xl font-bold mb-6">{isEditMode ? 'Edit Item' : 'Create Item'}</h1>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <input
           name="item_name"
           placeholder="Item Name"
-          className="border p-2 rounded"
+          className={getInputClass('item_name')}
           value={item.item_name}
           onChange={(e) => setItem({ ...item, item_name: e.target.value })}
+          readOnly={isFieldLocked('item_name')}
         />
         <input
           name="hsn_code"
           placeholder="HSN code"
-          className="border p-2 rounded"
+          className={getInputClass('hsn_code')}
           value={item.hsn_code}
           onChange={(e) => setItem({ ...item, hsn_code: e.target.value })}
+          readOnly={isFieldLocked('hsn_code')}
         />
         <input
           name="unit"
           placeholder="Unit"
-          className="border p-2 rounded"
+          className={getInputClass('unit')}
           value={item.unit}
           onChange={(e) => setItem({ ...item, unit: e.target.value })}
         />
         <input
           name='rate'
           placeholder="Rate"
-          className="border p-2 rounded"
+          className={getInputClass('rate')}
           value={item.rate}
           onChange={(e) => setItem({ ...item, rate: e.target.value })}
         />
       </div>
       <div className='flex justify-end space-x-4'>
         <Button
-          text="Save"
+          text={isEditMode ? "Update Item" : "Save"}
           color="green"
           onClick={async () => {
             try {
@@ -58,10 +91,19 @@ function Item_form() {
                 notify("Item Name is required", "warning");
                 return;
               }
-              await LinkItem(item);
-              notify("Item Created Successfully!", "success");
+
+              if (isEditMode) {
+                await handleApiResponse(api.put(`/items/${item.item_id}`, item));
+                notify("Item Updated Successfully!", "success");
+                if (onSuccess) onSuccess();
+              } else {
+                await LinkItem(item);
+                notify("Item Created Successfully!", "success");
+                setItem(initialItemState);
+                if (onSuccess) onSuccess();
+              }
             } catch (error) {
-              notify(error.message || "Failed to create item", "error");
+              notify(error.message || "Failed to save item", "error");
             }
           }}
         />

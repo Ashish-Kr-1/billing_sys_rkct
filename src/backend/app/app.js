@@ -109,17 +109,78 @@ app.get('/test-db', async (req, res) => {
 
 app.get('/parties', async (req, res) => {
   try {
-    const [rows] = await req.db.query("SELECT party_id, party_name FROM parties ORDER BY party_name");
+    const [rows] = await req.db.query("SELECT party_id, party_name FROM parties WHERE is_deleted = 0 ORDER BY party_name");
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 })
 
+// Update party details
+app.put('/parties/:id', async (req, res) => {
+  const partyId = req.params.id;
+  const {
+    party_name,
+    gstin_no,
+    type,
+    billing_address,
+    shipping_address,
+    supply_state_code,
+    vendore_code,
+    pin_code,
+    contact_person,
+    mobile_no
+  } = req.body;
+
+  try {
+    await req.db.query(
+      `UPDATE parties SET 
+        party_name = ?, 
+        gstin_no = ?, 
+        type = ?, 
+        billing_address = ?, 
+        shipping_address = ?, 
+        supply_state_code = ?, 
+        vendore_code = ?, 
+        pin_code = ?, 
+        contact_person = ?, 
+        mobile_no = ?
+       WHERE party_id = ?`,
+      [
+        party_name,
+        gstin_no,
+        type,
+        billing_address,
+        shipping_address,
+        supply_state_code,
+        vendore_code,
+        pin_code,
+        contact_person,
+        mobile_no,
+        partyId
+      ]
+    );
+    res.json({ success: true, message: 'Party updated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Soft delete party
+app.delete('/parties/:id', async (req, res) => {
+  const partyId = req.params.id;
+  try {
+    await req.db.query("UPDATE parties SET is_deleted = 1 WHERE party_id = ?", [partyId]);
+    res.json({ success: true, message: 'Party deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.get('/itemNames', async (req, res) => {
   try {
-    const [rows] = await req.db.query("SELECT item_id, item_name FROM items ORDER BY item_name");
+    const [rows] = await req.db.query("SELECT item_id, item_name FROM items WHERE is_deleted = 0 ORDER BY item_name");
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -137,21 +198,61 @@ app.get('/transactions', async (req, res) => {
 
 app.get('/items', async (req, res) => {
   try {
-    const [rows] = await req.db.query("SELECT * from items");
-    res.json({ rows }); // Frontend might expect { rows: [] } structure based on previous code or just array? 
-    // Previous code: res.json(result); which sends the whole PG object { command, rowCount, rows: [] }.
-    // Frontend likely uses data.rows.
-    console.log(rows);
+    const [rows] = await req.db.query("SELECT * from items WHERE is_deleted = 0");
+    res.json({ rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 })
 
+// Get item details
+app.get('/items/:id', async (req, res) => {
+  try {
+    const [rows] = await req.db.query("SELECT * FROM items WHERE item_id = ? AND is_deleted = 0", [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Item not found' });
+    res.json({ item: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update item
+app.put('/items/:id', async (req, res) => {
+  const itemId = req.params.id;
+  const { item_name, hsn_code, unit, rate } = req.body;
+
+  try {
+    await req.db.query(
+      `UPDATE items SET 
+                item_name = ?, 
+                hsn_code = ?, 
+                unit = ?, 
+                rate = ?
+             WHERE item_id = ?`,
+      [item_name, hsn_code, unit, rate, itemId]
+    );
+    res.json({ success: true, message: 'Item updated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Soft delete item
+app.delete('/items/:id', async (req, res) => {
+  const itemId = req.params.id;
+  try {
+    await req.db.query("UPDATE items SET is_deleted = 1 WHERE item_id = ?", [itemId]);
+    res.json({ success: true, message: 'Item deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 async function partyList(req, res) {
   const client = await req.db.getConnection(); // MySQL
   try {
     await client.beginTransaction();
-    const [rows] = await client.query("SELECT party_id, party_name, supply_state_code FROM parties ORDER BY party_name");
+    const [rows] = await client.query("SELECT party_id, party_name, supply_state_code FROM parties WHERE is_deleted = 0 ORDER BY party_name");
     res.json(rows);
     await client.commit();
   } catch (err) {
@@ -181,6 +282,7 @@ async function partyDetails(req, res) {
         party_id,
         party_name,
         gstin_no,
+        type,
         billing_address,
         shipping_address,
         vendore_code,
@@ -188,7 +290,7 @@ async function partyDetails(req, res) {
         contact_person,
         supply_state_code
       FROM parties
-      WHERE party_id = ?
+      WHERE party_id = ? AND is_deleted = 0
       `,
       [partyId]
     );
@@ -496,7 +598,7 @@ async function createPartyHandler(req, res) {
     mobile_no = null
   } = req.body;
 
-  if (!party_name || !type || !supply_state_code) {
+  if (!party_name || !supply_state_code) {
     return res.status(400).json({ error: 'Party Name, Type, and State Code are required' });
   }
 
@@ -517,15 +619,6 @@ async function createPartyHandler(req, res) {
   try {
     // ... transaction code ...
     await client.beginTransaction();
-
-    // If you want to prevent duplicates by GSTIN: 
-    if (gstin_no) {
-      const [dup] = await client.query('SELECT party_id FROM parties WHERE gstin_no = ?', [gstin_no]);
-      if (dup.length > 0) {
-        await client.rollback();
-        return res.status(409).json({ error: 'Party with this GSTIN already exists', party_id: dup[0].party_id });
-      }
-    }
 
     const insertSql = `INSERT INTO parties
       (party_name, gstin_no, type, billing_address, shipping_address, supply_state_code, vendore_code, pin_code, contact_person, mobile_no)

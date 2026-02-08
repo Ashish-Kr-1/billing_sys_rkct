@@ -55,11 +55,42 @@ export function AuthProvider({ children }) {
             }
 
             const data = await res.json();
+
+            // Handle OTP flow
+            if (data.otpRequired) {
+                return data; // Return OTP data without setting session yet
+            }
+
             setToken(data.token);
             setUser(data.user);
             localStorage.setItem('token', data.token);
 
             return data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const verifyOtp = async (userId, otp) => {
+        try {
+            const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, otp })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'OTP Verification failed');
+            }
+
+            const data = await res.json();
+            setToken(data.token);
+            setUser(data.user);
+            localStorage.setItem('token', data.token);
+
+            return data;
+
         } catch (error) {
             throw error;
         }
@@ -97,6 +128,7 @@ export function AuthProvider({ children }) {
         token,
         login,
         signup,
+        verifyOtp,
         logout,
         loading,
         isAuthenticated: !!user

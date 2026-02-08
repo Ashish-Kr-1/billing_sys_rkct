@@ -6,7 +6,8 @@ import {
     loginUser,
     logoutUser,
     getCurrentUser,
-    changePassword
+    changePassword,
+    verifyOtp
 } from '../controllers/authController.js';
 
 // Company controllers
@@ -38,6 +39,7 @@ const authRouter = express.Router();
 // authRouter.post('/register', registerUser);
 authRouter.post('/login', loginUser);
 authRouter.post('/logout', logoutUser);
+authRouter.post('/verify-otp', verifyOtp);
 authRouter.get('/me', authenticateUser, getCurrentUser);
 authRouter.post('/change-password', authenticateUser, changePassword);
 

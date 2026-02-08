@@ -11,7 +11,11 @@ export default function Login() {
     const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { login } = useAuth();
+    const [otpRequired, setOtpRequired] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+    const [hostUserId, setHostUserId] = useState(null);
+
+    const { login, verifyOtp } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -25,17 +29,41 @@ export default function Login() {
     }, [location]);
 
 
+    // Verify OTP Handler
+    const handleOtpSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            await verifyOtp(hostUserId, otpCode);
+            setSuccessMessage('Login successful!');
+            navigate('/select-company');
+        } catch (err) {
+            setError(err.message || 'OTP verification failed.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            await login(username, password);
-            navigate('/select-company');
+            const result = await login(username, password);
+
+            if (result.otpRequired) {
+                setOtpRequired(true);
+                setHostUserId(result.userId);
+                setSuccessMessage(result.message);
+                setLoading(false); // Stop loading to show OTP form
+            } else {
+                navigate('/select-company');
+            }
         } catch (err) {
             setError(err.message || 'Invalid credentials. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
@@ -76,58 +104,81 @@ export default function Login() {
                     )}
 
 
-                    {/* Login Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Username Field */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Username or Email</label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
-                                    placeholder="Enter your username"
-                                    required
-                                    autoFocus
-                                />
+                    {/* Login / OTP Form */}
+                    <form onSubmit={otpRequired ? handleOtpSubmit : handleSubmit} className="space-y-4">
+                        {otpRequired && (
+                            <div className="space-y-2 animate-fade-in-down">
+                                <label className="text-sm font-medium text-gray-700">One-Time Password (OTP)</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                    <input
+                                        type="text"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none text-center letter-spacing-widest text-lg font-bold"
+                                        placeholder="Enter 6-digit OTP"
+                                        maxLength={6}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 text-center">OTP sent to Administrator email.</p>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Password Field */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Password</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
-                                    placeholder="Enter your password"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                </button>
-                            </div>
-                        </div>
+                        {!otpRequired && (
+                            <>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Username or Email</label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                        <input
+                                            type="text"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
+                                            placeholder="Enter your username"
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
 
-                        {/* Remember Me & Forgot Password */}
-                        <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                <span className="text-gray-600">Remember me</span>
-                            </label>
-                            <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                                Forgot password?
-                            </Link>
-                        </div>
+                                {/* Password Field */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Password</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
+                                            placeholder="Enter your password"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Remember Me & Forgot Password */}
+                                <div className="flex items-center justify-between text-sm">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
+                                        <span className="text-gray-600">Remember me</span>
+                                    </label>
+                                    <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                                        Forgot password?
+                                    </Link>
+                                </div>
+                            </>
+                        )}
 
                         {/* Submit Button */}
                         <button
@@ -138,12 +189,12 @@ export default function Login() {
                             {loading ? (
                                 <>
                                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    <span>Signing in...</span>
+                                    <span>{otpRequired ? 'Verifying...' : 'Signing in...'}</span>
                                 </>
                             ) : (
                                 <>
                                     <LogIn className="w-5 h-5" />
-                                    <span>Sign In</span>
+                                    <span>{otpRequired ? 'Verify OTP' : 'Sign In'}</span>
                                 </>
                             )}
                         </button>

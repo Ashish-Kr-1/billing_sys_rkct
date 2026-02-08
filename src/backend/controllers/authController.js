@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { dbManager } from '../db.js';
 import { generateToken } from '../middleware/auth.js';
+import { sendLoginOTP } from '../utils/emailService.js';
 
 const SALT_ROUNDS = 10;
 
@@ -115,6 +116,44 @@ export async function loginUser(req, res) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // ============================================================
+        // OTP LOGIC FOR NON-ADMIN USERS
+        // ============================================================
+        if (user.role !== 'admin') {
+            // Generate 6-digit OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+            // Store OTP in DB
+            await client.query(
+                'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE user_id = ?',
+                [otp, expiresAt, user.user_id]
+            );
+
+            await client.commit(); // Commit so OTP is saved
+
+            // Send OTP via Email
+            try {
+                await sendLoginOTP(user, otp);
+            } catch (emailErr) {
+                console.error('Failed to send OTP email:', emailErr);
+                // We should probably still return success but warn user? 
+                // Or fail? "Risk free" -> If email fails, user can't login.
+                // Assuming email service works.
+            }
+
+            return res.status(200).json({
+                success: false,
+                otpRequired: true,
+                userId: user.user_id,
+                message: 'OTP sent to Master Email. Please enter OTP to login.'
+            });
+        }
+
+        // ============================================================
+        // ADMIN LOGIN (Direct Access)
+        // ============================================================
+
         // Generate JWT token
         const token = generateToken(user);
 
@@ -152,6 +191,88 @@ export async function loginUser(req, res) {
     } catch (error) {
         await client.rollback();
         console.error('Login error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Verify OTP and complete login
+ */
+export async function verifyOtp(req, res) {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+        return res.status(400).json({ error: 'User ID and OTP are required' });
+    }
+
+    const client = await dbManager.getPool(AUTH_DB_ID).getConnection();
+
+    try {
+        await client.beginTransaction();
+
+        // Get user and OTP
+        const [users] = await client.query(
+            `SELECT user_id, username, email, full_name, role, otp_code, otp_expires_at 
+             FROM users WHERE user_id = ?`,
+            [userId]
+        );
+
+        if (users.length === 0) {
+            await client.rollback();
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = users[0];
+
+        // Verify OTP
+        if (String(user.otp_code) !== String(otp)) {
+            await client.rollback();
+            return res.status(401).json({ error: 'Invalid OTP' });
+        }
+
+        // Verify Expiry
+        if (new Date() > new Date(user.otp_expires_at)) {
+            await client.rollback();
+            return res.status(401).json({ error: 'OTP has expired' });
+        }
+
+        // Clear OTP
+        await client.query(
+            'UPDATE users SET otp_code = NULL, otp_expires_at = NULL, last_login = NOW() WHERE user_id = ?',
+            [user.user_id]
+        );
+
+        // Generate Token
+        const token = generateToken(user);
+        const ip_address = req.ip || req.connection.remoteAddress;
+        const user_agent = req.headers['user-agent'];
+        const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await client.query(
+            `INSERT INTO sessions (user_id, token, ip_address, user_agent, expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
+            [user.user_id, token, ip_address, user_agent, expires_at]
+        );
+
+        await client.commit();
+
+        return res.status(200).json({
+            success: true,
+            token,
+            user: {
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email,
+                full_name: user.full_name,
+                role: user.role
+            }
+        });
+
+    } catch (error) {
+        await client.rollback();
+        console.error('OTP Verification Error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     } finally {
         client.release();
