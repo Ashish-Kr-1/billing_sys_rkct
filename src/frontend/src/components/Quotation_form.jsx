@@ -442,23 +442,7 @@ export default function QuotationForm({ initialData }) {
                     </div>
 
                     {/* Row 3 - Party Selection & Vendor Code */}
-                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400 col-span-1 md:col-span-2">
-                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Enquiry Received From</label>
-                        <select
-                            value={selectedPartyId}
-                            onChange={(e) => handlePartySelect(e.target.value)}
-                            className="w-full px-1 py-1 outline-none bg-white font-medium cursor-pointer"
-                        >
-                            <option value="">-- Select Party --</option>
-                            {parties.map(party => (
-                                <option key={party.party_id} value={party.party_id}>
-                                    {party.party_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400 col-span-1 md:col-span-2">
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
                         <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Vendor Code</label>
                         <input
                             type="text"
@@ -470,7 +454,26 @@ export default function QuotationForm({ initialData }) {
                         />
                     </div>
                 </div>
+
                 <h1 className="text-2xl mb-3 font-bold ">Bill To Party</h1>
+
+                {/* SELECT PARTY BLOCK */}
+                <div className="mb-4">
+                    <label className="font-bold block mb-1">Select Party</label>
+                    <select
+                        value={selectedPartyId}
+                        onChange={(e) => handlePartySelect(e.target.value)}
+                        className="border p-2 rounded w-full cursor-pointer"
+                    >
+                        <option value="">-- Select Party --</option>
+                        {parties.map(party => (
+                            <option key={party.party_id} value={party.party_id}>
+                                {party.party_name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* BASIC INFO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <input

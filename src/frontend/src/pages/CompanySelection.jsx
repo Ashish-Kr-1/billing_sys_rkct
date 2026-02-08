@@ -133,7 +133,7 @@ export default function CompanySelection() {
                         >
                             {/* Gradient Header */}
                             <div className={`h-40 bg-gradient-to-br ${colors.bg} ${isConnected ? colors.hover : ''} transition-all duration-300 flex items-center justify-center relative`}>
-                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md p-3">
+                                <div className="w-20 h-auto bg-white rounded-full flex items-center justify-center shadow-md p-3">
                                     <img
                                         src={company.id === 3 ? GlobalBharatLogo : (company.id === 1 ? RkCastingLogo : DefaultLogo)}
                                         alt={company.name}

@@ -914,93 +914,99 @@ const GeographyTab = ({ KPIs }) => (
 // ============================================================
 // MAIN APP
 // ============================================================
-const QuotationsTab = ({ KPIs }) => (
-  <div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <MetricCard title="Total Quotations" value={KPIs.totalQuotations} icon={FileText} color={COLORS.blue} subtitle="Generated" />
-      <MetricCard title="Conversion Rate" value={`${KPIs.quotationConversionRate}%`} icon={Target} color={parseFloat(KPIs.quotationConversionRate) > 30 ? COLORS.emerald : COLORS.amber} subtitle="Won vs Total" />
-      <MetricCard title="Total Value" value={fmt(KPIs.quotationValue)} icon={DollarSign} color={COLORS.purple} subtitle="Pipeline value" />
-      <MetricCard title="Converted Value" value={fmt(KPIs.convertedValue)} icon={DollarSign} color={COLORS.emerald} subtitle="Revenue realized" />
-    </div>
+const QuotationsTab = ({ KPIs }) => {
+  const safeQuotationMonthly = KPIs.quotationMonthly || [];
+  const safeQuotationStatusData = KPIs.quotationStatusData || [];
 
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-      <CardShell className="lg:col-span-2">
-        <SectionTitle icon={Activity}>Monthly Quotation Activity</SectionTitle>
-        <div style={{ height: 260 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={KPIs.quotationMonthly}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => fmt(v)} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="total" name="Created" fill={COLORS.blue} radius={[4, 4, 0, 0]} />
-              <Bar yAxisId="left" dataKey="converted" name="Converted" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
-              <Line yAxisId="right" type="monotone" dataKey="value" name="Value" stroke={COLORS.purple} strokeWidth={2} dot={false} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardShell>
+  return (
+    <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <MetricCard title="Total Quotations" value={KPIs.totalQuotations} icon={FileText} color={COLORS.blue} subtitle="Generated" />
+        <MetricCard title="Conversion Rate" value={`${KPIs.quotationConversionRate}%`} icon={Target} color={parseFloat(KPIs.quotationConversionRate) > 30 ? COLORS.emerald : COLORS.amber} subtitle="Won vs Total" />
+        <MetricCard title="Total Value" value={fmt(KPIs.quotationValue)} icon={DollarSign} color={COLORS.purple} subtitle="Pipeline value" />
+        <MetricCard title="Converted Value" value={fmt(KPIs.convertedValue)} icon={DollarSign} color={COLORS.emerald} subtitle="Revenue realized" />
+      </div>
 
-      <CardShell>
-        <SectionTitle icon={PieIcon}>Status Distribution</SectionTitle>
-        <div style={{ height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={KPIs.quotationStatusData} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none">
-                {KPIs.quotationStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v) => v} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="space-y-2 mt-2">
-          {KPIs.quotationStatusData.map((d, i) => (
-            <div key={i} className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                <span style={{ color: "#64748b" }}>{d.name}</span>
-              </span>
-              <span className="font-bold" style={{ color: COLORS.primary }}>{d.value}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <CardShell className="lg:col-span-2">
+          <SectionTitle icon={Activity}>Monthly Quotation Activity</SectionTitle>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={safeQuotationMonthly}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => fmt(v)} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 11 }} />
+                <Bar yAxisId="left" dataKey="total" name="Created" fill={COLORS.blue} radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="converted" name="Converted" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="value" name="Value" stroke={COLORS.purple} strokeWidth={2} dot={false} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardShell>
+
+        <CardShell>
+          <SectionTitle icon={PieIcon}>Status Distribution</SectionTitle>
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={safeQuotationStatusData} cx="50%" cy="50%" innerRadius={42} outerRadius={72} dataKey="value" stroke="none">
+                  {safeQuotationStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => v} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-2 mt-2">
+            {safeQuotationStatusData.map((d, i) => (
+              <div key={i} className="flex items-center justify-between text-[11px]">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
+                  <span style={{ color: "#64748b" }}>{d.name}</span>
+                </span>
+                <span className="font-bold" style={{ color: COLORS.primary }}>{d.value}</span>
+              </div>
+            ))}
+          </div>
+        </CardShell>
+      </div>
+
+
+      <div className="grid grid-cols-1 gap-5 mb-5">
+        <CardShell>
+          <SectionTitle icon={Activity} subtitle="Sales pipeline health indicator">
+            Pipeline Performance Summary
+          </SectionTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+            <div className="p-4 rounded-lg" style={{ background: "#dcfce7" }}>
+              <p className="text-[10px] font-bold mb-1" style={{ color: "#166534" }}>CONVERTED</p>
+              <p className="text-2xl font-black mb-1" style={{ color: COLORS.emerald }}>{KPIs.convertedQuotations}</p>
+              <p className="text-[9px]" style={{ color: "#166534" }}>{fmt(KPIs.convertedValue)} revenue generated</p>
             </div>
-          ))}
-        </div>
-      </CardShell>
-    </div>
 
-    <div className="grid grid-cols-1 gap-5 mb-5">
-      <CardShell>
-        <SectionTitle icon={Activity} subtitle="Sales pipeline health indicator">
-          Pipeline Performance Summary
-        </SectionTitle>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-          <div className="p-4 rounded-lg" style={{ background: "#dcfce7" }}>
-            <p className="text-[10px] font-bold mb-1" style={{ color: "#166534" }}>CONVERTED</p>
-            <p className="text-2xl font-black mb-1" style={{ color: COLORS.emerald }}>{KPIs.convertedQuotations}</p>
-            <p className="text-[9px]" style={{ color: "#166534" }}>{fmt(KPIs.convertedValue)} revenue generated</p>
-          </div>
+            <div className="p-4 rounded-lg" style={{ background: "#fee2e2" }}>
+              <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST / PENDING</p>
+              <p className="text-2xl font-black mb-1" style={{ color: COLORS.red }}>{KPIs.totalQuotations - KPIs.convertedQuotations}</p>
+              <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity remaining</p>
+            </div>
 
-          <div className="p-4 rounded-lg" style={{ background: "#fee2e2" }}>
-            <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST / PENDING</p>
-            <p className="text-2xl font-black mb-1" style={{ color: COLORS.red }}>{KPIs.totalQuotations - KPIs.convertedQuotations}</p>
-            <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity remaining</p>
+            <div className="p-4 rounded-lg" style={{ background: "#dbeafe" }}>
+              <p className="text-[10px] font-bold mb-1" style={{ color: "#1e40af" }}>AVERAGE VALUE</p>
+              <p className="text-2xl font-black mb-1" style={{ color: COLORS.blue }}>
+                {fmt(KPIs.quotationValue / (KPIs.totalQuotations || 1))}
+              </p>
+              <p className="text-[9px]" style={{ color: "#1e40af" }}>Per quotation</p>
+            </div>
           </div>
-
-          <div className="p-4 rounded-lg" style={{ background: "#dbeafe" }}>
-            <p className="text-[10px] font-bold mb-1" style={{ color: "#1e40af" }}>AVERAGE VALUE</p>
-            <p className="text-2xl font-black mb-1" style={{ color: COLORS.blue }}>
-              {fmt(KPIs.quotationValue / (KPIs.totalQuotations || 1))}
-            </p>
-            <p className="text-[9px]" style={{ color: "#1e40af" }}>Per quotation</p>
-          </div>
-        </div>
-      </CardShell >
+        </CardShell >
+      </div >
     </div >
-  </div >
-);
+  );
+};
 
 // ============================================================
 // MAIN APP COMPONENT
