@@ -1095,10 +1095,19 @@ export default function App() {
     // Filter Sell Summary based on valid invoice IDs
     const filteredSell = (analyticsData.sellSummary || []).filter(s => validIds.has(s.invoice_no));
 
+    const filteredQuotations = (analyticsData.quotations || []).filter(q => {
+      const d = new Date(q.quotation_date);
+      if (isNaN(d)) return false;
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      return y === targetYear && m >= monthRange.start && m <= monthRange.end;
+    });
+
     return {
       ...analyticsData,
       transactions: filteredTx,
-      sellSummary: filteredSell
+      sellSummary: filteredSell,
+      quotations: filteredQuotations
     };
   }, [analyticsData, selectedYear, monthRange]);
 

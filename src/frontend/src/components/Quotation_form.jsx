@@ -441,7 +441,19 @@ export default function QuotationForm({ initialData }) {
                         />
                     </div>
 
-                    {/* Row 3 - Party Selection & Vendor Code */}
+                    {/* Row 3 - Enquiry From & Vendor Code */}
+                    <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Enquiry Received From</label>
+                        <input
+                            type="text"
+                            name="enquiry_from"
+                            placeholder="Enquiry Received From"
+                            className="w-full px-1 py-1 outline-none font-medium"
+                            value={quotation.enquiry_from || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+
                     <div className="flex flex-col border rounded p-1 shadow-sm transition-all focus-within:ring-1 focus-within:ring-blue-400">
                         <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Vendor Code</label>
                         <input

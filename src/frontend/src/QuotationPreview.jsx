@@ -160,8 +160,6 @@ export default function QuotationPreview() {
             }
         }
     }
-
-
     return (
         <div>
             {loading ? (
