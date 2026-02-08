@@ -9,17 +9,18 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
   // Helper function to get company logo
   const getCompanyLogo = () => {
     if (!companyConfig) return DefaultLogo;
+    const compId = Number(companyConfig.company_id || companyConfig.id);
 
     // Company 3 is Global Bharat
-    if (companyConfig.company_id === 3) {
+    if (compId === 3) {
       return GlobalBharatLogo;
     }
     // Company 1 is RK Casting (using new logo)
-    if (companyConfig.company_id === 1) {
+    if (compId === 1) {
       return RkCastingLogo;
     }
     // Check if logo_url contains global-bharat
-    if (companyConfig.logo_url?.includes('global-bharat')) {
+    if (companyConfig?.logo_url?.includes('global-bharat')) {
       return GlobalBharatLogo;
     }
 

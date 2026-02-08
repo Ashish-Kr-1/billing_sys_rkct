@@ -45,7 +45,7 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
       interstateTotal: 0, intrastate: 0,
       totalQuotations: 0, convertedQuotations: 0, quotationConversionRate: "0.0",
       companyStats: {}, clientPerformance: [], companyProductBreakdown: [], companyWiseTopItems: [], companyWiseItemKeys: [],
-      monthlyData: [], monthlyStatus: [], gstPieData: [], quotationMonthly: [], recentTransactions: []
+      monthlyData: [], monthlyStatus: [], gstPieData: [], quotationMonthly: [], quotationStatusData: [], recentTransactions: []
     };
   }
 
