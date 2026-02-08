@@ -75,18 +75,19 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
                 </div>
             </div>
             {/*Upper section*/}
-            <div className="text-sm grid grid-cols-2 md:grid-cols-4 gap-2 border-b-2 mt-2 pb-2">
+            <div className="text-sm grid grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-4 border-b-2 mt-2 pb-2">
                 <div><span className="font-bold">Quotation No:</span> {quotation.QuotationNo}</div>
                 <div><span className="font-bold">Date:</span> {quotation.QuotationDate}</div>
                 <div><span className="font-bold">Validity:</span> {quotation.validity_days} days</div>
                 <div><span className="font-bold">RFQ No:</span> {quotation.rfq_no}</div>
 
                 <div><span className="font-bold">Enquiry Date:</span> {quotation.rfq_date}</div>
+                <div><span className="font-bold">Enquiry Received From:</span> {quotation.enquiry_from}</div>
                 <div><span className="font-bold">Contact Person:</span> {quotation.contact_person}</div>
                 <div><span className="font-bold">Contact No:</span> {quotation.contact_no}</div>
-                <div><span className="font-bold">Email:</span> {quotation.email}</div>
 
-                <div><span className="font-bold">Vendor Code:</span> {quotation.VendorCode}</div>
+                <div className="md:col-span-2"><span className="font-bold">Email:</span> {quotation.email}</div>
+                <div className="md:col-span-2"><span className="font-bold">Vendor Code:</span> {quotation.VendorCode}</div>
             </div>
 
 
