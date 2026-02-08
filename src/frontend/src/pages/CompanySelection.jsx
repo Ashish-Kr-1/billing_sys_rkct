@@ -12,8 +12,8 @@ import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 
 const COMPANY_COLORS = {
     1: { bg: 'from-orange-500 to-red-500', hover: 'hover:from-orange-600 hover:to-red-600' },
-    2: { bg: 'from-teal-500 to-cyan-500', hover: 'hover:from-teal-600 hover:to-cyan-600' },
-    3: { bg: 'from-blue-500 to-indigo-500', hover: 'hover:from-blue-600 hover:to-indigo-600' }
+    2: { bg: 'from-blue-500 to-indigo-500', hover: 'hover:from-blue-600 hover:to-indigo-600' },
+    3: { bg: 'from-teal-500 to-cyan-500', hover: 'hover:from-teal-600 hover:to-cyan-600' }
 };
 
 export default function CompanySelection() {
