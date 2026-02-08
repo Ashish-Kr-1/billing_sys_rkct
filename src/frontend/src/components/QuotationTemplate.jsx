@@ -191,6 +191,15 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
                     {quotation.Terms || "No terms and conditions specified."}
                 </p>
             </div>
+
+            {/* SIGNATURE SECTION */}
+            <div className="flex justify-end mt-10 mr-4">
+                <div className="text-center">
+                    <p className="font-bold">For {companyConfig?.company_name || 'R.K Casting & Engineering Works'}</p>
+                    <div className="h-16"></div>
+                    <p className="text-sm font-semibold">Authorized Signatory</p>
+                </div>
+            </div>
         </div >
     );
 }

@@ -700,7 +700,7 @@ export default function App() {
 
       </div>
       <footer className="mt-12 py-8 border-t text-center text-slate-500 text-sm">
-        <p>© 2026 R.K Casting & Engineering Works. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {selectedCompany?.name || 'R.K Casting & Engineering Works'}. All rights reserved.</p>
       </footer>
     </>
   );
