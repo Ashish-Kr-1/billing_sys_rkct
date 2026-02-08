@@ -35,8 +35,8 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   const PARTIES = data?.parties || [];
   const ITEMS = data?.items || [];
 
-  // Return empty KPIs if no data
-  if (!data || !RAW_TRANSACTIONS.length) {
+  // Return empty KPIs if no data object
+  if (!data) {
     return {
       totalRevenue: 0, totalCredited: 0, collectionRate: "0.0", pendingAmount: 0, blockedAmount: 0,
       totalGST: 0, totalIGST: 0, totalCGST_SGST: 0, gstRateDist: {},
@@ -235,11 +235,23 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   // KPI-19–20: Quotations Analysis
   const QUOTATIONS = data?.quotations || [];
   const totalQuotations = QUOTATIONS.length;
-  const convertedQuotations = QUOTATIONS.filter(q => q.status === 'Converted').length;
+
+  // Fix: Case-insensitive status check
+  const convertedQuotations = QUOTATIONS.filter(q => (q.status || '').toLowerCase() === 'converted').length;
   const quotationConversionRate = totalQuotations > 0 ? ((convertedQuotations / totalQuotations) * 100).toFixed(1) : "0.0";
+
+  // Fix: Calculate values based on status
+  // Total Value generated (All quotations)
   const quotationValue = QUOTATIONS.reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
-  const convertedValue = QUOTATIONS.filter(q => q.status === 'Converted').reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
-  const lostQuotationValue = quotationValue - convertedValue;
+
+  // Converted Value
+  const convertedValue = QUOTATIONS.filter(q => (q.status || '').toLowerCase() === 'converted').reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
+
+  // Lost Value (Rejected)
+  const lostQuotationValue = QUOTATIONS.filter(q => (q.status || '').toLowerCase() === 'rejected').reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
+
+  // Pending Value (Active Pipeline - Excluding Rejected)
+  const pendingQuotationValue = QUOTATIONS.filter(q => (q.status || '').toLowerCase() === 'pending').reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
 
 
   // KPI-21–22: Company Performance (single company in current context)
@@ -309,7 +321,7 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     });
 
     const totalCount = monthQs.length;
-    const convertedCount = monthQs.filter(q => q.status === 'Converted').length;
+    const convertedCount = monthQs.filter(q => (q.status || '').toLowerCase() === 'converted').length;
     const totalVal = monthQs.reduce((s, q) => s + parseFloat(q.total_amount || 0), 0);
 
     return {
@@ -323,8 +335,8 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
   // Quotation Status Distribution
   const quotationStatusData = [
     { name: "Converted", value: convertedQuotations, color: COLORS.emerald },
-    { name: "Pending", value: QUOTATIONS.filter(q => q.status === 'Pending').length, color: COLORS.amber },
-    { name: "Rejected", value: QUOTATIONS.filter(q => q.status === 'Rejected').length, color: COLORS.red }
+    { name: "Pending", value: QUOTATIONS.filter(q => (q.status || '').toLowerCase() === 'pending').length, color: COLORS.amber },
+    { name: "Rejected", value: QUOTATIONS.filter(q => (q.status || '').toLowerCase() === 'rejected').length, color: COLORS.red }
   ].filter(d => d.value > 0);
 
   // Recent transactions (last 8)
@@ -342,7 +354,7 @@ function computeKPIs(data = null, monthRange = { start: 0, end: 11 }) {
     totalInvoices, avgInvoiceValue,
     topParties, topItems, stateData,
     interstateTotal, intrastate,
-    totalQuotations, convertedQuotations, quotationConversionRate, quotationValue, convertedValue, lostQuotationValue,
+    totalQuotations, convertedQuotations, quotationConversionRate, quotationValue, convertedValue, lostQuotationValue, pendingQuotationValue,
     companyStats, clientPerformance, companyProductBreakdown: [], companyWiseTopItems, companyWiseItemKeys,
     monthlyData, monthlyStatus, gstPieData, quotationMonthly, quotationStatusData, recentTransactions
   };
@@ -988,10 +1000,18 @@ const QuotationsTab = ({ KPIs }) => {
               <p className="text-[9px]" style={{ color: "#166534" }}>{fmt(KPIs.convertedValue)} revenue generated</p>
             </div>
 
+            <div className="p-4 rounded-lg" style={{ background: "#dbeafe" }}>
+              <p className="text-[10px] font-bold mb-1" style={{ color: "#1e40af" }}>ACTIVE PIPELINE</p>
+              <p className="text-2xl font-black mb-1" style={{ color: COLORS.blue }}>
+                {KPIs.totalQuotations - KPIs.convertedQuotations - (KPIs.quotationStatusData?.find(d => d.name === 'Rejected')?.value || 0)}
+              </p>
+              <p className="text-[9px]" style={{ color: "#1e40af" }}>{fmt(KPIs.pendingQuotationValue)} opportunity pending</p>
+            </div>
+
             <div className="p-4 rounded-lg" style={{ background: "#fee2e2" }}>
-              <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST / PENDING</p>
-              <p className="text-2xl font-black mb-1" style={{ color: COLORS.red }}>{KPIs.totalQuotations - KPIs.convertedQuotations}</p>
-              <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity remaining</p>
+              <p className="text-[10px] font-bold mb-1" style={{ color: "#991b1b" }}>LOST / REJECTED</p>
+              <p className="text-2xl font-black mb-1" style={{ color: COLORS.red }}>{KPIs.quotationStatusData?.find(d => d.name === 'Rejected')?.value || 0}</p>
+              <p className="text-[9px]" style={{ color: "#991b1b" }}>{fmt(KPIs.lostQuotationValue)} opportunity lost</p>
             </div>
 
             <div className="p-4 rounded-lg" style={{ background: "#dbeafe" }}>
@@ -1080,6 +1100,15 @@ export default function App() {
     if (!analyticsData) return null;
 
     const rawTx = analyticsData.transactions || [];
+
+    // DEBUG LOGS
+    console.log("Analytics Data for Filter:", analyticsData);
+    console.log("Quotations present:", analyticsData.quotations?.length);
+    if (analyticsData.quotations?.length > 0) {
+      console.log("Sample Quotation Date:", analyticsData.quotations[0].quotation_date);
+    }
+    console.log("Filtering Target Year:", selectedYear);
+
     const targetYear = parseInt(selectedYear);
 
     // Filter Transactions
