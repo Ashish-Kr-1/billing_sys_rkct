@@ -11,7 +11,6 @@ function Invoice() {
       <div className='w-full rounded-2xl bg-[#004f43cc]'>
         <InvoiceForm initialData={state} />
       </div>
-      <Footer />
     </>
   );
 }

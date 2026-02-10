@@ -611,7 +611,7 @@ export default function UserManagement() {
                 cancelText="Cancel"
             />
 
-            <Footer />
+
         </div>
     );
 }

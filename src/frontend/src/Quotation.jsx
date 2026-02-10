@@ -11,7 +11,7 @@ function Quotation() {
       <div className='w-full rounded-2xl bg-[#004f43cc]'>
         <QuotationForm initialData={state || null} />
       </div>
-      <Footer />
+
     </>
   );
 }
