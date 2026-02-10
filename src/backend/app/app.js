@@ -519,6 +519,7 @@ async function getInvoiceHistoryHandler(req, res) {
     const [rows] = await req.db.query(
       `
       SELECT
+        transaction_id,
         transaction_date,
         credit_amount,
         narration
@@ -531,6 +532,7 @@ async function getInvoiceHistoryHandler(req, res) {
     );
 
     const payments = rows.map(r => ({
+      id: r.transaction_id,
       date: r.transaction_date,
       amount: Number(r.credit_amount),
       remarks: r.narration || ""
@@ -1071,6 +1073,34 @@ routerItems.get('/:id', itemDetails);
 routerLedger.get('/', ledgerData);
 routerLedger.post('/payment', createPaymentHandler);
 routerLedger.get("/payments", getInvoiceHistoryHandler);
+routerLedger.delete("/payment/:transactionId", deletePaymentHandler);
+
+async function deletePaymentHandler(req, res) {
+  const { transactionId } = req.params;
+
+  if (!transactionId) {
+    return res.status(400).json({ error: "Transaction ID is required" });
+  }
+
+  const client = await req.db.getConnection();
+  try {
+    const [result] = await client.query(
+      "DELETE FROM transactions WHERE transaction_id = ? AND transaction_type = 'RECEIPT'",
+      [transactionId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Payment not found or is not a receipt" });
+    }
+
+    res.json({ success: true, message: "Payment deleted successfully" });
+  } catch (err) {
+    console.error("Delete payment error:", err);
+    res.status(500).json({ error: "Failed to delete payment" });
+  } finally {
+    client.release();
+  }
+}
 
 // Cancel invoice endpoint
 async function cancelInvoiceHandler(req, res) {

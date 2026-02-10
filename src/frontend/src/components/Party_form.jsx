@@ -17,7 +17,7 @@ function Party_form({ initialData = null, onSuccess, onCancel }) {
     type: "",
     billing_address: "",
     shipping_address: "",
-    supply_state_code: "",
+    supply_state_code: "20",
     vendore_code: "",
     pin_code: "",
     contact_person: "",
