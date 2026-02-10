@@ -1331,30 +1331,7 @@ export default function App() {
         {tabContent[activeTab]}
       </main>
 
-      <footer className="max-w-7xl mx-auto px-5 pb-6">
-        <div className="rounded-2xl p-5 flex flex-wrap justify-between gap-4"
-          style={{ background: "linear-gradient(135deg, #0f2f3f 0%, #1a4d5c 100%)", color: "#fff" }}>
-          {[
-            { label: "Total Revenue", val: fmt(KPIs.totalRevenue), sub: `${KPIs.totalInvoices} invoices`, growth: KPIs.revenueGrowthRate },
-            { label: "Collection Rate", val: `${KPIs.collectionRate}%`, sub: "Efficiency", growth: "N/A" },
-            { label: "Active Customers", val: KPIs.activeParties, sub: "Parties served", growth: "N/A" },
-            { label: "Win Rate", val: `${KPIs.quotationConversionRate}%`, sub: "Quotations", growth: "N/A" }
-          ].map((s, i) => (
-            <div key={i} className="flex-1" style={{ minWidth: 120 }}>
-              <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>{s.label}</p>
-              <h3 className="text-[20px] font-black mt-0.5">{s.val}</h3>
-              <p className="text-[10px] mt-0.5 flex items-center gap-1.5">
-                {s.growth !== "N/A" && (
-                  <span style={{ color: parseFloat(s.growth) >= 0 ? "#34d399" : "#f87171" }}>
-                    {parseFloat(s.growth) >= 0 ? "↑" : "↓"} {Math.abs(parseFloat(s.growth))}%
-                  </span>
-                )}
-                <span style={{ color: "rgba(255,255,255,0.35)" }}>{s.sub}</span>
-              </p>
-            </div>
-          ))}
-        </div>
-      </footer>
+
     </div>
   );
 }

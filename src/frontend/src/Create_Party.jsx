@@ -59,7 +59,7 @@ function Create_Party() {
           onCancel={handleItemCancel}
           onManage={() => setIsItemModalOpen(true)}
         />
-        <Footer></Footer>
+
       </div>
 
       <PartyListModal
