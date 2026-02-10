@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Navbar from './components/Navbarr.jsx'
 import Footer from './components/Footer.jsx'
 import Party_form from './components/Party_form.jsx'
