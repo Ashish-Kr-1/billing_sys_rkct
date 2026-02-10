@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { API_BASE } from '../config/api';
 
 const AuthContext = createContext();
@@ -116,12 +116,68 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const logout = () => {
+    const logout = useCallback(() => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('selectedCompany');
-    };
+        localStorage.removeItem('lastActivity');
+    }, []);
+
+    // Auto-logout on inactivity (30 mins) - Syncs across tabs
+    useEffect(() => {
+        if (!token) return;
+
+        const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+        const CHECK_INTERVAL = 30 * 1000; // Check every 30 seconds
+
+        // Update local activity timestamp
+        const updateActivity = () => {
+            localStorage.setItem('lastActivity', Date.now().toString());
+        };
+
+        // Check for inactivity
+        const checkInactivity = () => {
+            const lastActivity = localStorage.getItem('lastActivity');
+            if (lastActivity) {
+                const now = Date.now();
+                if (now - parseInt(lastActivity, 10) > INACTIVITY_LIMIT) {
+                    console.log('User inactive for 30mins, logging out...');
+                    logout();
+                }
+            } else {
+                // If no activity record, set it now
+                updateActivity();
+            }
+        };
+
+        // Throttled event handler to avoid excessive localStorage writes
+        let throttleTimer;
+        const handleUserActivity = () => {
+            if (!throttleTimer) {
+                updateActivity(); // Immediate update on first action
+                throttleTimer = setTimeout(() => {
+                    throttleTimer = null;
+                }, 5000); // Limit updates to once per 5 seconds
+            }
+        };
+
+        // Initialize
+        updateActivity();
+
+        // Attach listeners
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+        events.forEach(event => window.addEventListener(event, handleUserActivity));
+
+        // Start interval
+        const intervalId = setInterval(checkInactivity, CHECK_INTERVAL);
+
+        return () => {
+            events.forEach(event => window.removeEventListener(event, handleUserActivity));
+            clearInterval(intervalId);
+            if (throttleTimer) clearTimeout(throttleTimer);
+        };
+    }, [token, logout]);
 
     const value = {
         user,

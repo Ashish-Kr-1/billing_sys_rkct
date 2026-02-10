@@ -8,7 +8,7 @@ import { INDIAN_STATES } from '../constants/indian_states.js';
 
 import { api, handleApiResponse } from '../config/apiClient.js';
 
-function Party_form({ initialData = null, onSuccess, onCancel }) {
+function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
   const isEditMode = !!initialData;
 
   const initialPartyState = {
@@ -57,7 +57,12 @@ function Party_form({ initialData = null, onSuccess, onCancel }) {
           Cancel Edit
         </button>
       )}
-      <h1 className="text-2xl font-bold mb-6">{isEditMode ? 'Edit Party' : 'Create Party'}</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Party' : 'Create Party'}</h1>
+        {onManage && !isEditMode && (
+          <Button text="Manage Parties" color="blue" onClick={onManage} />
+        )}
+      </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <input
           name="party_name"

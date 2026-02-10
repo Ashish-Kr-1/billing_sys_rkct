@@ -7,12 +7,10 @@ function Footer() {
   const { selectedCompany } = useCompany();
 
   return (
-    <div>
-      <div className='border-t-3 w-full border-[#004D43] text-white pt-5 bg-black  font-[Rubik] '>
-        <h1 className='cursor-pointer hover:underline underline-offset-2 text-center'>
-          &copy; {new Date().getFullYear()} {selectedCompany?.name || 'R.K Casting & Engineering Works'}. All rights reserved.
-        </h1>
-      </div>
+    <div className="pt-8 mt-8 border-t border-zinc-200 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+      <p className="text-xs text-gray-500 text-center md:text-left">
+        &copy; {new Date().getFullYear()} {selectedCompany?.name || 'R.K Casting & Engineering Works'}. All rights reserved.
+      </p>
     </div>
   )
 }

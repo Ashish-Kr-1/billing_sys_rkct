@@ -5,7 +5,7 @@ import LinkItem from "../link_item.jsx"
 import { notify } from './Notification.jsx';
 import { api, handleApiResponse } from '../config/apiClient.js';
 
-function Item_form({ initialData = null, onSuccess, onCancel }) {
+function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
   const isEditMode = !!initialData;
 
   const initialItemState = {
@@ -48,7 +48,12 @@ function Item_form({ initialData = null, onSuccess, onCancel }) {
           Cancel Edit
         </button>
       )}
-      <h1 className="text-2xl font-bold mb-6">{isEditMode ? 'Edit Item' : 'Create Item'}</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Item' : 'Create Item'}</h1>
+        {onManage && !isEditMode && (
+          <Button text="Manage Items" color="blue" onClick={onManage} />
+        )}
+      </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <input
           name="item_name"

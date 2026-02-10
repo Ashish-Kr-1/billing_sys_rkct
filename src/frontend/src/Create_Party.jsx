@@ -44,31 +44,20 @@ function Create_Party() {
 
   return (
     <>
-      <div className='rounded-2xl bg-[#004f43cc] min-h-screen pb-10'>
-        <div className="max-w-6xl mx-auto pt-6 flex justify-end px-6 space-x-4">
-          <Button
-            text="Manage Parties"
-            color="blue"
-            onClick={() => setIsModalOpen(true)}
-          />
-          <Button
-            text="Manage Items"
-            color="blue"
-            onClick={() => setIsItemModalOpen(true)}
-          />
-        </div>
-
+      <div className='rounded-2xl bg-[#004f43cc] min-h-screen pb-10 pt-4'>
         <Party_form
           className='mt-4'
           initialData={editingParty}
           onSuccess={handleFormSuccess}
           onCancel={handleFormCancel}
+          onManage={() => setIsModalOpen(true)}
         />
 
         <Item_form
           initialData={editingItem}
           onSuccess={handleItemSuccess}
           onCancel={handleItemCancel}
+          onManage={() => setIsItemModalOpen(true)}
         />
         <Footer></Footer>
       </div>
