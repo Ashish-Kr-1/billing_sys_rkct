@@ -432,20 +432,43 @@ const CardShell = ({ children, className = "" }) => (
   </div>
 );
 
-const CustomTooltip = ({ active, payload, label, prefix = "₹", suffix = "K" }) => {
+const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload) return null;
   return (
     <div className="bg-white border border-gray-100 rounded-xl shadow-lg p-3" style={{ minWidth: 140 }}>
       <p className="text-[11px] font-bold mb-2" style={{ color: COLORS.primary }}>{label}</p>
-      {payload.map((p, i) => (
-        <div key={i} className="flex items-center justify-between gap-4 text-[11px]">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: p.color }} />
-            <span style={{ color: "#64748b" }}>{p.name}</span>
-          </span>
-          <span className="font-bold" style={{ color: COLORS.primary }}>{prefix}{typeof p.value === 'number' ? p.value.toLocaleString() : p.value}{suffix}</span>
-        </div>
-      ))}
+      {payload.map((p, i) => {
+        let prefix = "";
+        let suffix = "";
+
+        // Currency / Value fields (usually scaled to K)
+        if (["Revenue", "Value", "Collected", "Pending", "GST", "Amount"].some(k => p.name.includes(k))) {
+          prefix = "₹";
+          suffix = "K";
+        }
+        // Count fields (No scaling)
+        else if (["Created", "Converted", "Invoices", "Units", "Count"].some(k => p.name.includes(k))) {
+          prefix = "";
+          suffix = "";
+        }
+        // Fallback for others
+        else {
+          prefix = "";
+          suffix = "";
+        }
+
+        return (
+          <div key={i} className="flex items-center justify-between gap-4 text-[11px]">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: p.color }} />
+              <span style={{ color: "#64748b" }}>{p.name}</span>
+            </span>
+            <span className="font-bold" style={{ color: COLORS.primary }}>
+              {prefix}{typeof p.value === 'number' ? p.value.toLocaleString() : p.value}{suffix}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 };
