@@ -168,13 +168,38 @@ export const getNextQuotationNumber = async (req, res) => {
     try {
         await client.beginTransaction();
 
+        if (companyId == 1) {
+            // Special format for Company 1: RKC/222
+            const prefix = 'RKC';
+            const [rows] = await client.query(`
+                SELECT quotation_no FROM quotations 
+                WHERE quotation_no LIKE ? AND quotation_no NOT LIKE ?
+                ORDER BY created_at DESC LIMIT 1
+            `, [`${prefix}/%`, `${prefix}/%/%`]);
+
+            let nextNum = 222;
+            if (rows.length > 0) {
+                const lastNo = rows[0].quotation_no; // RKC/222
+                const parts = lastNo.split('/');
+                const lastSegment = parts[parts.length - 1];
+                const parsed = parseInt(lastSegment, 10);
+                if (!isNaN(parsed)) {
+                    nextNum = parsed + 1;
+                }
+            }
+            const formatted = `${prefix}/${nextNum}`;
+
+            await client.commit();
+            return res.json({ QuotationNo: formatted });
+        }
+
+        // Standard logic for other companies
         // 1. Determine Prefix based on Company
         const prefixMap = {
-            1: 'QT/RKCT',
             2: 'QT/RKEP',
-            3: 'QT/GBH' // As requested
+            3: 'QT/GBH'
         };
-        const basePrefix = prefixMap[companyId] || 'QT/RKCT';
+        const basePrefix = prefixMap[companyId] || 'QT/Unknown';
 
         // 2. Calculate Dynamic Financial Year
         const today = new Date();
@@ -186,13 +211,11 @@ export const getNextQuotationNumber = async (req, res) => {
             fyStart = year - 1;
         }
 
-        const fyEnd = (fyStart + 1).toString().slice(-2); // "26" for 2026
-        const financialYear = `${fyStart}-${fyEnd}`; // "2025-26"
+        const fyEnd = (fyStart + 1).toString().slice(-2);
+        const financialYear = `${fyStart}-${fyEnd}`;
 
-        // Full Prefix: QT/RKCT/2025-26
         const fullPrefix = `${basePrefix}/${financialYear}`;
 
-        // 3. Find the last number
         const [rows] = await client.query(`
             SELECT quotation_no FROM quotations 
             WHERE quotation_no LIKE ? 
@@ -201,11 +224,8 @@ export const getNextQuotationNumber = async (req, res) => {
 
         let nextNum = 1;
         if (rows.length > 0) {
-            const lastNo = rows[0].quotation_no; // e.g. QT/RKCT/2025-26/045
+            const lastNo = rows[0].quotation_no;
             const parts = lastNo.split('/');
-            // Expecting [QT, RKCT, 2025-26, 045] -> length 4
-            // But DT/GBH might be same length.
-            // Safest way is to take the LAST segment
             const lastSegment = parts[parts.length - 1];
             if (!isNaN(lastSegment)) {
                 nextNum = parseInt(lastSegment) + 1;

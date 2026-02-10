@@ -360,7 +360,7 @@ async function getNextInvoiceNumber(req, res) {
 
     // Use invoice prefix based on company ID (hardcoded mapping)
     const prefixMap = {
-      1: 'RKCT',      // RK Casting
+      1: 'RKC/TI',      // RK Casting
       2: 'RKEP',      // RK Engineering
       3: 'GBH'        // Global Bharat
     };
@@ -377,10 +377,10 @@ async function getNextInvoiceNumber(req, res) {
       fyStart = year - 1;
     }
 
-    // Format: "25-26" (short year) or "2025-26" (long year)
-    // Existing format was "2025-26", let's keep it consistent.
     const fyEnd = (fyStart + 1).toString().slice(-2);
-    const financialYear = `${fyStart}-${fyEnd}`;
+    // Short year format: 25-26
+    const fyStartShort = String(fyStart).slice(-2);
+    const financialYear = `${fyStartShort}-${fyEnd}`;
 
     const prefix = `${invoicePrefix}/${financialYear}`;
 
@@ -393,6 +393,9 @@ async function getNextInvoiceNumber(req, res) {
   `, [`${prefix}/%`]);
 
     let nextNumber = 1;
+    if (req.companyId == 1 && financialYear === '25-26') {
+      nextNumber = 269;
+    }
 
     if (rows.length > 0) {
       const lastInvoiceNo = rows[0].invoice_no; // RKCT/2025-26/012
@@ -1106,7 +1109,7 @@ async function cancelInvoiceHandler(req, res) {
        SET status = 'cancelled', 
            cancelled_at = NOW(), 
            cancelled_by = ?
-       WHERE invoice_no = ? AND transaction_type = 'SALE'`,
+       WHERE invoice_no = ?`,
       [user_id, invoice_no]
     );
 

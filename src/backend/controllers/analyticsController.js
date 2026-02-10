@@ -128,6 +128,7 @@ ss.invoice_no,
     status,
     created_at
     FROM quotations
+    WHERE status NOT IN ('cancelled', 'rejected', 'Cancelled', 'Rejected')
     ORDER BY quotation_date DESC`
     );
 

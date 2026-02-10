@@ -32,7 +32,7 @@ export default function InvoiceForm({ initialData }) {
       VendorCode: "",
       ChallanNo: "",
       ChallanDate: "",
-      Terms: "",
+      Terms: "1. Jurisdiction: All disputes are subject to Dhanbad jurisdiction only.\n2. Payment Terms: Payment is due within 30 days from the date of successful delivery of goods/material.\n3. GST: GST will be charged extra as applicable at the time of billing.\n4. Packing & Forwarding / Freight Charges: Packing, forwarding, transportation, and flight charges will be charged extra at actuals, unless otherwise specified.\n5. Declaration: We hereby declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.\n6. Interest on Delayed Payment: Interest @ 18% per annum will be charged if payment is not made on or before the due date.\n7. Mode of Payment: Payment shall be made through NEFT / RTGS / A/C Payee Cheque / Demand Draft only.\n8. Delivery Schedule: Delivery will be made within 30 days from receipt of confirmed purchase order, unless otherwise mutually agreed.",
       AccountName: "",
       CurrentACCno: "",
       IFSCcode: "",
@@ -715,7 +715,14 @@ export default function InvoiceForm({ initialData }) {
             name="Terms"
             rows={4}
             className="w-full border rounded-md p-2 text-sm resize-y"
-            placeholder="Enter terms and conditions here..."
+            placeholder="1. Jurisdiction: All disputes are subject to Dhanbad jurisdiction only.
+2. Payment Terms: Payment is due within 30 days from the date of successful delivery of goods/material.
+3. GST: GST will be charged extra as applicable at the time of billing.
+4. Packing & Forwarding / Freight Charges: Packing, forwarding, transportation, and flight charges will be charged extra at actuals, unless otherwise specified.
+5. Declaration: We hereby declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+6. Interest on Delayed Payment: Interest @ 18% per annum will be charged if payment is not made on or before the due date.
+7. Mode of Payment: Payment shall be made through NEFT / RTGS / A/C Payee Cheque / Demand Draft only.
+8. Delivery Schedule: Delivery will be made within 30 days from receipt of confirmed purchase order, unless otherwise mutually agreed."
             value={invoice.Terms}
             onChange={handleChange}
           />
