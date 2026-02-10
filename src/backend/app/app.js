@@ -561,12 +561,6 @@ async function createItemHandler(req, res) {
   try {
     await client.beginTransaction();
 
-    const [dup] = await client.query("SELECT item_id from items WHERE hsn_code = ?", [hsn_code]);
-    if (dup.length > 0) {
-      await client.rollback()
-      return res.status(409).json({ error: 'Item with this hsn code already exists', item_id: dup[0].item_id });
-    }
-
     const INSERT_SQL = `INSERT INTO items
       (item_name, hsn_code, unit, rate)
       VALUES (?,?,?,?)`;
