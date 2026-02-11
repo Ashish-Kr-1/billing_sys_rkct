@@ -441,20 +441,20 @@ const CustomTooltip = ({ active, payload, label }) => {
         let prefix = "";
         let suffix = "";
 
-        // Currency / Value fields (usually scaled to K)
-        if (["Revenue", "Value", "Collected", "Pending", "GST", "Amount"].some(k => p.name.includes(k))) {
+        // Count fields (No scaling) - explicit check
+        if (["Created", "Converted", "Invoices", "Units", "Count", "Rate"].some(k => p.name.includes(k))) {
+          prefix = "";
+          suffix = "";
+        }
+        // Percentage fields
+        else if (p.name.includes("%") || p.name.includes("Rate")) {
+          prefix = "";
+          suffix = "%";
+        }
+        // Default to Currency (Revenue, Value, Collected, and Company Names in Comparison)
+        else {
           prefix = "₹";
           suffix = "K";
-        }
-        // Count fields (No scaling)
-        else if (["Created", "Converted", "Invoices", "Units", "Count"].some(k => p.name.includes(k))) {
-          prefix = "";
-          suffix = "";
-        }
-        // Fallback for others
-        else {
-          prefix = "";
-          suffix = "";
         }
 
         return (
