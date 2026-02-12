@@ -32,7 +32,7 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
     <div
       id="invoice-download"
       className="w-[999px] py-2 mx-auto bg-white shadow-lg px-6 relative overflow-hidden"
-      style={{ fontFamily: "Rubik", color: "#1A1A1A", minHeight: "1122px" }}
+      style={{ fontFamily: "'Rubik', sans-serif", color: "#1A1A1A", minHeight: "1122px" }}
     >
       {/* WATERMARK */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -139,14 +139,14 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
         </div>
 
         {/* ITEMS TABLE */}
-        <table className="w-full  mt-6 border-collapse ">
+        <table className="w-full mt-6 border-collapse table-fixed">
           <thead>
             <tr style={{ backgroundColor: "#0A4350", color: "white", height: "30px" }}>
-              <th className="text-left pl-4 pb-2.5">DESCRIPTION</th>
-              <th className='pb-2.5'>HSN</th>
-              <th className='pb-2.5'>QTY</th>
-              <th className='pb-2.5'>PRICE</th>
-              <th className="pr-4 pb-2.5">AMOUNT</th>
+              <th className="text-left pl-4 pb-2.5 w-[40%]">DESCRIPTION</th>
+              <th className='pb-2.5 w-[15%]'>HSN</th>
+              <th className='pb-2.5 w-[10%]'>QTY</th>
+              <th className='pb-2.5 w-[15%]'>PRICE</th>
+              <th className="pr-4 pb-2.5 w-[20%]">AMOUNT</th>
             </tr>
           </thead>
 

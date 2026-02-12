@@ -69,7 +69,8 @@ export default function Preview() {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
-      logging: false
+      logging: false,
+      windowWidth: 1200
     });
 
     // Use JPEG instead of PNG for significant size reduction
