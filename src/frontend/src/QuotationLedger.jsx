@@ -62,10 +62,7 @@ export default function QuotationLedger() {
 
             navigate('/QuotationPreview', {
                 state: {
-                    quotation: {
-                        ...data.quotation,
-                        items: data.items
-                    },
+                    quotation: data.quotation,
                     subtotalAmount: data.subtotalAmount,
                     totalAmount: data.totalAmount,
                     cgst: data.cgst,

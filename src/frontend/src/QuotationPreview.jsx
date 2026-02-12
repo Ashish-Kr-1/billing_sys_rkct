@@ -13,16 +13,16 @@ export default function QuotationPreview() {
     const navigate = useNavigate();
     const { state } = useLocation();
 
-    // Fallback if no state or quotation (e.g. direct URL access)
-    if (!state || !state.quotation) {
+    // Fallback if no state (e.g. direct URL access)
+    if (!state) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen">
                 <h2 className="text-xl font-bold text-red-600 mb-4">No Quotation Data Found</h2>
                 <button
-                    onClick={() => navigate('/QuotationLedger')}
+                    onClick={() => navigate('/Quotation')}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                    Go Back to Ledger
+                    Go to New Quotation
                 </button>
             </div>
         );
