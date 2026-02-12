@@ -325,3 +325,112 @@ export const updateQuotationStatus = async (req, res) => {
         client.release();
     }
 };
+
+export const getQuotationDetails = async (req, res) => {
+    const quotationNo = req.query.quotation_no || req.params.quotation_no;
+    const companyId = req.companyId;
+
+    if (!quotationNo) {
+        return res.status(400).json({ error: "Quotation number required" });
+    }
+
+    const client = await getClient(companyId);
+
+    try {
+        // Fetch quotation
+        const [quotations] = await client.query(
+            "SELECT * FROM quotations WHERE quotation_no = ?",
+            [quotationNo]
+        );
+
+        if (quotations.length === 0) {
+            return res.status(404).json({ error: "Quotation not found" });
+        }
+
+        const quotationData = quotations[0];
+
+        // Fetch quotation details
+        const [details] = await client.query(
+            "SELECT * FROM quotation_details WHERE quotation_no = ?",
+            [quotationNo]
+        );
+
+        // Fetch quotation items
+        const [items] = await client.query(
+            "SELECT * FROM quotation_items WHERE quotation_no = ?",
+            [quotationNo]
+        );
+
+        // Fetch party details
+        let party = null;
+        if (quotationData.party_id) {
+            const [parties] = await client.query(
+                "SELECT * FROM parties WHERE party_id = ?",
+                [quotationData.party_id]
+            );
+            party = parties[0] || null;
+        }
+
+        // Map to frontend expected format
+        const responseData = {
+            quotation: {
+                QuotationNo: quotationData.quotation_no,
+                QuotationDate: quotationData.quotation_date,
+                party_id: quotationData.party_id,
+                subtotal: quotationData.subtotal,
+                cgst: quotationData.cgst_amount > 0 ? (quotationData.cgst_amount / quotationData.subtotal * 100) : 0,
+                sgst: quotationData.sgst_amount > 0 ? (quotationData.sgst_amount / quotationData.subtotal * 100) : 0,
+                igst: quotationData.igst_amount > 0 ? (quotationData.igst_amount / quotationData.subtotal * 100) : 0,
+                Terms: details[0]?.terms_conditions || '',
+                status: quotationData.status,
+                // Add fields for QuotationTemplate mapping if needed
+                clientName: details[0]?.client_name || party?.party_name || '',
+                clientAddress: details[0]?.client_address || party?.billing_address || '',
+                clientName2: details[0]?.client_name2 || party?.party_name || '',
+                clientAddress2: details[0]?.client_address2 || party?.shipping_address || '',
+                GSTIN: details[0]?.gstin || party?.gstin_no || '',
+                GSTIN2: details[0]?.gstin2 || party?.gstin_no || '',
+                TrasnportBy: details[0]?.transported_by || '',
+                PlaceofSupply: details[0]?.place_of_supply || '',
+                VehicleNo: details[0]?.vehicle_no || '',
+                EwayBillNo: details[0]?.eway_bill_no || '',
+                VendorCode: details[0]?.vendor_code || party?.vendore_code || '',
+                PONo: details[0]?.po_no || '',
+                PODate: details[0]?.po_date || '',
+                ChallanNo: details[0]?.challan_no || '',
+                ChallanDate: details[0]?.challan_date || '',
+                AccountName: details[0]?.account_name || '',
+                CurrentACCno: details[0]?.account_no || '',
+                IFSCcode: details[0]?.ifsc_code || '',
+                Branch: details[0]?.branch || '',
+                validity_days: details[0]?.validity_days || '',
+                rfq_no: details[0]?.rfq_no || '',
+                rfq_date: details[0]?.rfq_date || '',
+                contact_person: details[0]?.contact_person || '',
+                contact_no: details[0]?.contact_no || '',
+                email: details[0]?.email || ''
+            },
+            subtotalAmount: quotationData.subtotal,
+            totalAmount: quotationData.total_amount,
+            cgst: quotationData.cgst_amount > 0 ? (quotationData.cgst_amount / quotationData.subtotal * 100) : 0,
+            sgst: quotationData.sgst_amount > 0 ? (quotationData.sgst_amount / quotationData.subtotal * 100) : 0,
+            igst: quotationData.igst_amount > 0 ? (quotationData.igst_amount / quotationData.subtotal * 100) : 0,
+            items: items.map(item => ({
+                item_id: item.item_id,
+                description: item.item_name,
+                HSNCode: item.hsn_code,
+                quantity: Number(item.quantity),
+                price: Number(item.rate),
+                amount: Number(item.amount)
+            }))
+        };
+
+        res.json(responseData);
+
+    } catch (err) {
+        console.error("getQuotationDetails error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    } finally {
+        client.release();
+    }
+};

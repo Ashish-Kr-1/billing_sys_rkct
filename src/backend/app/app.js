@@ -907,9 +907,9 @@ async function createTransactionHandler(req, res) {
     await client.query(invoiceDetailsSql, invoiceDetailsValues);
 
     for (const item of items) {
-      if (!item.item_id) {
+      if (!item.item_id && !item.description) {
         throw new Error(
-          `Item must have item_id or HSNCode (invoice ${InvoiceNo})`
+          `Item must have item_id or description (invoice ${InvoiceNo})`
         );
       }
 
@@ -918,14 +918,20 @@ async function createTransactionHandler(req, res) {
         INSERT INTO sell_summary (
           invoice_no,
           item_id,
-          units_sold
+          units_sold,
+          item_name,
+          hsn_code,
+          unit_price
         )
-        VALUES (?,?,?)
+        VALUES (?,?,?,?,?,?)
         `,
         [
           InvoiceNo,
-          item.item_id || null, // preferred FK
-          Number(item.quantity) || 0
+          item.item_id || null,
+          Number(item.quantity) || 0,
+          item.description || null,
+          item.HSNCode || null,
+          Number(item.price) || 0
         ]
       );
     }
@@ -980,14 +986,29 @@ async function getInvoiceDetailsHandler(req, res) {
     const [sellSummary] = await req.db.query(
       `SELECT 
         ss.*,
-        i.item_name as description,
-        i.hsn_code,
-        i.rate as unit_price
+        ss.item_name as description,
+        ss.hsn_code,
+        ss.unit_price
       FROM sell_summary ss
-      LEFT JOIN items i ON ss.item_id = i.item_id
       WHERE ss.invoice_no = ?`,
       [invoiceNo]
     );
+
+    // ✅ Fallback: If item_name is missing (old records), try joining items
+    if (sellSummary.length > 0 && !sellSummary[0].description) {
+      const [legacyItems] = await req.db.query(
+        `SELECT 
+          ss.*,
+          i.item_name as description,
+          i.hsn_code,
+          i.rate as unit_price
+        FROM sell_summary ss
+        LEFT JOIN items i ON ss.item_id = i.item_id
+        WHERE ss.invoice_no = ?`,
+        [invoiceNo]
+      );
+      sellSummary.splice(0, sellSummary.length, ...legacyItems);
+    }
 
     // Fetch party details if party_id exists
     let party = null;
@@ -1154,6 +1175,67 @@ async function cancelInvoiceHandler(req, res) {
   }
 }
 
+// Revert cancel invoice handler
+async function revertCancelInvoiceHandler(req, res) {
+  const { invoice_no } = req.params;
+
+  if (!invoice_no) {
+    return res.status(400).json({ error: 'Invoice number is required' });
+  }
+
+  const client = await req.db.getConnection();
+
+  try {
+    await client.beginTransaction();
+
+    // Check if invoice exists and is cancelled
+    const [existing] = await client.query(
+      `SELECT status FROM transactions 
+       WHERE invoice_no = ? AND transaction_type = 'SALE' LIMIT 1`,
+      [invoice_no]
+    );
+
+    if (existing.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (existing[0].status !== 'cancelled') {
+      await client.rollback();
+      return res.status(400).json({ error: 'Invoice is not cancelled' });
+    }
+
+    // Update invoice status back to active (null or empty string depending on convention)
+    // Looking at Ledger.jsx, status === 'cancelled' is checked. 
+    // Usually status is null or 'SALE' or similar. 
+    // In getAllQuotations, status defaults to 'Pending'. 
+    // For invoices, let's set it to NULL or empty string.
+    await client.query(
+      `UPDATE transactions 
+       SET status = NULL, 
+           cancelled_at = NULL, 
+           cancelled_by = NULL
+       WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+
+    await client.commit();
+
+    res.json({
+      success: true,
+      message: 'Invoice reverted successfully',
+      invoice_no
+    });
+
+  } catch (err) {
+    await client.rollback();
+    console.error('Revert invoice error:', err);
+    return res.status(500).json({ error: 'Failed to revert invoice' });
+  } finally {
+    client.release();
+  }
+}
+
 // Delete Invoice Handler
 async function deleteInvoiceHandler(req, res) {
   // ROBUST FIX: Check query, body, then params. 
@@ -1225,6 +1307,14 @@ const safeCancelHandler = (req, res, next) => {
   return cancelInvoiceHandler(req, res, next);
 };
 
+// Wrapper for Revert Handler
+const safeRevertHandler = (req, res, next) => {
+  if (req.query.invoice_no || req.body.invoice_no) {
+    req.params.invoice_no = req.query.invoice_no || req.body.invoice_no;
+  }
+  return revertCancelInvoiceHandler(req, res, next);
+};
+
 // MOUNT ROUTES
 // 1. DELETE /createInvoice?invoice_no=... (Robust)
 routerTransaction.delete('/', deleteInvoiceHandler);
@@ -1236,8 +1326,12 @@ routerLedger.put('/cancel', safeCancelHandler);
 // 4. PUT /ledger/cancel/:invoice_no (Legacy)
 routerLedger.put('/cancel/:invoice_no', safeCancelHandler);
 
+// 5. PUT /ledger/revert?invoice_no=...
+routerLedger.put('/revert', safeRevertHandler);
+
 // Fallback
 app.put('/api/ledger/cancel', safeCancelHandler);
+app.put('/api/ledger/revert', safeRevertHandler);
 
 console.log('🚀 BACKEND VERSION 2.0.0 - INVOICE CANCELLATION ENABLED');
 

@@ -4,7 +4,8 @@ import {
     getNextQuotationNumber,
     getAllQuotations,
     deleteQuotation,
-    updateQuotationStatus
+    updateQuotationStatus,
+    getQuotationDetails
 } from '../controllers/quotationController.js';
 
 import { validateQuotation } from '../middleware/validators.js';
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.post('/', validateQuotation, createQuotationHandler);
 router.get('/quotationNo', getNextQuotationNumber);
+router.get('/details', getQuotationDetails);
 router.get('/', getAllQuotations);
 router.delete('/:id', deleteQuotation);
 router.put('/status', updateQuotationStatus);

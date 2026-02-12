@@ -4,7 +4,7 @@ import { api, handleApiResponse } from "./config/apiClient.js";
 import { useCompany } from "./context/CompanyContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { notify } from "./components/Notification.jsx";
-import { FileText, CheckCircle, XCircle, Clock } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 
 export default function QuotationLedger() {
     const { selectedCompany } = useCompany();
@@ -50,6 +50,31 @@ export default function QuotationLedger() {
         } catch (err) {
             console.error("Error updating status:", err);
             notify(`Failed to update status: ${err.message}`, "error");
+        }
+    };
+
+    const handlePreviewQuotation = async (quotationNo) => {
+        try {
+            if (!quotationNo) throw new Error("Quotation number is required");
+            if (!selectedCompany?.id) throw new Error("No company selected");
+
+            const data = await handleApiResponse(api.get(`/createQuotation/details?quotation_no=${encodeURIComponent(quotationNo)}`));
+
+            navigate('/QuotationPreview', {
+                state: {
+                    quotation: data.quotation,
+                    subtotalAmount: data.subtotalAmount,
+                    totalAmount: data.totalAmount,
+                    cgst: data.cgst,
+                    sgst: data.sgst,
+                    igst: data.igst,
+                    company_id: selectedCompany.id,
+                    isEditMode: true
+                }
+            });
+        } catch (err) {
+            console.error("Preview Error:", err);
+            notify(`Failed to load quotation: ${err.message}`, "error");
         }
     };
 
@@ -178,6 +203,14 @@ export default function QuotationLedger() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-center gap-2 opacity-100 transition-opacity">
                                                     {/* Action Buttons */}
+                                                    <button
+                                                        onClick={() => handlePreviewQuotation(q.quotation_no)}
+                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg border border-transparent hover:border-indigo-200 transition-all"
+                                                        title="Preview Quotation"
+                                                    >
+                                                        <Eye size={18} />
+                                                    </button>
+
                                                     {q.status !== 'Converted' && (
                                                         <button
                                                             onClick={() => updateStatus(q.quotation_no, 'Converted')}
