@@ -1,13 +1,15 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { pdf } from "@react-pdf/renderer";
 import InvoiceTemplate from "./components/InvoiceTemplate";
+import InvoicePDF from "./components/InvoicePDF";
 import { api, handleApiResponse } from "./config/apiClient";
 import { useCompany } from "./context/CompanyContext";
 import { notify } from "./components/Notification";
 import ConfirmModal from "./components/ConfirmModal";
+import DefaultLogo from './assets/logo.png';
+import GlobalBharatLogo from './assets/logo-global-bharat.png';
+import RkCastingLogo from './assets/logo-rkprivate-limited.png';
 
 export default function Preview() {
 
@@ -59,44 +61,46 @@ export default function Preview() {
   }, [state, selectedCompany]);
 
   async function downloadPDF() {
-    const element = document.getElementById("invoice-download");
+    try {
+      // Helper function to get logo path (exactly as in InvoiceTemplate)
+      const getLogoPath = () => {
+        if (!companyConfig) return DefaultLogo;
+        const compId = Number(companyConfig.company_id || companyConfig.id);
+        if (compId === 3) return GlobalBharatLogo;
+        if (compId === 1) return RkCastingLogo;
+        if (companyConfig?.logo_url?.includes('global-bharat')) return GlobalBharatLogo;
+        return DefaultLogo;
+      };
 
-    // Temporarily hide the 'Download' buttons or other UI if they are inside, 
-    // but here the element is just the invoice template.
+      // Create PDF blob using @react-pdf/renderer
+      const blob = await pdf(
+        <InvoicePDF
+          invoice={invoice}
+          subtotalAmount={subtotalAmount}
+          totalAmount={totalAmount}
+          sgst={sgst}
+          cgst={cgst}
+          igst={igst}
+          companyConfig={companyConfig}
+          logoUrl={getLogoPath()}
+        />
+      ).toBlob();
 
-    // Use scale 2 for better quality, but compress the output image
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-      windowWidth: 1200
-    });
+      // Create download link and trigger it
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Invoice-${invoice.InvoiceNo || 'draft'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-    // Use JPEG instead of PNG for significant size reduction
-    // Quality 0.7-0.8 usually gives great results for text/scans
-    const imgData = canvas.toDataURL("image/jpeg", 0.90);
-
-    // Initialize jsPDF with compression
-    const pdf = new jsPDF({
-      orientation: "p",
-      unit: "mm",
-      format: "a4",
-      compress: true
-    });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    // Calculate final image dimensions to fit the PDF
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    // Add image with compression alias 'FAST' (adds slightly more compression)
-    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
-
-    pdf.save(`Invoice-${invoice.InvoiceNo || 'draft'}.pdf`);
-    notify("PDF Downloaded Successfully!", "success");
+      notify("PDF Downloaded Successfully!", "success");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      notify("Failed to generate PDF", "error");
+    }
   }
 
   async function saveInvoiceToDB() {

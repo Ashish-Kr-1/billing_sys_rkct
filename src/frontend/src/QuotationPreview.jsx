@@ -1,12 +1,14 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { pdf } from "@react-pdf/renderer";
 import QuotationTemplate from "./components/QuotationTemplate";
+import QuotationPDF from "./components/QuotationPDF";
 import { api, handleApiResponse } from "./config/apiClient";
 import { useCompany } from "./context/CompanyContext";
 import { notify } from "./components/Notification";
+import DefaultLogo from './assets/logo.png';
+import GlobalBharatLogo from './assets/logo-global-bharat.png';
+import RkCastingLogo from './assets/logo-rkprivate-limited.png';
 
 export default function QuotationPreview() {
 
@@ -64,21 +66,46 @@ export default function QuotationPreview() {
     }, [state, selectedCompany]);
 
     async function downloadPDF() {
-        const element = document.getElementById("quotation-download");
+        try {
+            // Helper function to get logo path (exactly as in QuotationTemplate)
+            const getLogoPath = () => {
+                if (!companyConfig) return DefaultLogo;
+                const compId = Number(companyConfig.company_id || companyConfig.id);
+                if (compId === 3) return GlobalBharatLogo;
+                if (compId === 1) return RkCastingLogo;
+                if (companyConfig?.logo_url?.includes('global-bharat')) return GlobalBharatLogo;
+                return DefaultLogo;
+            };
 
-        const canvas = await html2canvas(element, {
-            scale: 1.2,
-            useCORS: true,
-            backgroundColor: "#ffffff"
-        });
-        //
+            // Create PDF blob using @react-pdf/renderer
+            const blob = await pdf(
+                <QuotationPDF
+                    quotation={quotation}
+                    subtotalAmount={subtotalAmount}
+                    totalAmount={totalAmount}
+                    sgst={sgst}
+                    cgst={cgst}
+                    igst={igst}
+                    companyConfig={companyConfig}
+                    logoUrl={getLogoPath()}
+                />
+            ).toBlob();
 
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("p", "mm", "a4");
-        const width = pdf.internal.pageSize.getWidth();
+            // Create download link and trigger it
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Quotation-${quotation.QuotationNo || 'draft'}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
 
-        pdf.addImage(imgData, "PNG", 0, 0, width, 0);
-        pdf.save("quotation.pdf");
+            notify("PDF Downloaded Successfully!", "success");
+        } catch (error) {
+            console.error("PDF generation error:", error);
+            notify("Failed to generate PDF", "error");
+        }
     }
 
     async function saveQuotationToDB() {
