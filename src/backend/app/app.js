@@ -718,6 +718,234 @@ async function createTransactionHandler(req, res) {
   const { invoice, invoice_details, items, totals } = req.body;
 
   const {
+    // Update Invoice Handler
+    async function updateInvoiceHandler(req, res) {
+      const { invoice, invoice_details, items } = req.body;
+
+      // The original invoice number (from URL or Query)
+      const oldInvoiceNo = req.params.invoice_no || req.query.invoice_no;
+
+      // The potentially new invoice number (from Body)
+      const newInvoiceNo = invoice?.InvoiceNo;
+
+      if (!oldInvoiceNo) {
+        return res.status(400).json({ error: "Invoice number is required" });
+      }
+
+      const client = await req.db.getConnection();
+
+      try {
+        await client.beginTransaction();
+
+        // Check if invoice exists
+        const [existing] = await client.query(
+          "SELECT transaction_id, party_id FROM transactions WHERE invoice_no = ? AND transaction_type = 'SALE'",
+          [oldInvoiceNo]
+        );
+
+        if (existing.length === 0) {
+          await client.rollback();
+          return res.status(404).json({ error: "Invoice not found" });
+        }
+
+        // RENAMING DETECTED
+        let currentInvoiceNo = oldInvoiceNo;
+
+        if (newInvoiceNo && newInvoiceNo !== oldInvoiceNo) {
+          // Check if new invoice number already exists
+          const [collision] = await client.query(
+            "SELECT transaction_id FROM transactions WHERE invoice_no = ? LIMIT 1",
+            [newInvoiceNo]
+          );
+
+          if (collision.length > 0) {
+            await client.rollback();
+            return res.status(409).json({ error: `Invoice number ${newInvoiceNo} already exists` });
+          }
+
+          // PERFORM RENAME USING FOREIGN_KEY_CHECKS toggling (Safe within transaction)
+          await client.query("SET FOREIGN_KEY_CHECKS=0");
+
+          try {
+            // 1. Update Parent (Transactions)
+            await client.query(
+              "UPDATE transactions SET invoice_no = ? WHERE invoice_no = ?",
+              [newInvoiceNo, oldInvoiceNo]
+            );
+
+            // 2. Update Children (Invoice Details)
+            await client.query(
+              "UPDATE invoice_details SET invoice_no = ? WHERE invoice_no = ?",
+              [newInvoiceNo, oldInvoiceNo]
+            );
+
+            // 3. Update Children (Sell Summary)
+            await client.query(
+              "UPDATE sell_summary SET invoice_no = ? WHERE invoice_no = ?",
+              [newInvoiceNo, oldInvoiceNo]
+            );
+
+            currentInvoiceNo = newInvoiceNo;
+
+          } catch (renameError) {
+            // Ensure checks are back on even if rename fails
+            await client.query("SET FOREIGN_KEY_CHECKS=1");
+            throw renameError;
+          }
+
+          await client.query("SET FOREIGN_KEY_CHECKS=1");
+        }
+
+
+        // Fetch Party State Code for Auto-Tax Calculation
+        // Use the party_id from the payload if provided, otherwise fallback to existing
+        const partyId = invoice.party_id || existing[0].party_id;
+
+        const [partyRows] = await client.query("SELECT supply_state_code FROM parties WHERE party_id = ?", [partyId]);
+
+        if (partyRows.length === 0) {
+          await client.rollback();
+          return res.status(404).json({ error: "Party not found" });
+        }
+
+        const stateCode = partyRows[0].supply_state_code;
+        let cgstRate = 0, sgstRate = 0, igstRate = 0;
+
+        const sc = String(stateCode || '').trim();
+        if (sc === '20') {
+          cgstRate = 9;
+          sgstRate = 9;
+          igstRate = 0;
+        } else {
+          cgstRate = 0;
+          sgstRate = 0;
+          igstRate = 18;
+        }
+
+        // Helper to parse numbers safely
+        const parseNum = (val) => Number(val) || 0;
+
+        const subtotal = parseNum(invoice.subtotal) || parseNum(invoice.taxable_amount) || 0;
+        const cgst_amount = (subtotal * cgstRate) / 100;
+        const sgst_amount = (subtotal * sgstRate) / 100;
+        const igst_amount = (subtotal * igstRate) / 100;
+        const total_amount = subtotal + cgst_amount + sgst_amount + igst_amount;
+        const round_off = Math.round(total_amount) - total_amount;
+        const gst_percentage = cgstRate + sgstRate + igstRate;
+
+        const grand_total = total_amount + round_off;
+
+        // 1. Update transactions table (using currentInvoiceNo)
+        await client.query(`
+      UPDATE transactions SET
+        transaction_date = ?,
+        party_id = ?,
+        sell_amount = ?,
+        credit_amount = 0,
+        taxable_amount = ?,
+        igst_amount = ?,
+        cgst_amount = ?,
+        sgst_amount = ?,
+        round_off = ?,
+        gst_percentage = ?,
+        narration = ?
+      WHERE invoice_no = ? AND transaction_type = 'SALE'
+    `, [
+          invoice.InvoiceDate || new Date(),
+          partyId,
+          grand_total, // sell_amount
+          subtotal, // taxable_amount
+          igst_amount,
+          cgst_amount,
+          sgst_amount,
+          round_off,
+          gst_percentage,
+          invoice.Terms || `Invoice ${currentInvoiceNo}`,
+          currentInvoiceNo
+        ]);
+
+        // 2. Update invoice_details table
+        await client.query(`
+      UPDATE invoice_details SET
+        invoice_date = ?,
+        transported_by = ?,
+        place_of_supply = ?,
+        vehical_no = ?,
+        eway_bill_no = ?,
+        vendore_code = ?,
+        po_no = ?,
+        po_date = ?,
+        challan_no = ?,
+        challan_date = ?,
+        account_name = ?,
+        account_no = ?,
+        ifsc_code = ?,
+        branch = ?,
+        terms_conditions = ?,
+        client_name = ?,
+        client_address = ?,
+        gstin = ?,
+        client_name2 = ?,
+        client_address2 = ?,
+        gstin2 = ?
+      WHERE invoice_no = ?
+    `, [
+          invoice.InvoiceDate || new Date(),
+          invoice_details.transported_by || null,
+          invoice_details.place_of_supply || null,
+          invoice_details.vehicle_no || null,
+          invoice_details.eway_bill_no || null,
+          invoice_details.vendor_code || null,
+          invoice_details.po_no || null,
+          invoice_details.po_date || null,
+          invoice_details.challan_no || null,
+          invoice_details.challan_date || null,
+          invoice_details.account_name || null,
+          invoice_details.account_no || null,
+          invoice_details.ifsc_code || null,
+          invoice_details.branch || null,
+          invoice_details.terms_conditions || null,
+          invoice_details.client_name || null,
+          invoice_details.client_address || null,
+          invoice_details.gstin || null,
+          invoice_details.client_name2 || null,
+          invoice_details.client_address2 || null,
+          invoice_details.gstin2 || null,
+          currentInvoiceNo
+        ]);
+
+        // 3. Delete existing items from sell_summary and re-insert
+        await client.query("DELETE FROM sell_summary WHERE invoice_no = ?", [currentInvoiceNo]);
+
+        if (items && items.length > 0) {
+          for (const item of items) {
+            if (!item.item_id) continue;
+
+            await client.query(`
+          INSERT INTO sell_summary (
+            invoice_no, item_id, units_sold
+          ) VALUES (?, ?, ?)
+        `, [
+              currentInvoiceNo,
+              item.item_id,
+              Number(item.quantity) || 0
+            ]);
+          }
+        }
+
+        await client.commit();
+        res.json({ success: true, message: "Invoice updated successfully", invoice_no: currentInvoiceNo });
+
+      } catch (err) {
+        await client.rollback();
+        console.error("updateInvoice error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      } finally {
+        client.release();
+      }
+    }
+
+  const {
     InvoiceNo,
     InvoiceDate,
     party_id,

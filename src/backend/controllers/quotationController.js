@@ -328,10 +328,15 @@ export const updateQuotationStatus = async (req, res) => {
 
 export const updateQuotationHandler = async (req, res) => {
     const { quotation, quotation_details, items } = req.body;
-    const quotationNo = req.params.quotation_no || quotation?.QuotationNo;
+
+    // Original Quotation No (from URL)
+    const oldQuotationNo = req.params.quotation_no || req.query.quotation_no;
+    // New Quotation No (from Body)
+    const newQuotationNo = quotation?.QuotationNo;
+
     const companyId = req.companyId;
 
-    if (!quotationNo) {
+    if (!oldQuotationNo) {
         return res.status(400).json({ error: "Quotation number is required" });
     }
 
@@ -343,13 +348,48 @@ export const updateQuotationHandler = async (req, res) => {
         // Check if quotation exists
         const [existing] = await client.query(
             "SELECT quotation_no FROM quotations WHERE quotation_no = ?",
-            [quotationNo]
+            [oldQuotationNo]
         );
 
         if (existing.length === 0) {
             await client.rollback();
             return res.status(404).json({ error: "Quotation not found" });
         }
+
+        // RENAMING DETECTED
+        let currentQuotationNo = oldQuotationNo;
+
+        if (newQuotationNo && newQuotationNo !== oldQuotationNo) {
+            // Check if new quotation number already exists
+            const [collision] = await client.query(
+                "SELECT quotation_no FROM quotations WHERE quotation_no = ?",
+                [newQuotationNo]
+            );
+
+            if (collision.length > 0) {
+                await client.rollback();
+                return res.status(409).json({ error: `Quotation number ${newQuotationNo} already exists` });
+            }
+
+            // Perform Safe Rename
+            await client.query("SET FOREIGN_KEY_CHECKS=0");
+            try {
+                // 1. Update Parent
+                await client.query("UPDATE quotations SET quotation_no = ? WHERE quotation_no = ?", [newQuotationNo, oldQuotationNo]);
+                // 2. Update Details
+                await client.query("UPDATE quotation_details SET quotation_no = ? WHERE quotation_no = ?", [newQuotationNo, oldQuotationNo]);
+                // 3. Update Items (Old items will be deleted anyway, but updating them keeps them linked until delete)
+                await client.query("UPDATE quotation_items SET quotation_no = ? WHERE quotation_no = ?", [newQuotationNo, oldQuotationNo]);
+
+                currentQuotationNo = newQuotationNo;
+
+            } catch (renameErr) {
+                await client.query("SET FOREIGN_KEY_CHECKS=1");
+                throw renameErr;
+            }
+            await client.query("SET FOREIGN_KEY_CHECKS=1");
+        }
+
 
         // Fetch Party State Code for Auto-Tax Calculation
         const [partyRows] = await client.query(
@@ -383,7 +423,7 @@ export const updateQuotationHandler = async (req, res) => {
         const total_amount = subtotal + cgst_amount + sgst_amount + igst_amount;
         const gst_percentage = cgstRate + sgstRate + igstRate;
 
-        // Update quotation
+        // Update quotation (using currentQuotationNo)
         await client.query(`
             UPDATE quotations SET
                 quotation_date = ?,
@@ -404,7 +444,7 @@ export const updateQuotationHandler = async (req, res) => {
             igst_amount,
             total_amount,
             gst_percentage,
-            quotationNo
+            currentQuotationNo
         ]);
 
         // Update quotation_details
@@ -464,11 +504,11 @@ export const updateQuotationHandler = async (req, res) => {
             quotation_details.contact_person || null,
             quotation_details.contact_no || null,
             quotation_details.email || null,
-            quotationNo
+            currentQuotationNo
         ]);
 
         // Delete existing items and re-insert
-        await client.query("DELETE FROM quotation_items WHERE quotation_no = ?", [quotationNo]);
+        await client.query("DELETE FROM quotation_items WHERE quotation_no = ?", [currentQuotationNo]);
 
         if (items && items.length > 0) {
             for (const item of items) {
@@ -477,7 +517,7 @@ export const updateQuotationHandler = async (req, res) => {
                         quotation_no, item_id, item_name, hsn_code, quantity, rate, amount
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                    quotationNo,
+                    currentQuotationNo,
                     item.item_id || null,
                     item.description || null,
                     item.HSNCode || null,
@@ -489,7 +529,7 @@ export const updateQuotationHandler = async (req, res) => {
         }
 
         await client.commit();
-        res.json({ success: true, message: "Quotation updated successfully", quotation_no: quotationNo });
+        res.json({ success: true, message: "Quotation updated successfully", quotation_no: currentQuotationNo });
 
     } catch (err) {
         await client.rollback();

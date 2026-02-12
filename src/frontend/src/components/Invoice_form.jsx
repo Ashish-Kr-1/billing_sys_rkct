@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE } from "../config/api.js";
 import { api, handleApiResponse } from "../config/apiClient.js";
 import { useCompany } from "../context/CompanyContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 
 export default function InvoiceForm({ initialData }) {
   const { selectedCompany } = useCompany();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [invoice, setInvoice] = useState(
@@ -373,10 +375,10 @@ export default function InvoiceForm({ initialData }) {
             type="text"
             name="InvoiceNo"
             placeholder="Invoice Number "
-            className="border p-2 rounded w-full"
+            className={`border p-2 rounded w-full ${user?.role === 'admin' ? 'bg-white border-blue-400' : 'bg-gray-100'}`}
             value={invoice.InvoiceNo}
             onChange={handleChange}
-            readOnly
+            readOnly={user?.role !== 'admin'}
           />
           <input
             type="text"

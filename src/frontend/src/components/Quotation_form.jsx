@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE } from "../config/api.js";
 import { api, handleApiResponse } from "../config/apiClient.js";
 import { useCompany } from "../context/CompanyContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import DefaultLogo from '../assets/logo.png';
 import GlobalBharatLogo from '../assets/logo-global-bharat.png';
 import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
@@ -13,6 +14,7 @@ export default function QuotationForm({ initialData }) {
     console.log("Tax Values:", { sgst: initialData?.sgst, cgst: initialData?.cgst, igst: initialData?.igst });
 
     const { selectedCompany } = useCompany();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [quotation, setQuotation] = useState(
@@ -352,9 +354,10 @@ export default function QuotationForm({ initialData }) {
                         <input
                             type="text"
                             name="QuotationNo"
-                            className="w-full px-1 py-1 outline-none font-semibold text-gray-700 bg-gray-50"
+                            className={`w-full px-1 py-1 outline-none font-semibold text-gray-700 ${user?.role === 'admin' ? 'bg-white border border-blue-400 rounded' : 'bg-gray-50'}`}
                             value={quotation.QuotationNo}
-                            readOnly
+                            onChange={handleChange}
+                            readOnly={user?.role !== 'admin'}
                         />
                     </div>
 
