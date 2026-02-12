@@ -10,23 +10,29 @@ import DefaultLogo from './assets/logo.png';
 import GlobalBharatLogo from './assets/logo-global-bharat.png';
 import RkCastingLogo from './assets/logo-rkprivate-limited.png';
 
-import { useAuth } from "./context/AuthContext";
-
 export default function QuotationPreview() {
 
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { selectedCompany } = useCompany();
-    const { user, loading: authLoading } = useAuth(); // Get current user & loading state
 
     // Fallback if no state (e.g. direct URL access)
-    // ... code ...
+    if (!state) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen">
+                <h2 className="text-xl font-bold text-red-600 mb-4">No Quotation Data Found</h2>
+                <button
+                    onClick={() => navigate('/Quotation')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                    Go to New Quotation
+                </button>
+            </div>
+        );
+    }
 
+    const { selectedCompany } = useCompany();
     const [companyConfig, setCompanyConfig] = useState(null);
-    const [configLoading, setConfigLoading] = useState(true);
-
-    // Combined loading state
-    const loading = authLoading || configLoading;
+    const [loading, setLoading] = useState(true);
 
     const quotation = state.quotation;
     const subtotalAmount = state.subtotalAmount;
@@ -38,7 +44,7 @@ export default function QuotationPreview() {
     // Fetch company configuration
     useEffect(() => {
         const fetchCompanyConfig = async () => {
-            setConfigLoading(true);
+            setLoading(true);
             try {
                 // Use company_id from state (for edit mode) or selectedCompany
                 const companyId = state?.company_id || selectedCompany?.id;
@@ -52,7 +58,7 @@ export default function QuotationPreview() {
             } catch (error) {
                 console.error('Error fetching company config:', error);
             } finally {
-                setConfigLoading(false);
+                setLoading(false);
             }
         };
 
@@ -102,40 +108,6 @@ export default function QuotationPreview() {
         }
     }
 
-    const handleBackToEdit = () => {
-        // ADMIN: Edit in-place
-        if (user?.role === 'admin') {
-            navigate("/Quotation", {
-                state: {
-                    quotation,
-                    subtotalAmount,
-                    totalAmount,
-                    sgst,
-                    cgst,
-                    igst,
-                    isEditMode: true, // Admin edits existing
-                    company_id: state?.company_id
-                }
-            });
-            return;
-        }
-
-        // USER: Clone/New Version (No in-place edit)
-        // We clear the quotation number so it generates a new one
-        navigate("/Quotation", {
-            state: {
-                quotation: { ...quotation, QuotationNo: '', status: 'Pending' },
-                subtotalAmount,
-                totalAmount,
-                sgst,
-                cgst,
-                igst,
-                isEditMode: false, // User creates new
-                company_id: state?.company_id
-            }
-        });
-    };
-
     async function saveQuotationToDB() {
         const payload = {
             quotation: {
@@ -148,7 +120,7 @@ export default function QuotationPreview() {
                 sgst,
                 igst,
                 Terms: quotation.Terms,
-                status: 'Pending'
+                status: 'Pending' // Default status
             },
 
             quotation_details: {
@@ -193,28 +165,27 @@ export default function QuotationPreview() {
 
 
         try {
-            // ADMIN UPDATE FLOW
-            if (state?.isEditMode && user?.role === 'admin') {
-                await handleApiResponse(api.put(`/createQuotation/${quotation.QuotationNo}`, payload));
+            // Use handleApiResponse to manage token headers and error checking
+            let data;
+            if (state?.isEditMode) {
+                data = await handleApiResponse(api.put(`/createQuotation/${quotation.QuotationNo}`, payload));
                 notify("Quotation Updated Successfully!", "success");
-                return;
+            } else {
+                data = await handleApiResponse(api.post('/createQuotation', payload));
+                notify("Quotation Created Successfully!", "success");
             }
-
-            // USER / NEW FLOW
-            await handleApiResponse(api.post('/createQuotation', payload));
-            notify("Quotation Created Successfully!", "success");
-
+            console.log("Quotation transaction result:", data);
         } catch (err) {
             console.error("Save quotation error:", err);
-            // If duplicate key error on 'Create'
+            // If duplicate key error on 'Create', it means it's already saved.
             if (!state?.isEditMode && err.message && err.message.includes("exists")) {
+                console.log("Quotation already exists (idempotent save).");
                 notify("Quotation already exists.", "warning");
             } else {
                 notify(`Error saving quotation: ${err.message}`, "error");
             }
         }
     }
-
     return (
         <div>
             {loading ? (
@@ -243,7 +214,18 @@ export default function QuotationPreview() {
                     <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-4 flex flex-wrap justify-center gap-2 md:gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50">
                         <button
                             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition-colors text-sm"
-                            onClick={handleBackToEdit}
+                            onClick={() => navigate("/Quotation", {
+                                state: {
+                                    quotation,
+                                    subtotalAmount,
+                                    totalAmount,
+                                    sgst,
+                                    cgst,
+                                    igst,
+                                    isEditMode: state?.isEditMode,
+                                    company_id: state?.company_id
+                                }
+                            })}
                         >
                             Back to Edit
                         </button>
