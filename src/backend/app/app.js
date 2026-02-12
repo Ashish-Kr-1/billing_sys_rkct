@@ -1320,3 +1320,142 @@ app.use('/item_id', routerItems);
 app.use('/createParty', router);
 app.use('/createInvoice', routerTransaction);
 app.use('/createItem', routerB);
+
+// Update Invoice Handler (Admin Only)
+async function updateInvoiceHandler(req, res) {
+  // 🔒 Security: Only Admins can update in-place
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ error: "Access denied. Only admins can update invoices." });
+  }
+
+  const { invoice_no } = req.params;
+  const { invoice, invoice_details, items } = req.body;
+
+  if (!invoice_no) {
+    return res.status(400).json({ error: "Invoice number is required" });
+  }
+
+  const client = await req.db.getConnection();
+
+  try {
+    await client.beginTransaction();
+
+    // 1. Verify Invoice Exists
+    const [existing] = await client.query(
+      "SELECT transaction_id, party_id FROM transactions WHERE invoice_no = ? AND transaction_type = 'SALE'",
+      [invoice_no]
+    );
+
+    if (existing.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // 2. Fetch Party State Code (for tax recalc)
+    // Use the NEW party_id from body if provided, else keep existing
+    const partyId = invoice.party_id || existing[0].party_id;
+
+    const [partyRows] = await client.query("SELECT supply_state_code FROM parties WHERE party_id = ?", [partyId]);
+    if (partyRows.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: "Party not found" });
+    }
+
+    const stateCode = partyRows[0].supply_state_code;
+    let cgstRate = 0, sgstRate = 0, igstRate = 0;
+
+    const sc = String(stateCode || '').trim();
+    if (sc === '20') { // Jharkhand
+      cgstRate = 9;
+      sgstRate = 9;
+      igstRate = 0;
+    } else {
+      cgstRate = 0;
+      sgstRate = 0;
+      igstRate = 18;
+    }
+
+    // 3. Recalculate Totals
+    const subtotal = Number(invoice.subtotal) || 0;
+    const cgst_amount = (subtotal * cgstRate) / 100;
+    const sgst_amount = (subtotal * sgstRate) / 100;
+    const igst_amount = (subtotal * igstRate) / 100;
+    const total_amount = subtotal + cgst_amount + sgst_amount + igst_amount;
+    const round_off = Math.round(total_amount) - total_amount;
+    const final_amount = Math.round(total_amount);
+
+    // 4. Update Transactions Table
+    await client.query(`
+      UPDATE transactions SET
+        transaction_date = ?,
+        party_id = ?,
+        taxable_amount = ?,
+        cgst_amount = ?,
+        sgst_amount = ?,
+        igst_amount = ?,
+        sell_amount = ?,
+        round_off = ?,
+        narration = ?
+      WHERE invoice_no = ? AND transaction_type = 'SALE'
+    `, [
+      invoice.InvoiceDate,
+      partyId,
+      subtotal,
+      cgst_amount,
+      sgst_amount,
+      igst_amount,
+      final_amount,
+      round_off,
+      invoice.Terms,
+      invoice_no
+    ]);
+
+    // 5. Update Invoice Details
+    await client.query(`
+      UPDATE invoice_details SET
+        transported_by = ?, place_of_supply = ?, vehical_no = ?, eway_bill_no = ?, vendore_code = ?,
+        po_no = ?, po_date = ?, challan_no = ?, challan_date = ?,
+        account_name = ?, account_no = ?, ifsc_code = ?, branch = ?,
+        terms_conditions = ?,
+        client_name = ?, client_address = ?, gstin = ?,
+        client_name2 = ?, client_address2 = ?, gstin2 = ?
+      WHERE invoice_no = ?
+    `, [
+      invoice_details.transported_by, invoice_details.place_of_supply, invoice_details.vehicle_no, invoice_details.eway_bill_no, invoice_details.vendor_code,
+      invoice_details.po_no, invoice_details.po_date, invoice_details.challan_no, invoice_details.challan_date,
+      invoice_details.account_name, invoice_details.account_no, invoice_details.ifsc_code, invoice_details.branch,
+      invoice_details.terms_conditions,
+      invoice_details.client_name, invoice_details.client_address, invoice_details.gstin,
+      invoice_details.client_name2, invoice_details.client_address2, invoice_details.gstin2,
+      invoice_no
+    ]);
+
+    // 6. Update Items (Delete + Re-insert)
+    await client.query("DELETE FROM sell_summary WHERE invoice_no = ?", [invoice_no]);
+
+    if (items && items.length > 0) {
+      for (const item of items) {
+        await client.query(`
+          INSERT INTO sell_summary (invoice_no, item_id, units_sold)
+          VALUES (?, ?, ?)
+        `, [
+          invoice_no,
+          item.item_id,
+          Number(item.quantity) || 0
+        ]);
+      }
+    }
+
+    await client.commit();
+    res.json({ success: true, message: "Invoice updated successfully", invoice_no });
+
+  } catch (err) {
+    await client.rollback();
+    console.error("updateInvoiceHandler error:", err);
+    res.status(500).json({ error: "Failed to update invoice" });
+  } finally {
+    client.release();
+  }
+}
+
+routerTransaction.put('/:invoice_no', updateInvoiceHandler);

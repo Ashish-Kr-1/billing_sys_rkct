@@ -10,10 +10,14 @@ import DefaultLogo from './assets/logo.png';
 import GlobalBharatLogo from './assets/logo-global-bharat.png';
 import RkCastingLogo from './assets/logo-rkprivate-limited.png';
 
+import { useAuth } from "./context/AuthContext";
+
 export default function QuotationPreview() {
 
     const navigate = useNavigate();
     const { state } = useLocation();
+    const { selectedCompany } = useCompany();
+    const { user } = useAuth(); // Get current user
 
     // Fallback if no state (e.g. direct URL access)
     if (!state) {
@@ -30,7 +34,6 @@ export default function QuotationPreview() {
         );
     }
 
-    const { selectedCompany } = useCompany();
     const [companyConfig, setCompanyConfig] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -108,6 +111,40 @@ export default function QuotationPreview() {
         }
     }
 
+    const handleBackToEdit = () => {
+        // ADMIN: Edit in-place
+        if (user?.role === 'admin') {
+            navigate("/Quotation", {
+                state: {
+                    quotation,
+                    subtotalAmount,
+                    totalAmount,
+                    sgst,
+                    cgst,
+                    igst,
+                    isEditMode: true, // Admin edits existing
+                    company_id: state?.company_id
+                }
+            });
+            return;
+        }
+
+        // USER: Clone/New Version (No in-place edit)
+        // We clear the quotation number so it generates a new one
+        navigate("/Quotation", {
+            state: {
+                quotation: { ...quotation, QuotationNo: '', status: 'Pending' },
+                subtotalAmount,
+                totalAmount,
+                sgst,
+                cgst,
+                igst,
+                isEditMode: false, // User creates new
+                company_id: state?.company_id
+            }
+        });
+    };
+
     async function saveQuotationToDB() {
         const payload = {
             quotation: {
@@ -120,7 +157,7 @@ export default function QuotationPreview() {
                 sgst,
                 igst,
                 Terms: quotation.Terms,
-                status: 'Pending' // Default status
+                status: 'Pending'
             },
 
             quotation_details: {
@@ -165,27 +202,28 @@ export default function QuotationPreview() {
 
 
         try {
-            // Use handleApiResponse to manage token headers and error checking
-            let data;
-            if (state?.isEditMode) {
-                data = await handleApiResponse(api.put(`/createQuotation/${quotation.QuotationNo}`, payload));
+            // ADMIN UPDATE FLOW
+            if (state?.isEditMode && user?.role === 'admin') {
+                await handleApiResponse(api.put(`/createQuotation/${quotation.QuotationNo}`, payload));
                 notify("Quotation Updated Successfully!", "success");
-            } else {
-                data = await handleApiResponse(api.post('/createQuotation', payload));
-                notify("Quotation Created Successfully!", "success");
+                return;
             }
-            console.log("Quotation transaction result:", data);
+
+            // USER / NEW FLOW
+            await handleApiResponse(api.post('/createQuotation', payload));
+            notify("Quotation Created Successfully!", "success");
+
         } catch (err) {
             console.error("Save quotation error:", err);
-            // If duplicate key error on 'Create', it means it's already saved.
+            // If duplicate key error on 'Create'
             if (!state?.isEditMode && err.message && err.message.includes("exists")) {
-                console.log("Quotation already exists (idempotent save).");
                 notify("Quotation already exists.", "warning");
             } else {
                 notify(`Error saving quotation: ${err.message}`, "error");
             }
         }
     }
+
     return (
         <div>
             {loading ? (
@@ -214,18 +252,7 @@ export default function QuotationPreview() {
                     <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-4 flex flex-wrap justify-center gap-2 md:gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50">
                         <button
                             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition-colors text-sm"
-                            onClick={() => navigate("/Quotation", {
-                                state: {
-                                    quotation,
-                                    subtotalAmount,
-                                    totalAmount,
-                                    sgst,
-                                    cgst,
-                                    igst,
-                                    isEditMode: state?.isEditMode,
-                                    company_id: state?.company_id
-                                }
-                            })}
+                            onClick={handleBackToEdit}
                         >
                             Back to Edit
                         </button>

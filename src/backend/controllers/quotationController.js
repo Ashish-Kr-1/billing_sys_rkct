@@ -327,6 +327,11 @@ export const updateQuotationStatus = async (req, res) => {
 };
 
 export const updateQuotationHandler = async (req, res) => {
+    // 🔒 Security: Only Admins can update in-place
+    if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Only admins can update quotations." });
+    }
+
     const { quotation, quotation_details, items } = req.body;
     const quotationNo = req.params.quotation_no || quotation?.QuotationNo;
     const companyId = req.companyId;

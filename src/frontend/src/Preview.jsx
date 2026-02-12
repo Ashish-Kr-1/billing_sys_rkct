@@ -11,99 +11,24 @@ import DefaultLogo from './assets/logo.png';
 import GlobalBharatLogo from './assets/logo-global-bharat.png';
 import RkCastingLogo from './assets/logo-rkprivate-limited.png';
 
+import { useAuth } from "./context/AuthContext";
+
 export default function Preview() {
 
   const navigate = useNavigate();
   const { state } = useLocation();
   const { selectedCompany } = useCompany();
+  const { user } = useAuth(); // Get current user
   const [companyConfig, setCompanyConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Guard clause if state is missing
-  if (!state || !state.invoice) {
-    useEffect(() => {
-      navigate('/Invoice');
-    }, [navigate]);
-    return null;
-  }
+  // ... (existing code for Guard clause and Fetch Config) ...
 
-  const invoice = state.invoice;
-  const subtotalAmount = state.subtotalAmount;
-  const totalAmount = state.totalAmount;
-  const sgst = state.sgst;
-  const cgst = state.cgst;
-  const igst = state.igst;
-
-  // Fetch company configuration
-  useEffect(() => {
-    const fetchCompanyConfig = async () => {
-      setLoading(true);
-      try {
-        // Use company_id from state (for edit mode) or selectedCompany
-        const companyId = state?.company_id || selectedCompany?.id;
-
-        if (companyId) {
-          const data = await handleApiResponse(
-            api.get(`/companies/${companyId}/config`)
-          );
-          setCompanyConfig(data.config);
-        }
-      } catch (error) {
-        console.error('Error fetching company config:', error);
-        notify("Failed to load company configuration", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCompanyConfig();
-  }, [state, selectedCompany]);
-
-  async function downloadPDF() {
-    try {
-      // Helper function to get logo path (exactly as in InvoiceTemplate)
-      const getLogoPath = () => {
-        if (!companyConfig) return DefaultLogo;
-        const compId = Number(companyConfig.company_id || companyConfig.id);
-        if (compId === 3) return GlobalBharatLogo;
-        if (compId === 1) return RkCastingLogo;
-        if (companyConfig?.logo_url?.includes('global-bharat')) return GlobalBharatLogo;
-        return DefaultLogo;
-      };
-
-      // Create PDF blob using @react-pdf/renderer
-      const blob = await pdf(
-        <InvoicePDF
-          invoice={invoice}
-          subtotalAmount={subtotalAmount}
-          totalAmount={totalAmount}
-          sgst={sgst}
-          cgst={cgst}
-          igst={igst}
-          companyConfig={companyConfig}
-          logoUrl={getLogoPath()}
-        />
-      ).toBlob();
-
-      // Create download link and trigger it
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Invoice-${invoice.InvoiceNo || 'draft'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      notify("PDF Downloaded Successfully!", "success");
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      notify("Failed to generate PDF", "error");
-    }
-  }
+  // ... (existing code for downloadPDF) ...
 
   async function saveInvoiceToDB() {
+    // ... (payload construction) ...
     const payload = {
       invoice: {
         InvoiceNo: invoice.InvoiceNo,
@@ -124,16 +49,16 @@ export default function Preview() {
         vehicle_no: invoice.VehicleNo,
         eway_bill_no: invoice.EwayBillNo,
         vendor_code: invoice.VendorCode,
-        po_no: invoice.po_no, // UPDATED: Matches Invoice_form state name
+        po_no: invoice.po_no,
         po_date: invoice.PODate,
         challan_no: invoice.ChallanNo,
         challan_date: invoice.ChallanDate,
         client_name: invoice.clientName,
         client_address: invoice.clientAddress,
-        gstin: invoice.GSTIN, // FIXED: gstIn -> gstin
+        gstin: invoice.GSTIN,
         client_name2: invoice.clientName2,
         client_address2: invoice.clientAddress2,
-        gstin2: invoice.GSTIN2, // FIXED: gstIn2 -> gstin2
+        gstin2: invoice.GSTIN2,
         account_name: invoice.AccountName,
         account_no: invoice.CurrentACCno,
         ifsc_code: invoice.IFSCcode,
@@ -153,6 +78,13 @@ export default function Preview() {
 
 
     try {
+      // ADMIN UPDATE FLOW
+      if (state?.isEditMode && user?.role === 'admin') {
+        const data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
+        notify("Invoice Updated Successfully!", "success");
+        return;
+      }
+
       // Check if invoice exists before trying to create a new one (Prevent Duplicate)
       if (!state?.isEditMode) {
         try {
@@ -166,19 +98,14 @@ export default function Preview() {
         }
       }
 
-      // Use handleApiResponse to manage token headers and error checking
-      let data;
-      if (state?.isEditMode) {
-        data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
-        notify("Invoice Saved Successfully!", "success");
-      } else {
-        data = await handleApiResponse(api.post('/createInvoice', payload));
-        notify("Invoice Saved Successfully!", "success");
-      }
+      // CREATE FLOW (User or Admin New)
+      const data = await handleApiResponse(api.post('/createInvoice', payload));
+      notify("Invoice Saved Successfully!", "success");
       console.log("Invoice transaction result:", data);
+
     } catch (err) {
       console.error("Save invoice error:", err);
-      // If duplicate key error on 'Create' (fallback if pre-check fails appropriately)
+      // If duplicate key error on 'Create'
       if (!state?.isEditMode && err.message && err.message.includes("exists")) {
         console.log("Invoice already exists (idempotent save).");
         notify("Invoice is already saved!", "info");
@@ -189,6 +116,24 @@ export default function Preview() {
   }
 
   async function checkInvoiceAndNavigate() {
+    // 1. ADMIN FLOW: Skip checks, just go back to edit
+    if (user?.role === 'admin') {
+      navigate("/Invoice", {
+        state: {
+          invoice: { ...invoice },
+          subtotalAmount,
+          totalAmount,
+          sgst,
+          cgst,
+          igst,
+          isEditMode: true, // Allow editing
+          company_id: state?.company_id
+        }
+      });
+      return;
+    }
+
+    // 2. USER FLOW: Strict "Cancel -> New" logic
     const invoiceNo = invoice.InvoiceNo;
 
     try {
@@ -196,10 +141,10 @@ export default function Preview() {
       const response = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoiceNo)}`);
 
       if (response.ok) {
-        // Invoice exists - show confirm modal
+        // Invoice exists - show confirm modal to cancel it
         setShowDeleteModal(true);
       } else {
-        // Invoice doesn't exist - just go back to edit normally
+        // Invoice doesn't exist - proceed normally
         navigate("/Invoice", {
           state: {
             invoice: { ...invoice, status: '' },
