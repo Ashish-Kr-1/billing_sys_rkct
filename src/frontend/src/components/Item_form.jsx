@@ -16,8 +16,10 @@ function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
   };
 
   const [item, setItem] = useState(initialItemState);
+  const [isCloning, setIsCloning] = useState(false);
 
   useEffect(() => {
+    setIsCloning(false);
     if (initialData) {
       setItem(initialData);
     } else {
@@ -25,11 +27,13 @@ function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
     }
   }, [initialData]);
 
+  const isActuallyEditing = isEditMode && !isCloning;
+
   const navigate = useNavigate();
 
   const LOCKED_FIELDS = ['item_name', 'hsn_code'];
 
-  const isFieldLocked = (fieldName) => isEditMode && LOCKED_FIELDS.includes(fieldName);
+  const isFieldLocked = (fieldName) => isActuallyEditing && LOCKED_FIELDS.includes(fieldName);
 
   const getInputClass = (fieldName) => {
     const baseClass = "border p-2 rounded w-full";
@@ -49,7 +53,7 @@ function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
         </button>
       )}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Item' : 'Create Item'}</h1>
+        <h1 className="text-2xl font-bold">{isActuallyEditing ? 'Edit Item' : 'Create Item'}</h1>
         {onManage && !isEditMode && (
           <Button text="Manage Items" color="blue" onClick={onManage} />
         )}
@@ -88,7 +92,7 @@ function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
       </div>
       <div className='flex justify-end space-x-4'>
         <Button
-          text={isEditMode ? "Update Item" : "Save"}
+          text={isActuallyEditing ? "Update Item" : "Save"}
           color="green"
           onClick={async () => {
             try {
@@ -97,12 +101,14 @@ function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
                 return;
               }
 
-              if (isEditMode) {
+              if (isActuallyEditing) {
                 await handleApiResponse(api.put(`/items/${item.item_id}`, item));
                 notify("Item Updated Successfully!", "success");
                 if (onSuccess) onSuccess();
               } else {
-                await LinkItem(item);
+                // Strip item_id when cloning or creating fresh
+                const { item_id, ...newItemData } = item;
+                await LinkItem(newItemData);
                 notify("Item Created Successfully!", "success");
                 setItem(initialItemState);
                 if (onSuccess) onSuccess();
@@ -112,7 +118,15 @@ function Item_form({ initialData = null, onSuccess, onCancel, onManage }) {
             }
           }}
         />
-        <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
+        {isEditMode && !isCloning ? (
+          <Button
+            text="Create New Item"
+            color="blue"
+            onClick={() => setIsCloning(true)}
+          />
+        ) : (
+          <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
+        )}
       </div>
     </div>
   )

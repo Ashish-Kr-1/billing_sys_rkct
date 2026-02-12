@@ -25,8 +25,10 @@ function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
   };
 
   const [party, setParty] = useState(initialPartyState);
+  const [isCloning, setIsCloning] = useState(false);
 
   useEffect(() => {
+    setIsCloning(false);
     if (initialData) {
       setParty(initialData);
     } else {
@@ -34,11 +36,13 @@ function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
     }
   }, [initialData]);
 
+  const isActuallyEditing = isEditMode && !isCloning;
+
   const navigate = useNavigate();
 
   const LOCKED_FIELDS = ['party_name', 'gstin_no', 'billing_address', 'shipping_address', 'pin_code', 'supply_state_code', 'type'];
 
-  const isFieldLocked = (fieldName) => isEditMode && LOCKED_FIELDS.includes(fieldName);
+  const isFieldLocked = (fieldName) => isActuallyEditing && LOCKED_FIELDS.includes(fieldName);
 
   const getInputClass = (fieldName) => {
     const baseClass = "border p-2 rounded w-full";
@@ -58,7 +62,7 @@ function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
         </button>
       )}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Party' : 'Create Party'}</h1>
+        <h1 className="text-2xl font-bold">{isActuallyEditing ? 'Edit Party' : 'Create Party'}</h1>
         {onManage && !isEditMode && (
           <Button text="Manage Parties" color="blue" onClick={onManage} />
         )}
@@ -154,7 +158,7 @@ function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
       </div>
       <div className='flex justify-end space-x-4'>
         <Button
-          text={isEditMode ? "Update Party" : "Save"}
+          text={isActuallyEditing ? "Update Party" : "Save"}
           color="green"
           onClick={async () => {
             try {
@@ -163,12 +167,14 @@ function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
                 return;
               }
 
-              if (isEditMode) {
+              if (isActuallyEditing) {
                 await handleApiResponse(api.put(`/parties/${party.party_id}`, party));
                 notify("Party Updated Successfully!", "success");
                 if (onSuccess) onSuccess();
               } else {
-                await Link(party);
+                // When cloning or creating new, ensure we don't send the old ID
+                const { party_id, ...newPartyData } = party;
+                await Link(newPartyData);
                 notify("Party Created Successfully!", "success");
                 setParty(initialPartyState);
                 if (onSuccess) onSuccess();
@@ -178,7 +184,15 @@ function Party_form({ initialData = null, onSuccess, onCancel, onManage }) {
             }
           }}
         />
-        <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
+        {isEditMode && !isCloning ? (
+          <Button
+            text="Create New Party"
+            color="blue"
+            onClick={() => setIsCloning(true)}
+          />
+        ) : (
+          <Button text='Create Invoice' color='blue' onClick={() => navigate("/Invoice")}></Button>
+        )}
       </div>
     </div>
   )
