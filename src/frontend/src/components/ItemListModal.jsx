@@ -8,6 +8,8 @@ export default function ItemListModal({ isOpen, onClose, onEdit }) {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
+    //demo changes
+
     useEffect(() => {
         if (isOpen) {
             fetchItems();
