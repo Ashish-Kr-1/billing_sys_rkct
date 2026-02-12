@@ -145,13 +145,13 @@ const styles = StyleSheet.create({
   colQty: { width: '10%', textAlign: 'center' },
   colPrice: { width: '15%', textAlign: 'center' },
   colAmount: { width: '20%', textAlign: 'right' },
-  
+
   footerContainer: {
     flexDirection: 'row',
     marginTop: 15,
   },
   bankDetails: {
-    width: '60%',
+    width: '55%',
     border: '1pt solid #D9D9D9',
     borderRadius: 10,
     padding: 10,
@@ -165,26 +165,27 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   totalsContainer: {
-    width: '40%',
+    width: '45%',
     alignItems: 'flex-end',
-    paddingRight: 10,
   },
   totalRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     width: '100%',
     marginBottom: 4,
     fontSize: 10,
+    gap: 10,
   },
   grandTotalRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     width: '100%',
     marginTop: 5,
     paddingTop: 5,
     borderTop: '2pt solid #0A4350',
     fontSize: 14,
     fontWeight: 'bold',
+    gap: 10,
   },
   termsBox: {
     marginTop: 15,
@@ -239,13 +240,13 @@ export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst,
 
         {/* HEADER */}
         <Text style={styles.headerTitle}>INVOICE</Text>
-        
+
         <View style={styles.headerContainer}>
           <View style={styles.logoContainer}>
             <Text style={styles.gstinHeader}>GSTIN: {companyConfig?.gstin || invoice.GSTIN0}</Text>
             {logoUrl && <Image src={logoUrl} style={styles.logo} />}
           </View>
-          
+
           <View style={styles.companyInfo}>
             <Text style={styles.companyName}>{companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}</Text>
             <Text style={styles.companyDetails}>{companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}</Text>
@@ -303,8 +304,8 @@ export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst,
               <Text style={styles.colDesc}>{item.description}</Text>
               <Text style={styles.colHsn}>{item.HSNCode}</Text>
               <Text style={styles.colQty}>{item.quantity}</Text>
-              <Text style={styles.colPrice}>₹{item.price}</Text>
-              <Text style={styles.colAmount}>₹{item.quantity * item.price}</Text>
+              <Text style={styles.colPrice}>Rs.{item.price}</Text>
+              <Text style={styles.colAmount}>Rs.{item.quantity * item.price}</Text>
             </View>
           ))}
         </View>
@@ -318,34 +319,34 @@ export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst,
             <Text style={styles.bankText}>{invoice.IFSCcode}</Text>
             <Text style={styles.bankText}>{invoice.Branch}</Text>
           </View>
-          
+
           <View style={styles.totalsContainer}>
             <View style={styles.totalRow}>
               <Text>Subtotal</Text>
-              <Text>₹{subtotalAmount.toFixed(2)}</Text>
+              <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
             </View>
-            
+
             {igst > 0 ? (
               <View style={styles.totalRow}>
                 <Text>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                <Text>₹{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
+                <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
               </View>
             ) : (
               <>
                 <View style={styles.totalRow}>
                   <Text>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                  <Text>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
+                  <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                   <Text>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                  <Text>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
+                  <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
                 </View>
               </>
             )}
-            
+
             <View style={styles.grandTotalRow}>
               <Text>Total Amount</Text>
-              <Text>₹{Math.round(totalAmount)}</Text>
+              <Text>Rs.{Math.round(totalAmount)}</Text>
             </View>
           </View>
         </View>

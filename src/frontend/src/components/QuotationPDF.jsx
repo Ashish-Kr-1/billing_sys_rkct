@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     bankDetails: {
-        width: '60%',
+        width: '55%',
         border: '1pt solid #D9D9D9',
         borderRadius: 10,
         padding: 10,
@@ -149,26 +149,27 @@ const styles = StyleSheet.create({
         fontSize: 9,
     },
     totalsContainer: {
-        width: '40%',
+        width: '45%',
         alignItems: 'flex-end',
-        paddingRight: 10,
     },
     totalRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         width: '100%',
         marginBottom: 4,
         fontSize: 10,
+        gap: 10,
     },
     grandTotalRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         width: '100%',
         marginTop: 5,
         paddingTop: 5,
         borderTop: '2pt solid #0A4350',
         fontSize: 14,
         fontWeight: 'bold',
+        gap: 10,
     },
     termsBox: {
         marginTop: 15,
@@ -280,8 +281,8 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
                             <Text style={styles.colDesc}>{item.description}</Text>
                             <Text style={styles.colHsn}>{item.HSNCode}</Text>
                             <Text style={styles.colQty}>{item.quantity}</Text>
-                            <Text style={styles.colPrice}>₹{item.price}</Text>
-                            <Text style={styles.colAmount}>₹{item.quantity * item.price}</Text>
+                            <Text style={styles.colPrice}>Rs.{item.price}</Text>
+                            <Text style={styles.colAmount}>Rs.{item.quantity * item.price}</Text>
                         </View>
                     ))}
                 </View>
@@ -299,30 +300,30 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
                     <View style={styles.totalsContainer}>
                         <View style={styles.totalRow}>
                             <Text>Subtotal</Text>
-                            <Text>₹{subtotalAmount.toFixed(2)}</Text>
+                            <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
                         </View>
 
                         {igst > 0 ? (
                             <View style={styles.totalRow}>
                                 <Text>IGST ({igst}%)</Text>
-                                <Text>₹{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
+                                <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
                             </View>
                         ) : (
                             <>
                                 <View style={styles.totalRow}>
                                     <Text>SGST ({sgst}%)</Text>
-                                    <Text>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
+                                    <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
                                 </View>
                                 <View style={styles.totalRow}>
                                     <Text>CGST ({cgst}%)</Text>
-                                    <Text>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
+                                    <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
                                 </View>
                             </>
                         )}
 
                         <View style={styles.grandTotalRow}>
                             <Text>Total Amount</Text>
-                            <Text>₹{Math.round(totalAmount)}</Text>
+                            <Text>Rs.{Math.round(totalAmount)}</Text>
                         </View>
                     </View>
                 </View>
