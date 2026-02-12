@@ -23,9 +23,88 @@ export default function Preview() {
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // ... (existing code for Guard clause and Fetch Config) ...
+  // Guard clause if state is missing
+  if (!state || !state.invoice) {
+    useEffect(() => {
+      navigate('/Invoice');
+    }, [navigate]);
+    return null;
+  }
 
-  // ... (existing code for downloadPDF) ...
+  const invoice = state.invoice;
+  const subtotalAmount = state.subtotalAmount;
+  const totalAmount = state.totalAmount;
+  const sgst = state.sgst;
+  const cgst = state.cgst;
+  const igst = state.igst;
+
+  // Fetch company configuration
+  useEffect(() => {
+    const fetchCompanyConfig = async () => {
+      setLoading(true);
+      try {
+        // Use company_id from state (for edit mode) or selectedCompany
+        const companyId = state?.company_id || selectedCompany?.id;
+
+        if (companyId) {
+          const data = await handleApiResponse(
+            api.get(`/companies/${companyId}/config`)
+          );
+          setCompanyConfig(data.config);
+        }
+      } catch (error) {
+        console.error('Error fetching company config:', error);
+        notify("Failed to load company configuration", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyConfig();
+  }, [state, selectedCompany]);
+
+  async function downloadPDF() {
+    try {
+      // Helper function to get logo path (exactly as in InvoiceTemplate)
+      const getLogoPath = () => {
+        if (!companyConfig) return DefaultLogo;
+        const compId = Number(companyConfig.company_id || companyConfig.id);
+        if (compId === 3) return GlobalBharatLogo;
+        if (compId === 1) return RkCastingLogo;
+        if (companyConfig?.logo_url?.includes('global-bharat')) return GlobalBharatLogo;
+        return DefaultLogo;
+      };
+
+      // Create PDF blob using @react-pdf/renderer
+      const blob = await pdf(
+        <InvoicePDF
+          invoice={invoice}
+          subtotalAmount={subtotalAmount}
+          totalAmount={totalAmount}
+          sgst={sgst}
+          cgst={cgst}
+          igst={igst}
+          companyConfig={companyConfig}
+          logoUrl={getLogoPath()}
+        />
+      ).toBlob();
+
+      // Create download link and trigger it
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Invoice-${invoice.InvoiceNo || 'draft'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      notify("PDF Downloaded Successfully!", "success");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      notify("Failed to generate PDF", "error");
+    }
+  }
 
   async function saveInvoiceToDB() {
     // ... (payload construction) ...
