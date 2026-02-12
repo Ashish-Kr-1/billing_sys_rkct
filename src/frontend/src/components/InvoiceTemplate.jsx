@@ -6,7 +6,6 @@ import { useCompany } from "../context/CompanyContext";
 export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig }) {
   const navigate = useNavigate();
 
-  // Helper function to get company logo
   const getCompanyLogo = () => {
     if (!companyConfig) return DefaultLogo;
     const compId = Number(companyConfig.company_id || companyConfig.id);
