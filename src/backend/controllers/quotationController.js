@@ -325,3 +325,101 @@ export const updateQuotationStatus = async (req, res) => {
         client.release();
     }
 };
+
+export const getQuotationDetailsHandler = async (req, res) => {
+    // Handle both query param (new) and path param (legacy)
+    const quotationNo = req.query.quotation_no || req.params.quotation_no;
+
+    if (!quotationNo) {
+        return res.status(400).json({ error: "Quotation number required" });
+    }
+
+    const companyId = req.companyId;
+    const client = await getClient(companyId);
+
+    try {
+        // Fetch quotation (main record)
+        const [quotations] = await client.query(
+            'SELECT * FROM quotations WHERE quotation_no = ?',
+            [quotationNo]
+        );
+
+        if (!quotations || quotations.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Quotation not found'
+            });
+        }
+
+        const quotation = quotations[0];
+
+        // Fetch quotation_details
+        const [quotationDetails] = await client.query(
+            'SELECT * FROM quotation_details WHERE quotation_no = ?',
+            [quotationNo]
+        );
+
+        // Fetch items from quotation_items with item details
+        const [quotationItems] = await client.query(
+            `SELECT 
+                qi.*,
+                i.item_name as description,
+                i.hsn_code,
+                qi.rate as unit_price
+            FROM quotation_items qi
+            LEFT JOIN items i ON qi.item_id = i.item_id
+            WHERE qi.quotation_no = ?`,
+            [quotationNo]
+        );
+
+        // Fetch party details if party_id exists
+        let party = null;
+        if (quotation.party_id) {
+            const [parties] = await client.query(
+                'SELECT * FROM parties WHERE party_id = ?',
+                [quotation.party_id]
+            );
+            party = parties[0] || null;
+        }
+
+        // Map to match frontend expected format
+        const quotationData = {
+            quotation: {
+                quotation_no: quotation.quotation_no,
+                quotation_date: quotation.quotation_date,
+                gstin: quotation.gst_number || '',
+                party_id: quotation.party_id,
+                subtotal: quotation.subtotal,
+                cgst: quotation.cgst_amount > 0 ? (quotation.cgst_amount / quotation.subtotal * 100) : 0,
+                sgst: quotation.sgst_amount > 0 ? (quotation.sgst_amount / quotation.subtotal * 100) : 0,
+                igst: quotation.igst_amount > 0 ? (quotation.igst_amount / quotation.subtotal * 100) : 0,
+                status: quotation.status
+            },
+            quotation_details: quotationDetails[0] || {},
+            items: quotationItems.map(item => ({
+                item_id: item.item_id,
+                description: item.item_name || item.description,
+                hsn_code: item.hsn_code,
+                quantity: item.quantity,
+                unit_price: item.rate,
+                price: item.rate
+            })),
+            party: party
+        };
+
+        return res.status(200).json({
+            success: true,
+            ...quotationData
+        });
+
+    } catch (error) {
+        console.error('Get quotation details error:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack
+        });
+    } finally {
+        client.release();
+    }
+};

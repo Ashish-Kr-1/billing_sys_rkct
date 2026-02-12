@@ -1154,6 +1154,64 @@ async function cancelInvoiceHandler(req, res) {
   }
 }
 
+// Reverse (un-cancel) invoice endpoint
+async function reverseInvoiceHandler(req, res) {
+  const { invoice_no } = req.params;
+  const user_id = req.user?.user_id; // From auth middleware
+
+  if (!invoice_no) {
+    return res.status(400).json({ error: 'Invoice number is required' });
+  }
+
+  const client = await req.db.getConnection();
+
+  try {
+    await client.beginTransaction();
+
+    // Check if invoice exists and is cancelled
+    const [existing] = await client.query(
+      `SELECT status, invoice_no FROM transactions 
+       WHERE invoice_no = ? AND transaction_type = 'SALE' LIMIT 1`,
+      [invoice_no]
+    );
+
+    if (existing.length === 0) {
+      await client.rollback();
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (existing[0].status !== 'cancelled') {
+      await client.rollback();
+      return res.status(400).json({ error: 'Invoice is not cancelled' });
+    }
+
+    // Update invoice status to active (null is the default/active state)
+    await client.query(
+      `UPDATE transactions 
+       SET status = NULL, 
+           cancelled_at = NULL, 
+           cancelled_by = NULL
+       WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+
+    await client.commit();
+
+    res.json({
+      success: true,
+      message: 'Invoice reversed successfully',
+      invoice_no
+    });
+
+  } catch (err) {
+    await client.rollback();
+    console.error('Reverse invoice error:', err);
+    return res.status(500).json({ error: 'Failed to reverse invoice' });
+  } finally {
+    client.release();
+  }
+}
+
 // Delete Invoice Handler
 async function deleteInvoiceHandler(req, res) {
   // ROBUST FIX: Check query, body, then params. 
@@ -1225,6 +1283,15 @@ const safeCancelHandler = (req, res, next) => {
   return cancelInvoiceHandler(req, res, next);
 };
 
+// Wrapper for Reverse Handler to support Query Params
+const safeReverseHandler = (req, res, next) => {
+  // Inject query param into where the original function expects it
+  if (req.query.invoice_no || req.body.invoice_no) {
+    req.params.invoice_no = req.query.invoice_no || req.body.invoice_no;
+  }
+  return reverseInvoiceHandler(req, res, next);
+};
+
 // MOUNT ROUTES
 // 1. DELETE /createInvoice?invoice_no=... (Robust)
 routerTransaction.delete('/', deleteInvoiceHandler);
@@ -1236,8 +1303,14 @@ routerLedger.put('/cancel', safeCancelHandler);
 // 4. PUT /ledger/cancel/:invoice_no (Legacy)
 routerLedger.put('/cancel/:invoice_no', safeCancelHandler);
 
+// 5. PUT /ledger/reverse?invoice_no=... (Robust)
+routerLedger.put('/reverse', safeReverseHandler);
+// 6. PUT /ledger/reverse/:invoice_no (Legacy)
+routerLedger.put('/reverse/:invoice_no', safeReverseHandler);
+
 // Fallback
 app.put('/api/ledger/cancel', safeCancelHandler);
+app.put('/api/ledger/reverse', safeReverseHandler);
 
 console.log('🚀 BACKEND VERSION 2.0.0 - INVOICE CANCELLATION ENABLED');
 
