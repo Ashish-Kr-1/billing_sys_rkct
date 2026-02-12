@@ -1,15 +1,9 @@
-import { Page, Text, View, Document, StyleSheet, Image, Font } from "@react-pdf/renderer";
-
-// Register a font that supports the Rupee symbol (₹)
-Font.register({
-    family: 'Noto Sans',
-    src: 'https://fonts.gstatic.com/s/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRA.ttf'
-});
+import { Page, Text, View, Document, StyleSheet, Image } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
     page: {
         padding: 30,
-        fontFamily: 'Noto Sans',
+        fontFamily: 'Helvetica',
         color: '#1A1A1A',
     },
     watermarkContainer: {
@@ -287,8 +281,8 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
                             <Text style={styles.colDesc}>{item.description}</Text>
                             <Text style={styles.colHsn}>{item.HSNCode}</Text>
                             <Text style={styles.colQty}>{item.quantity}</Text>
-                            <Text style={styles.colPrice}>₹{item.price}</Text>
-                            <Text style={styles.colAmount}>₹{item.quantity * item.price}</Text>
+                            <Text style={styles.colPrice}>Rs.{item.price}</Text>
+                            <Text style={styles.colAmount}>Rs.{item.quantity * item.price}</Text>
                         </View>
                     ))}
                 </View>
@@ -306,30 +300,30 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
                     <View style={styles.totalsContainer}>
                         <View style={styles.totalRow}>
                             <Text>Subtotal</Text>
-                            <Text>₹{subtotalAmount.toFixed(2)}</Text>
+                            <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
                         </View>
 
                         {igst > 0 ? (
                             <View style={styles.totalRow}>
                                 <Text>IGST ({igst}%)</Text>
-                                <Text>₹{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
+                                <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
                             </View>
                         ) : (
                             <>
                                 <View style={styles.totalRow}>
                                     <Text>SGST ({sgst}%)</Text>
-                                    <Text>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
+                                    <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
                                 </View>
                                 <View style={styles.totalRow}>
                                     <Text>CGST ({cgst}%)</Text>
-                                    <Text>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
+                                    <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
                                 </View>
                             </>
                         )}
 
                         <View style={styles.grandTotalRow}>
                             <Text>Total Amount</Text>
-                            <Text>₹{Math.round(totalAmount)}</Text>
+                            <Text>Rs.{Math.round(totalAmount)}</Text>
                         </View>
                     </View>
                 </View>
