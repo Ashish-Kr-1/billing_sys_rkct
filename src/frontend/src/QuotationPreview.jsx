@@ -17,25 +17,16 @@ export default function QuotationPreview() {
     const navigate = useNavigate();
     const { state } = useLocation();
     const { selectedCompany } = useCompany();
-    const { user } = useAuth(); // Get current user
+    const { user, loading: authLoading } = useAuth(); // Get current user & loading state
 
     // Fallback if no state (e.g. direct URL access)
-    if (!state) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen">
-                <h2 className="text-xl font-bold text-red-600 mb-4">No Quotation Data Found</h2>
-                <button
-                    onClick={() => navigate('/Quotation')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                    Go to New Quotation
-                </button>
-            </div>
-        );
-    }
+    // ... code ...
 
     const [companyConfig, setCompanyConfig] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [configLoading, setConfigLoading] = useState(true);
+
+    // Combined loading state
+    const loading = authLoading || configLoading;
 
     const quotation = state.quotation;
     const subtotalAmount = state.subtotalAmount;
@@ -47,7 +38,7 @@ export default function QuotationPreview() {
     // Fetch company configuration
     useEffect(() => {
         const fetchCompanyConfig = async () => {
-            setLoading(true);
+            setConfigLoading(true);
             try {
                 // Use company_id from state (for edit mode) or selectedCompany
                 const companyId = state?.company_id || selectedCompany?.id;
@@ -61,7 +52,7 @@ export default function QuotationPreview() {
             } catch (error) {
                 console.error('Error fetching company config:', error);
             } finally {
-                setLoading(false);
+                setConfigLoading(false);
             }
         };
 

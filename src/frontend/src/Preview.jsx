@@ -18,9 +18,12 @@ export default function Preview() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { selectedCompany } = useCompany();
-  const { user } = useAuth(); // Get current user
+  const { user, loading: authLoading } = useAuth(); // Get current user & loading state
   const [companyConfig, setCompanyConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [configLoading, setConfigLoading] = useState(true);
+
+  // Combined loading state
+  const loading = authLoading || configLoading;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Guard clause if state is missing
@@ -41,7 +44,7 @@ export default function Preview() {
   // Fetch company configuration
   useEffect(() => {
     const fetchCompanyConfig = async () => {
-      setLoading(true);
+      setConfigLoading(true);
       try {
         // Use company_id from state (for edit mode) or selectedCompany
         const companyId = state?.company_id || selectedCompany?.id;
@@ -56,7 +59,7 @@ export default function Preview() {
         console.error('Error fetching company config:', error);
         notify("Failed to load company configuration", "error");
       } finally {
-        setLoading(false);
+        setConfigLoading(false);
       }
     };
 
