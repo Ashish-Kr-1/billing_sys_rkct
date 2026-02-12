@@ -387,6 +387,23 @@ export default function App() {
     }
   };
 
+  const handleReverseInvoice = async (invoice_no, clientName) => {
+    try {
+      const response = await api.put(`/ledger/reverse?invoice_no=${encodeURIComponent(invoice_no)}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        notify(`Invoice ${invoice_no} reversed successfully.`, "success");
+        fetchLedgerData();
+      } else {
+        notify(data.error || 'Failed to reverse invoice', "error");
+      }
+    } catch (error) {
+      console.error('Reverse invoice error:', error);
+      notify('Failed to reverse invoice', "error");
+    }
+  };
+
 
   return (
     <>
@@ -527,6 +544,17 @@ export default function App() {
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                            {isCancelled && (
+                              <button
+                                onClick={() => handleReverseInvoice(row.invoice, row.client)}
+                                className="text-slate-400 hover:text-emerald-600 transition-colors"
+                                title="Reverse Cancellation"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
                                 </svg>
                               </button>
                             )}
