@@ -13,12 +13,12 @@ import { validateQuotation } from '../middleware/validators.js';
 
 const router = express.Router();
 
+router.put('/status', updateQuotationStatus);
 router.post('/', validateQuotation, createQuotationHandler);
 router.get('/quotationNo', getNextQuotationNumber);
 router.get('/', getAllQuotations);
 router.get('/details', getQuotationDetailsHandler);
 router.put('/:quotation_no', validateQuotation, updateQuotationHandler);
 router.delete('/:id', deleteQuotation);
-router.put('/status', updateQuotationStatus);
 
 export default router;
