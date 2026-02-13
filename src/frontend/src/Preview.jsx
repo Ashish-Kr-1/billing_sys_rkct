@@ -6,7 +6,6 @@ import InvoicePDF from "./components/InvoicePDF";
 import { api, handleApiResponse } from "./config/apiClient";
 import { useCompany } from "./context/CompanyContext";
 import { notify } from "./components/Notification";
-import ConfirmModal from "./components/ConfirmModal";
 import DefaultLogo from './assets/logo.png';
 import GlobalBharatLogo from './assets/logo-global-bharat.png';
 import RkCastingLogo from './assets/logo-rkprivate-limited.png';
@@ -18,7 +17,6 @@ export default function Preview() {
   const { selectedCompany } = useCompany();
   const [companyConfig, setCompanyConfig] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Guard clause if state is missing
   if (!state || !state.invoice) {
@@ -153,117 +151,38 @@ export default function Preview() {
 
 
     try {
-      // Check if invoice exists before trying to create a new one (Prevent Duplicate)
-      if (!state?.isEditMode) {
-        try {
-          const checkRes = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoice.InvoiceNo)}`);
-          if (checkRes.ok) {
-            notify("Invoice is already saved!", "info");
-            return;
-          }
-        } catch (e) {
-          // Ignore error (e.g. 404 Not Found), proceed to creation
-        }
-      }
-
       // Use handleApiResponse to manage token headers and error checking
       let data;
       if (state?.isEditMode) {
         data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
         notify("Invoice Saved Successfully!", "success");
       } else {
+        // POST will create new invoice or update if it already exists
         data = await handleApiResponse(api.post('/createInvoice', payload));
         notify("Invoice Saved Successfully!", "success");
       }
       console.log("Invoice transaction result:", data);
     } catch (err) {
       console.error("Save invoice error:", err);
-      // If duplicate key error on 'Create' (fallback if pre-check fails appropriately)
-      if (!state?.isEditMode && err.message && err.message.includes("exists")) {
-        console.log("Invoice already exists (idempotent save).");
-        notify("Invoice is already saved!", "info");
-      } else {
-        notify(`Error saving invoice: ${err.message}`, "error");
-      }
+      notify(`Error saving invoice: ${err.message}`, "error");
     }
   }
 
-  async function checkInvoiceAndNavigate() {
-    const invoiceNo = invoice.InvoiceNo;
-
-    try {
-      // Check if invoice exists in database
-      const response = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(invoiceNo)}`);
-
-      if (response.ok) {
-        // Invoice exists - show confirm modal
-        setShowDeleteModal(true);
-      } else {
-        // Invoice doesn't exist - just go back to edit normally
-        navigate("/Invoice", {
-          state: {
-            invoice: { ...invoice, status: '' },
-            subtotalAmount,
-            totalAmount,
-            sgst,
-            cgst,
-            igst,
-            isEditMode: state?.isEditMode,
-            company_id: state?.company_id
-          }
-        });
+  function checkInvoiceAndNavigate() {
+    // Simply navigate back to edit without canceling invoice
+    navigate("/Invoice", {
+      state: {
+        invoice: { ...invoice, status: '' },
+        subtotalAmount,
+        totalAmount,
+        sgst,
+        cgst,
+        igst,
+        isEditMode: state?.isEditMode,
+        company_id: state?.company_id
       }
-    } catch (err) {
-      // Error (likely 404) - invoice doesn't exist, proceed normally
-      console.log('Invoice not found in DB, proceeding to edit');
-      navigate("/Invoice", {
-        state: {
-          invoice: { ...invoice, status: '' },
-          subtotalAmount,
-          totalAmount,
-          sgst,
-          cgst,
-          igst,
-          isEditMode: state?.isEditMode,
-          company_id: state?.company_id
-        }
-      });
-    }
+    });
   }
-
-  const performCancelAndNavigate = async () => {
-    const invoiceNo = invoice.InvoiceNo;
-    try {
-      const response = await api.put('/api/ledger/cancel', { invoice_no: invoiceNo });
-      const data = await response.json();
-
-      if (response.ok) {
-        notify(`Invoice "${invoiceNo}" cancelled. You can create a new one.`, "success");
-        setShowDeleteModal(false);
-
-        // Navigate to edit mode - invoice number will be fetched fresh
-        navigate("/Invoice", {
-          state: {
-            invoice: { ...invoice, InvoiceNo: '', status: '' }, // Clear invoice number and status
-            subtotalAmount,
-            totalAmount,
-            sgst,
-            cgst,
-            igst,
-            isEditMode: false, // Treat as new invoice
-            company_id: state?.company_id
-          }
-        });
-      } else {
-        notify(data.error || 'Failed to cancel invoice. Please try again.', "error");
-        setShowDeleteModal(false);
-      }
-    } catch (err) {
-      console.error("Cancel error:", err);
-      notify("An error occurred while canceling the invoice.", "error");
-      setShowDeleteModal(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-24">
@@ -319,15 +238,6 @@ export default function Preview() {
             </button>
           </div>
 
-          <ConfirmModal
-            isOpen={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={performCancelAndNavigate}
-            title="Warning: Invoice Already Saved"
-            message={`Invoice "${invoice.InvoiceNo}" is already saved in the database.\n\nGoing back to edit will CANCEL this invoice so you can create a new version.\n\nAre you sure?`}
-            confirmText="Cancel Invoice & Edit"
-            cancelText="Keep Invoice"
-          />
         </>
       )}
     </div>

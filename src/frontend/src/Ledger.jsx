@@ -159,9 +159,10 @@ export default function App() {
     return { label: "Advance", color: "text-indigo-600 bg-indigo-50" };
   };
 
-  const calculateRunningBalance = (index) => {
-    if (!invoicePopup) return 0;
-    return invoicePopup.history
+  const calculateRunningBalance = (sortedHistory, index) => {
+    if (!sortedHistory || !Array.isArray(sortedHistory)) return 0;
+    // Calculate balance based on the sorted history array up to the current index
+    return sortedHistory
       .slice(0, index + 1)
       .reduce((acc, curr) => acc + (Number(curr.debit || 0) - Number(curr.credit || 0)), 0);
   };
@@ -655,13 +656,11 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {[...invoicePopup.history]
-                        .sort((a, b) =>
-                          getSortableDate(a.date).localeCompare(
-                            getSortableDate(b.date)
-                          )
-                        )
-                        .map((row, i) => (
+                      {(() => {
+                        const sortedHistory = [...invoicePopup.history].sort((a, b) =>
+                          getSortableDate(a.date).localeCompare(getSortableDate(b.date))
+                        );
+                        return sortedHistory.map((row, i) => (
                           <tr key={i} className="hover:bg-slate-50">
                             <td className="px-4 py-4 text-xs whitespace-nowrap">
                               {row.date}
@@ -677,7 +676,7 @@ export default function App() {
                                 : "—"}
                             </td>
                             <td className="px-4 py-4 text-right font-bold text-slate-900">
-                              ₹{calculateRunningBalance(i).toLocaleString()}
+                              ₹{calculateRunningBalance(sortedHistory, i).toLocaleString()}
                             </td>
                             <td
                               className="px-4 py-4 text-xs text-slate-500 italic max-w-[150px] truncate"
@@ -699,7 +698,8 @@ export default function App() {
                               )}
                             </td>
                           </tr>
-                        ))}
+                        ));
+                      })()}
                     </tbody>
                   </table>
                 </div>

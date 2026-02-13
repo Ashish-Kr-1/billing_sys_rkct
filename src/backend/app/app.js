@@ -939,19 +939,184 @@ async function createTransactionHandler(req, res) {
     await client.beginTransaction();
     console.log("Tried");
 
-
-    // ✅ Prevent duplicate invoice numbers
-    const [dup] = await client.query(
-      "SELECT transaction_id FROM transactions WHERE invoice_no = ?",
+    // ✅ Check if invoice already exists - if so, update it instead of creating new
+    const [existing] = await client.query(
+      "SELECT transaction_id, party_id FROM transactions WHERE invoice_no = ? AND transaction_type = 'SALE'",
       [InvoiceNo]
     );
 
-    if (dup.length > 0) {
-      await client.rollback();
-      return res.status(409).json({
-        error: "Transaction with this invoice no already exists",
-        transaction_id: dup[0].transaction_id
-      });
+    if (existing.length > 0) {
+      // Invoice exists - update it instead of creating new
+      const existingPartyId = existing[0].party_id;
+      const partyIdToUse = party_id || existingPartyId;
+
+      // Fetch Party State Code for Auto-Tax Calculation
+      const [partyRows] = await client.query("SELECT supply_state_code FROM parties WHERE party_id = ?", [partyIdToUse]);
+
+      if (partyRows.length === 0) {
+        await client.rollback();
+        return res.status(404).json({ error: "Party not found" });
+      }
+
+      const stateCode = partyRows[0].supply_state_code;
+      let cgstRate = 0, sgstRate = 0, igstRate = 0;
+
+      const sc = String(stateCode || '').trim();
+      if (sc === '20') {
+        cgstRate = 9;
+        sgstRate = 9;
+        igstRate = 0;
+      } else {
+        cgstRate = 0;
+        sgstRate = 0;
+        igstRate = 18;
+      }
+
+      const parseNum = (val) => Number(val) || 0;
+      const subtotalAmount = parseNum(subtotal) || parseNum(invoice.taxable_amount) || 0;
+      const cgst_amount = (subtotalAmount * cgstRate) / 100;
+      const sgst_amount = (subtotalAmount * sgstRate) / 100;
+      const igst_amount = (subtotalAmount * igstRate) / 100;
+      const total_amount = subtotalAmount + cgst_amount + sgst_amount + igst_amount;
+      const round_off = Math.round(total_amount) - total_amount;
+      const gst_percentage = cgstRate + sgstRate + igstRate;
+      const grand_total = total_amount + round_off;
+
+      // 1. Update transactions table
+      await client.query(`
+        UPDATE transactions SET
+          transaction_date = ?,
+          party_id = ?,
+          sell_amount = ?,
+          credit_amount = 0,
+          taxable_amount = ?,
+          igst_amount = ?,
+          cgst_amount = ?,
+          sgst_amount = ?,
+          round_off = ?,
+          gst_percentage = ?,
+          narration = ?
+        WHERE invoice_no = ? AND transaction_type = 'SALE'
+      `, [
+        InvoiceDate || new Date(),
+        partyIdToUse,
+        grand_total,
+        subtotalAmount,
+        igst_amount,
+        cgst_amount,
+        sgst_amount,
+        round_off,
+        gst_percentage,
+        Terms || `Invoice ${InvoiceNo}`,
+        InvoiceNo
+      ]);
+
+      // 2. Update invoice_details table (use INSERT ... ON DUPLICATE KEY UPDATE or UPDATE)
+      const [invoiceDetailsExists] = await client.query(
+        "SELECT invoice_no FROM invoice_details WHERE invoice_no = ?",
+        [InvoiceNo]
+      );
+
+      if (invoiceDetailsExists.length > 0) {
+        // Update existing invoice_details
+        await client.query(`
+          UPDATE invoice_details SET
+            invoice_date = ?,
+            transported_by = ?,
+            place_of_supply = ?,
+            vehical_no = ?,
+            eway_bill_no = ?,
+            vendore_code = ?,
+            po_no = ?,
+            po_date = ?,
+            challan_no = ?,
+            challan_date = ?,
+            account_name = ?,
+            account_no = ?,
+            ifsc_code = ?,
+            branch = ?,
+            terms_conditions = ?,
+            client_name = ?,
+            client_address = ?,
+            gstin = ?,
+            client_name2 = ?,
+            client_address2 = ?,
+            gstin2 = ?
+          WHERE invoice_no = ?
+        `, [
+          InvoiceDate || new Date(),
+          invoice_details?.transported_by || null,
+          invoice_details?.place_of_supply || null,
+          invoice_details?.vehicle_no || null,
+          invoice_details?.eway_bill_no || null,
+          invoice_details?.vendor_code || null,
+          invoice_details?.po_no || null,
+          invoice_details?.po_date || null,
+          invoice_details?.challan_no || null,
+          invoice_details?.challan_date || null,
+          invoice_details?.account_name || null,
+          invoice_details?.account_no || null,
+          invoice_details?.ifsc_code || null,
+          invoice_details?.branch || null,
+          invoice_details?.terms_conditions || null,
+          invoice_details?.client_name || null,
+          invoice_details?.client_address || null,
+          invoice_details?.gstin || null,
+          invoice_details?.client_name2 || null,
+          invoice_details?.client_address2 || null,
+          invoice_details?.gstin2 || null,
+          InvoiceNo
+        ]);
+      } else {
+        // Insert new invoice_details if it doesn't exist
+        await client.query(`
+          INSERT INTO invoice_details (
+            invoice_no, invoice_date, transported_by, place_of_supply,
+            vehical_no, eway_bill_no, vendore_code, po_no, po_date,
+            challan_no, challan_date, account_name, account_no,
+            ifsc_code, branch, terms_conditions, client_name,
+            client_address, gstin, client_name2, client_address2, gstin2
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        `, [
+          InvoiceNo,
+          InvoiceDate || new Date(),
+          invoice_details?.transported_by || null,
+          invoice_details?.place_of_supply || null,
+          invoice_details?.vehicle_no || null,
+          invoice_details?.eway_bill_no || null,
+          invoice_details?.vendor_code || null,
+          invoice_details?.po_no || null,
+          invoice_details?.po_date || null,
+          invoice_details?.challan_no || null,
+          invoice_details?.challan_date || null,
+          invoice_details?.account_name || null,
+          invoice_details?.account_no || null,
+          invoice_details?.ifsc_code || null,
+          invoice_details?.branch || null,
+          invoice_details?.terms_conditions || null,
+          invoice_details?.client_name || null,
+          invoice_details?.client_address || null,
+          invoice_details?.gstin || null,
+          invoice_details?.client_name2 || null,
+          invoice_details?.client_address2 || null,
+          invoice_details?.gstin2 || null
+        ]);
+      }
+
+      // 3. Delete existing items from sell_summary and re-insert
+      await client.query("DELETE FROM sell_summary WHERE invoice_no = ?", [InvoiceNo]);
+
+      if (items && items.length > 0) {
+        for (const item of items) {
+          if (!item.item_id) continue;
+          await client.query(`
+            INSERT INTO sell_summary (invoice_no, item_id, units_sold) VALUES (?, ?, ?)
+          `, [InvoiceNo, item.item_id, Number(item.quantity) || 0]);
+        }
+      }
+
+      await client.commit();
+      return res.json({ success: true, message: "Invoice updated successfully", invoice_no: InvoiceNo });
     }
 
     // ✅ Fetch Party State Code for Auto-Tax Calculation

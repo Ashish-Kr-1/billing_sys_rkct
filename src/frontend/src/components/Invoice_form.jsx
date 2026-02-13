@@ -14,8 +14,67 @@ export default function InvoiceForm({ initialData }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [invoice, setInvoice] = useState(
-    initialData?.invoice || {
+  // Helper function to convert DD/MM/YYYY to YYYY-MM-DD for date inputs
+  const convertDateForInput = (dateStr) => {
+    if (!dateStr) return '';
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // If in DD/MM/YYYY format, convert to YYYY-MM-DD
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      const [day, month, year] = dateStr.split('/');
+      return `${year}-${month}-${day}`;
+    }
+    // Try to parse as Date object and convert
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    } catch (e) {
+      // If parsing fails, return empty string
+    }
+    return '';
+  };
+
+  // Initialize invoice state - preserve ALL data from initialData if present
+  const [invoice, setInvoice] = useState(() => {
+    if (initialData?.invoice) {
+      // When initialData exists (edit mode or returning from preview), use it completely
+      return {
+        clientName: initialData.invoice.clientName || "",
+        clientName2: initialData.invoice.clientName2 || "",
+        clientAddress2: initialData.invoice.clientAddress2 || "",
+        clientAddress: initialData.invoice.clientAddress || "",
+        GSTIN2: initialData.invoice.GSTIN2 || "",
+        GSTIN: initialData.invoice.GSTIN || "",
+        GSTIN0: initialData.invoice.GSTIN0 || "20DAMPK8203A1ZB",
+        InvoiceDate: convertDateForInput(initialData.invoice.InvoiceDate) || "",
+        InvoiceNo: initialData.invoice.InvoiceNo || "",
+        PODate: convertDateForInput(initialData.invoice.PODate) || "",
+        ChallanDate: convertDateForInput(initialData.invoice.ChallanDate) || "",
+        TrasnportBy: initialData.invoice.TrasnportBy || "",
+        PlaceofSupply: initialData.invoice.PlaceofSupply || "",
+        po_no: initialData.invoice.po_no || "",
+        VehicleNo: initialData.invoice.VehicleNo || "",
+        EwayBillNo: initialData.invoice.EwayBillNo || "",
+        VendorCode: initialData.invoice.VendorCode || "",
+        ChallanNo: initialData.invoice.ChallanNo || "",
+        ChallanDate: convertDateForInput(initialData.invoice.ChallanDate) || "",
+        Terms: initialData.invoice.Terms || "1. Jurisdiction: All disputes arising out of this invoice shall be subject to the jurisdiction of Dhanbad courts only.\n2. Payment-80% Advance & 20% within 7 days after successful delivery.\n3. GST: GST shall be charged extra as applicable at the time of billing.\n4. Packing & Forwarding / Freight Charges: Packing, forwarding, transportation, freight, and flight charges shall be charged extra at actuals, unless otherwise specified in writing.\n5. Declaration: We hereby declare that this invoice reflects the actual price of the goods described herein and that all particulars are true and correct.\n6. Interest on Delayed Payment: Interest @ 18% per annum shall be charged on overdue payments beyond the due date until realization.\n7. Mode of Payment: Payment shall be made through NEFT / RTGS / A/C Payee Cheque / Demand Draft only.\n8. Delivery Schedule: Delivery shall be made within 45 days from receipt of confirmed purchase order, unless otherwise mutually agreed in writing.",
+        AccountName: initialData.invoice.AccountName || "",
+        CurrentACCno: initialData.invoice.CurrentACCno || "",
+        IFSCcode: initialData.invoice.IFSCcode || "",
+        Branch: initialData.invoice.Branch || "",
+        items: initialData.invoice.items || [{ description: "", HSNCode: "", quantity: '', price: "" }],
+        transaction_type: initialData.invoice.transaction_type || "",
+        party_id: initialData.invoice.party_id || ""
+      };
+    }
+    // Default empty state for new invoice
+    return {
       clientName: "",
       clientName2: "",
       clientAddress2: "",
@@ -42,11 +101,12 @@ export default function InvoiceForm({ initialData }) {
       items: [{ description: "", HSNCode: "", quantity: '', price: "" }],
       transaction_type: "",
       party_id: ""
-    });
+    };
+  });
 
   const [parties, setParties] = useState([]);
   const [itemsList, setItemsList] = useState([]);
-  const [selectedPartyId, setSelectedPartyId] = useState("");
+  const [selectedPartyId, setSelectedPartyId] = useState(initialData?.invoice?.party_id || "");
   const [companyConfig, setCompanyConfig] = useState(null);
 
 
@@ -100,15 +160,19 @@ export default function InvoiceForm({ initialData }) {
               party_id: ''
             }));
           } else {
-            // If we HAVE initialData (returning from preview), we might still want to ensure 
-            // bank details are populated if they were somehow missing, but usually we trust initialData.
-            // But actually, the issue "back to edit" wiping data is because this ran on mount.
-            // By adding if(!initialData), we prevent the wipe.
-
-            // However, allow updating local config state (GSTIN0) if needed, but carefully.
+            // If we HAVE initialData (returning from preview or edit mode), preserve ALL data
+            // Only update GSTIN0 if it's missing from initialData, but don't overwrite existing values
+            const isEditMode = initialData?.isEditMode;
+            if (isEditMode) {
+              // In edit mode, preserve everything - don't modify invoice state
+              // Only update company config for display purposes
+              return;
+            }
+            // Not in edit mode but has initialData (returning from preview before first save)
+            // Only update GSTIN0 if missing, preserve everything else
             setInvoice(prev => ({
               ...prev,
-              GSTIN0: data.config.gstin || prev.GSTIN0 // Ensure local GSTIN matches config if missing
+              GSTIN0: prev.GSTIN0 || data.config.gstin || ''
             }));
           }
         })
@@ -121,17 +185,25 @@ export default function InvoiceForm({ initialData }) {
     console.log(import.meta.env.VITE_API_BASE_URL);
 
     const checkAndSetInvoiceNumber = async () => {
+      // If in edit mode, don't modify invoice data at all - everything is already preserved
+      const isEditMode = initialData?.isEditMode;
+      if (isEditMode) {
+        console.log('📝 Edit mode: Skipping invoice number check - all data preserved');
+        return;
+      }
+
       // If we have initialData with an invoice number, check if it exists in DB
       const existingInvoiceNo = initialData?.invoice?.InvoiceNo;
 
       if (selectedCompany && existingInvoiceNo) {
+
+        // Not in edit mode - check if invoice exists
         try {
-          // Check if this invoice exists in the database
           console.log('🔍 Checking if invoice exists:', existingInvoiceNo);
           const response = await api.get(`/createInvoice/details?invoice_no=${encodeURIComponent(existingInvoiceNo)}`);
 
           if (response.ok) {
-            // Invoice exists in DB - fetch next invoice number for a new invoice
+            // Invoice exists in DB - but we're not in edit mode, so fetch next invoice number for a new invoice
             console.log('✅ Invoice exists in DB, fetching next invoice number...');
             const data = await handleApiResponse(api.get('/createInvoice/invoiceNo'));
             console.log('📄 New invoice number:', data.InvoiceNo);
