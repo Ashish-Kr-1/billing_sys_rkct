@@ -1,0 +1,25 @@
+name: 🔴 Stop Site (Client Payment Pending)
+
+on: workflow_dispatch
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop Docker Containers on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            cd /var/www/billing_sys_rkct
+
+            echo "==== STOPPING SITE ===="
+            docker compose down
+
+            echo "==== CONTAINER STATUS ===="
+            docker ps -a
+
+            echo "✅ Site stopped successfully."
