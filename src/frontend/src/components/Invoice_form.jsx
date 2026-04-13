@@ -692,28 +692,28 @@ export default function InvoiceForm({ initialData }) {
         <div className="mt-3">
           {(igst > 0) ? (
             <div className="flex justify-end items-center ">
-              <h2 className="font-bold mr-3.5"> IGST ({igst}%)</h2>
+              <h2 className="font-bold mr-3.5"> IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</h2>
               <input type="number"
                 name="igst"
-                value={igst}
+                value={Number(igst).toFixed(2).replace(/\.00$/, '')}
                 readOnly
                 className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
             </div>
           ) : (
             <>
               <div className="flex justify-end items-center ">
-                <h2 className="font-bold mr-3.5"> SGST ({sgst}%)</h2>
+                <h2 className="font-bold mr-3.5"> SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</h2>
                 <input type="number"
                   name="sgst"
-                  value={sgst}
+                  value={Number(sgst).toFixed(2).replace(/\.00$/, '')}
                   readOnly
                   className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
               </div>
               <div className="flex justify-end items-center ">
-                <h2 className="font-bold mr-3.5"> CGST ({cgst}%)</h2>
+                <h2 className="font-bold mr-3.5"> CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</h2>
                 <input type="number"
                   name="cgst"
-                  value={cgst}
+                  value={Number(cgst).toFixed(2).replace(/\.00$/, '')}
                   readOnly
                   className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
               </div>

@@ -154,7 +154,7 @@ export default function Preview() {
       // Use handleApiResponse to manage token headers and error checking
       let data;
       if (state?.isEditMode) {
-        data = await handleApiResponse(api.put(`/createInvoice/${invoice.InvoiceNo}`, payload));
+        data = await handleApiResponse(api.put(`/createInvoice/${encodeURIComponent(invoice.InvoiceNo)}`, payload));
         notify("Invoice Saved Successfully!", "success");
       } else {
         // POST will create new invoice or update if it already exists

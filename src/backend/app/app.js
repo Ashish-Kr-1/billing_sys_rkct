@@ -1420,6 +1420,8 @@ routerTransaction.get("/invoiceNo", getNextInvoiceNumber);
 routerTransaction.get("/details", getInvoiceDetailsHandler);
 // Fallback for legacy clients using path parameter
 routerTransaction.get("/:invoice_no/details", getInvoiceDetailsHandler);
+routerTransaction.put("/", updateInvoiceHandler);
+routerTransaction.put("/:invoice_no", updateInvoiceHandler);
 
 routerParty.get('/', partyList);
 routerParty.get('/:id', partyDetails);

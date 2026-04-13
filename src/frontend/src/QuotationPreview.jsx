@@ -168,7 +168,7 @@ export default function QuotationPreview() {
             // Use handleApiResponse to manage token headers and error checking
             let data;
             if (state?.isEditMode) {
-                data = await handleApiResponse(api.put(`/createQuotation/${quotation.QuotationNo}`, payload));
+                data = await handleApiResponse(api.put(`/createQuotation/${encodeURIComponent(quotation.QuotationNo)}`, payload));
                 notify("Quotation Updated Successfully!", "success");
             } else {
                 data = await handleApiResponse(api.post('/createQuotation', payload));

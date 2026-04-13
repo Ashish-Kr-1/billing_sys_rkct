@@ -305,17 +305,17 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
 
                         {igst > 0 ? (
                             <View style={styles.totalRow}>
-                                <Text>IGST ({igst}%)</Text>
+                                <Text>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</Text>
                                 <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
                             </View>
                         ) : (
                             <>
                                 <View style={styles.totalRow}>
-                                    <Text>SGST ({sgst}%)</Text>
+                                    <Text>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
                                     <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
                                 </View>
                                 <View style={styles.totalRow}>
-                                    <Text>CGST ({cgst}%)</Text>
+                                    <Text>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
                                     <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
                                 </View>
                             </>
