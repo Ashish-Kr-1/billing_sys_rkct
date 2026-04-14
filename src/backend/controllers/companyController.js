@@ -144,11 +144,6 @@ export async function getCompanyConfig(req, res) {
             return res.status(404).json({ error: 'Company not found' });
         }
 
-        // FORCE UPDATE PHONE NUMBER TEMPORARILY
-        if (companyId === '1') {
-            await dbManager.query(1, "UPDATE companies SET mobile_no = '+919288020166' WHERE id = 1");
-        }
-
         // Fetch from existing companies table
         const companies = await dbManager.query(
             companyId,
