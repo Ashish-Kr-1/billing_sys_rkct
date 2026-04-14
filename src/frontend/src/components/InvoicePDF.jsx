@@ -1,8 +1,4 @@
-import { Page, Text, View, Document, StyleSheet, Image, Font } from "@react-pdf/renderer";
-
-// Register fonts if needed, but standard fonts are usually enough for start
-// Note: @react-pdf/renderer standard fonts are Helvetica, Courier, Times-Roman
-// We'll use Helvetica as default which matches sans-serif clean look.
+import { Page, Text, View, Document, StyleSheet, Image } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
   page: {
@@ -140,12 +136,18 @@ const styles = StyleSheet.create({
     padding: 5,
     fontSize: 9,
   },
+  tableRowAlt: {
+    flexDirection: 'row',
+    borderBottom: '1pt solid #D9D9D9',
+    padding: 5,
+    fontSize: 9,
+    backgroundColor: '#f9f9f9',
+  },
   colDesc: { width: '40%' },
   colHsn: { width: '15%', textAlign: 'center' },
   colQty: { width: '10%', textAlign: 'center' },
   colPrice: { width: '15%', textAlign: 'center' },
   colAmount: { width: '20%', textAlign: 'right' },
-
   footerContainer: {
     flexDirection: 'row',
     marginTop: 15,
@@ -220,87 +222,95 @@ const styles = StyleSheet.create({
   }
 });
 
+// Table header — repeats on every page via fixed prop
+function TableHeader() {
+  return (
+    <View style={styles.tableHeader} fixed>
+      <Text style={styles.colDesc}>DESCRIPTION</Text>
+      <Text style={styles.colHsn}>HSN</Text>
+      <Text style={styles.colQty}>QTY</Text>
+      <Text style={styles.colPrice}>PRICE</Text>
+      <Text style={styles.colAmount}>AMOUNT</Text>
+    </View>
+  );
+}
+
 export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig, logoUrl }) {
   const isCancelled = invoice.status?.toLowerCase() === 'cancelled';
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        {/* WATERMARK */}
+      <Page size="A4" style={styles.page} wrap>
+
+        {/* WATERMARK — repeats on every page */}
         {logoUrl && (
-          <View style={styles.watermarkContainer}>
+          <View style={styles.watermarkContainer} fixed>
             <Image src={logoUrl} style={styles.watermark} />
           </View>
         )}
 
         {/* CANCELLED WATERMARK */}
         {isCancelled && (
-          <Text style={styles.cancelledWatermark}>CANCELLED</Text>
+          <Text style={styles.cancelledWatermark} fixed>CANCELLED</Text>
         )}
 
-        {/* HEADER */}
-        <Text style={styles.headerTitle}>INVOICE</Text>
-
-        <View style={styles.headerContainer}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.gstinHeader}>GSTIN: {companyConfig?.gstin || invoice.GSTIN0}</Text>
-            {logoUrl && <Image src={logoUrl} style={styles.logo} />}
+        {/* HEADER — first page only */}
+        <View>
+          <Text style={styles.headerTitle}>INVOICE</Text>
+          <View style={styles.headerContainer}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.gstinHeader}>GSTIN: {companyConfig?.gstin || invoice.GSTIN0}</Text>
+              {logoUrl && <Image src={logoUrl} style={styles.logo} />}
+            </View>
+            <View style={styles.companyInfo}>
+              <Text style={styles.companyName}>{companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}</Text>
+              <Text style={styles.companyDetails}>{companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}</Text>
+              <Text style={styles.companyDetails}>Mobile No: {companyConfig?.mobile_no || '+91 6204583192'}</Text>
+              <Text style={styles.companyDetails}>Email Id: {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}</Text>
+              <Text style={styles.companyDetails}>
+                {companyConfig?.cin_no ? `CIN No.: ${companyConfig.cin_no}` : 'T. License No. - SEA2135400243601'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>{companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}</Text>
-            <Text style={styles.companyDetails}>{companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}</Text>
-            <Text style={styles.companyDetails}>Mobile No: {companyConfig?.mobile_no || '+91 6204583192'}</Text>
-            <Text style={styles.companyDetails}>Email Id: {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}</Text>
-            <Text style={styles.companyDetails}>
-              {companyConfig?.cin_no ? `CIN No.: ${companyConfig.cin_no}` : 'T. License No. - SEA2135400243601'}
-            </Text>
+          {/* UPPER DETAILS */}
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Invoice No: </Text>{invoice.InvoiceNo}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Transported By: </Text>{invoice.TrasnportBy}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Vehicle No: </Text>{invoice.VehicleNo}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Date: </Text>{invoice.InvoiceDate}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Place of Supply: </Text>{invoice.PlaceofSupply}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Eway Bill No: </Text>{invoice.EwayBillNo}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>PO No: </Text>{invoice.po_no}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>PO Date: </Text>{invoice.PODate}</Text></View>
+            <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Vendor Code: </Text>{invoice.VendorCode}</Text></View>
+            <View style={{ width: '100%', fontSize: 9, marginTop: 2 }}>
+              <Text><Text style={styles.detailLabel}>GatePass/Challan No: </Text>{invoice.ChallanNo} {invoice.ChallanDate}</Text>
+            </View>
+          </View>
+
+          {/* BILLING */}
+          <View style={styles.billingContainer}>
+            <View style={styles.billingBox}>
+              <Text style={styles.billingHeader}>BILLED TO PARTY</Text>
+              <Text style={[styles.billingText, styles.billingName]}>{invoice.clientName}</Text>
+              <Text style={styles.billingText}>{invoice.clientAddress}</Text>
+              <Text style={[styles.billingText, { fontWeight: 'bold', marginTop: 5 }]}>GSTIN: {invoice.GSTIN}</Text>
+            </View>
+            <View style={styles.billingBox}>
+              <Text style={styles.billingHeader}>SHIPPED TO PARTY</Text>
+              <Text style={[styles.billingText, styles.billingName]}>{invoice.clientName2}</Text>
+              <Text style={styles.billingText}>{invoice.clientAddress2}</Text>
+              <Text style={[styles.billingText, { fontWeight: 'bold', marginTop: 5 }]}>GSTIN: {invoice.GSTIN2}</Text>
+            </View>
           </View>
         </View>
 
-        {/* UPPER SECTION */}
-        <View style={styles.detailsGrid}>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Invoice No: </Text>{invoice.InvoiceNo}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Transported By: </Text>{invoice.TrasnportBy}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Vehicle No: </Text>{invoice.VehicleNo}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Date: </Text>{invoice.InvoiceDate}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Place of Supply: </Text>{invoice.PlaceofSupply}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Eway Bill No: </Text>{invoice.EwayBillNo}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>PO No: </Text>{invoice.po_no}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>PO Date: </Text>{invoice.PODate}</Text></View>
-          <View style={styles.detailItem}><Text><Text style={styles.detailLabel}>Vendor Code: </Text>{invoice.VendorCode}</Text></View>
-          <View style={{ width: '100%', fontSize: 9, marginTop: 2 }}>
-            <Text><Text style={styles.detailLabel}>GatePass/Challan No: </Text>{invoice.ChallanNo} {invoice.ChallanDate}</Text>
-          </View>
-        </View>
-
-        {/* BILLING SECTION */}
-        <View style={styles.billingContainer}>
-          <View style={styles.billingBox}>
-            <Text style={styles.billingHeader}>BILLED TO PARTY</Text>
-            <Text style={[styles.billingText, styles.billingName]}>{invoice.clientName}</Text>
-            <Text style={styles.billingText}>{invoice.clientAddress}</Text>
-            <Text style={[styles.billingText, { fontWeight: 'bold', marginTop: 5 }]}>GSTIN: {invoice.GSTIN}</Text>
-          </View>
-          <View style={styles.billingBox}>
-            <Text style={styles.billingHeader}>SHIPPED TO PARTY</Text>
-            <Text style={[styles.billingText, styles.billingName]}>{invoice.clientName2}</Text>
-            <Text style={styles.billingText}>{invoice.clientAddress2}</Text>
-            <Text style={[styles.billingText, { fontWeight: 'bold', marginTop: 5 }]}>GSTIN: {invoice.GSTIN2}</Text>
-          </View>
-        </View>
-
-        {/* ITEMS TABLE */}
+        {/* ITEMS TABLE — flows/wraps across pages naturally */}
         <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={styles.colDesc}>DESCRIPTION</Text>
-            <Text style={styles.colHsn}>HSN</Text>
-            <Text style={styles.colQty}>QTY</Text>
-            <Text style={styles.colPrice}>PRICE</Text>
-            <Text style={styles.colAmount}>AMOUNT</Text>
-          </View>
+          <TableHeader />
           {invoice.items.map((item, i) => (
-            <View key={i} style={styles.tableRow}>
+            <View key={i} style={i % 2 === 0 ? styles.tableRow : styles.tableRowAlt} wrap={false}>
               <Text style={styles.colDesc}>{item.description}</Text>
               <Text style={styles.colHsn}>{item.HSNCode}</Text>
               <Text style={styles.colQty}>{item.quantity}</Text>
@@ -310,59 +320,58 @@ export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst,
           ))}
         </View>
 
-        {/* FOOTER & TOTALS */}
-        <View style={styles.footerContainer}>
-          <View style={styles.bankDetails}>
-            <Text style={styles.bankTitle}>Bank Details :-</Text>
-            <Text style={styles.bankText}>{invoice.AccountName}</Text>
-            <Text style={styles.bankText}>{invoice.CurrentACCno}</Text>
-            <Text style={styles.bankText}>{invoice.IFSCcode}</Text>
-            <Text style={styles.bankText}>{invoice.Branch}</Text>
-          </View>
-
-          <View style={styles.totalsContainer}>
-            <View style={styles.totalRow}>
-              <Text>Subtotal</Text>
-              <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
+        {/* FOOTER — never splits, always kept together on same page */}
+        <View wrap={false}>
+          <View style={styles.footerContainer}>
+            <View style={styles.bankDetails}>
+              <Text style={styles.bankTitle}>Bank Details :-</Text>
+              <Text style={styles.bankText}>{invoice.AccountName}</Text>
+              <Text style={styles.bankText}>{invoice.CurrentACCno}</Text>
+              <Text style={styles.bankText}>{invoice.IFSCcode}</Text>
+              <Text style={styles.bankText}>{invoice.Branch}</Text>
             </View>
 
-            {igst > 0 ? (
+            <View style={styles.totalsContainer}>
               <View style={styles.totalRow}>
-                <Text>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
+                <Text>Subtotal</Text>
+                <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
               </View>
-            ) : (
-              <>
+              {igst > 0 ? (
                 <View style={styles.totalRow}>
-                  <Text>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                  <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
+                  <Text>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</Text>
+                  <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
                 </View>
-                <View style={styles.totalRow}>
-                  <Text>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                  <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
-                </View>
-              </>
-            )}
-
-            <View style={styles.grandTotalRow}>
-              <Text>Total Amount</Text>
-              <Text>Rs.{Math.round(totalAmount)}</Text>
+              ) : (
+                <>
+                  <View style={styles.totalRow}>
+                    <Text>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
+                    <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.totalRow}>
+                    <Text>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
+                    <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
+                  </View>
+                </>
+              )}
+              <View style={styles.grandTotalRow}>
+                <Text>Total Amount</Text>
+                <Text>Rs.{Math.round(totalAmount)}</Text>
+              </View>
             </View>
+          </View>
+
+          <View style={styles.termsBox}>
+            <Text style={styles.termsTitle}>Terms & Conditions</Text>
+            <Text style={styles.termsText}>{invoice.Terms || "No terms and conditions specified."}</Text>
+          </View>
+
+          <View style={styles.signatureSection}>
+            <Text style={styles.signatureText}>For {companyConfig?.company_name || 'R.K Casting & Engineering Works'}</Text>
+            <View style={styles.signatureSpace} />
+            <Text style={styles.authText}>Authorized Signatory</Text>
           </View>
         </View>
 
-        {/* TERMS */}
-        <View style={styles.termsBox}>
-          <Text style={styles.termsTitle}>Terms & Conditions</Text>
-          <Text style={styles.termsText}>{invoice.Terms || "No terms and conditions specified."}</Text>
-        </View>
-
-        {/* SIGNATURE */}
-        <View style={styles.signatureSection}>
-          <Text style={styles.signatureText}>For {companyConfig?.company_name || 'R.K Casting & Engineering Works'}</Text>
-          <View style={styles.signatureSpace} />
-          <Text style={styles.authText}>Authorized Signatory</Text>
-        </View>
       </Page>
     </Document>
   );
