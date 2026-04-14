@@ -4,7 +4,7 @@ import RkCastingLogo from '../assets/logo-rkprivate-limited.png';
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
 
-export default function QuotationTemplate({ quotation, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig }) {
+export default function QuotationTemplate({ quotation, subtotalAmount, totalAmount, sgst, cgst, igst, showTax, companyConfig }) {
     const navigate = useNavigate();
 
     // Helper function to get company logo
@@ -147,28 +147,29 @@ export default function QuotationTemplate({ quotation, subtotalAmount, totalAmou
                 </div>
                 <div className='flex justify-end'>
                     <div className="w-64 ">
-                        <div className="flex justify-around mb-2">
-                            <span>Subtotal</span>
-                            <span>₹{(subtotalAmount.toFixed(2))}</span>
-                        </div>
-
-
-
-                        {(igst > 0) ? (
-                            <div className="flex justify-around mb-2">
-                                <span>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</span>
-                                <span>₹{((subtotalAmount * igst) / 100).toFixed(2)}</span>
-                            </div>
-                        ) : (
+                        {showTax && (
                             <>
-                                <div className="flex justify-around mb-2">
-                                    <span>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</span>
-                                    <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
-                                </div>
+                                {(igst > 0) ? (
+                                    <div className="flex justify-around mb-2">
+                                        <span>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</span>
+                                        <span>₹{((subtotalAmount * igst) / 100).toFixed(2)}</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-around mb-2">
+                                            <span>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</span>
+                                            <span>₹{((subtotalAmount * sgst) / 100).toFixed(2)}</span>
+                                        </div>
 
+                                        <div className="flex justify-around mb-2">
+                                            <span>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</span>
+                                            <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
+                                        </div>
+                                    </>
+                                )}
                                 <div className="flex justify-around mb-2">
-                                    <span>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</span>
-                                    <span>₹{((subtotalAmount * cgst) / 100).toFixed(2)}</span>
+                                    <span>Subtotal</span>
+                                    <span>₹{(subtotalAmount.toFixed(2))}</span>
                                 </div>
                             </>
                         )}

@@ -235,7 +235,7 @@ function TableHeader() {
   );
 }
 
-export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst, cgst, igst, companyConfig, logoUrl }) {
+export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst, cgst, igst, showTax, companyConfig, logoUrl }) {
   const isCancelled = invoice.status?.toLowerCase() === 'cancelled';
 
   return (
@@ -332,24 +332,28 @@ export default function InvoicePDF({ invoice, subtotalAmount, totalAmount, sgst,
             </View>
 
             <View style={styles.totalsContainer}>
-              <View style={styles.totalRow}>
-                <Text>Subtotal</Text>
-                <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
-              </View>
-              {igst > 0 ? (
-                <View style={styles.totalRow}>
-                  <Text>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                  <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
-                </View>
-              ) : (
+              {showTax && (
                 <>
+                  {igst > 0 ? (
+                    <View style={styles.totalRow}>
+                      <Text>IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</Text>
+                      <Text>Rs.{((subtotalAmount * igst) / 100).toFixed(2)}</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.totalRow}>
+                        <Text>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
+                        <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
+                      </View>
+                      <View style={styles.totalRow}>
+                        <Text>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
+                        <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
+                      </View>
+                    </>
+                  )}
                   <View style={styles.totalRow}>
-                    <Text>SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                    <Text>Rs.{((subtotalAmount * sgst) / 100).toFixed(2)}</Text>
-                  </View>
-                  <View style={styles.totalRow}>
-                    <Text>CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</Text>
-                    <Text>Rs.{((subtotalAmount * cgst) / 100).toFixed(2)}</Text>
+                    <Text>Subtotal</Text>
+                    <Text>Rs.{subtotalAmount.toFixed(2)}</Text>
                   </View>
                 </>
               )}

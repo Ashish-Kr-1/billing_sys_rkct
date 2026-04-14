@@ -258,6 +258,7 @@ export default function QuotationForm({ initialData }) {
     const [sgst, setSgst] = useState(initialData?.sgst || 0);
     const [cgst, setCgst] = useState(initialData?.cgst || 0);
     const [igst, setIgst] = useState(initialData?.igst || 0);
+    const [showTax, setShowTax] = useState(initialData?.showTax !== false);
 
 
     const totalAmount = subtotalAmount + (subtotalAmount * sgst) / 100 + (subtotalAmount * cgst) / 100 + (subtotalAmount * igst) / 100;
@@ -618,39 +619,56 @@ export default function QuotationForm({ initialData }) {
 
                 {/* TOTAL */}
                 <div className="mt-3">
-                    {(igst > 0) ? (
-                        <div className="flex justify-end items-center ">
-                            <h2 className="font-bold mr-3.5"> IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</h2>
-                            <input type="number"
-                                name="igst"
-                                value={Number(igst).toFixed(2).replace(/\.00$/, '')}
-                                readOnly
-                                className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+                    {/* Show Tax Checkbox */}
+                <div className="flex justify-end items-center mb-3">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={showTax}
+                            onChange={(e) => setShowTax(e.target.checked)}
+                            className="w-4 h-4 accent-blue-600 cursor-pointer"
+                        />
+                        <span className="font-semibold text-gray-700 text-sm">Show GST &amp; Subtotal in Quotation</span>
+                    </label>
+                </div>
+
+                {showTax && (
+                    <>
+                        {(igst > 0) ? (
+                            <div className="flex justify-end items-center ">
+                                <h2 className="font-bold mr-3.5"> IGST ({Number(igst).toFixed(2).replace(/\.00$/, '')}%)</h2>
+                                <input type="number"
+                                    name="igst"
+                                    value={Number(igst).toFixed(2).replace(/\.00$/, '')}
+                                    readOnly
+                                    className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-end items-center ">
+                                    <h2 className="font-bold mr-3.5"> SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</h2>
+                                    <input type="number"
+                                        name="sgst"
+                                        value={Number(sgst).toFixed(2).replace(/\.00$/, '')}
+                                        readOnly
+                                        className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+                                </div>
+                                <div className="flex justify-end items-center ">
+                                    <h2 className="font-bold mr-3.5"> CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</h2>
+                                    <input type="number"
+                                        name="cgst"
+                                        value={Number(cgst).toFixed(2).replace(/\.00$/, '')}
+                                        readOnly
+                                        className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
+                                </div>
+                            </>
+                        )}
+                        <div className="flex justify-end mt-6 items-center">
+                            <h1 className="text-xl font-bold  mr-3.5">Subtotal</h1>
+                            <p className="text-xl font-bold">₹ {subtotalAmount}</p>
                         </div>
-                    ) : (
-                        <>
-                            <div className="flex justify-end items-center ">
-                                <h2 className="font-bold mr-3.5"> SGST ({Number(sgst).toFixed(2).replace(/\.00$/, '')}%)</h2>
-                                <input type="number"
-                                    name="sgst"
-                                    value={Number(sgst).toFixed(2).replace(/\.00$/, '')}
-                                    readOnly
-                                    className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
-                            </div>
-                            <div className="flex justify-end items-center ">
-                                <h2 className="font-bold mr-3.5"> CGST ({Number(cgst).toFixed(2).replace(/\.00$/, '')}%)</h2>
-                                <input type="number"
-                                    name="cgst"
-                                    value={Number(cgst).toFixed(2).replace(/\.00$/, '')}
-                                    readOnly
-                                    className="border p-1 rounded w-24 bg-gray-100 text-right font-bold" />
-                            </div>
-                        </>
-                    )}
-                    <div className="flex justify-end mt-6 items-center">
-                        <h1 className="text-xl font-bold  mr-3.5">Subtotal</h1>
-                        <p className="text-xl font-bold">₹ {subtotalAmount}</p>
-                    </div>
+                    </>
+                )}
                 </div>
 
                 <div className=" mt-2 flex justify-end items-center">
@@ -734,6 +752,7 @@ export default function QuotationForm({ initialData }) {
                                     sgst: sgst || 0,
                                     cgst: cgst || 0,
                                     igst: igst || 0,
+                                    showTax,
                                     isEditMode: initialData?.isEditMode || false,
                                     company_id: selectedCompany?.id
                                 }

@@ -32,6 +32,7 @@ export default function Preview() {
   const sgst = state.sgst;
   const cgst = state.cgst;
   const igst = state.igst;
+  const showTax = state.showTax !== false;
 
   // Fetch company configuration
   useEffect(() => {
@@ -79,6 +80,7 @@ export default function Preview() {
           sgst={sgst}
           cgst={cgst}
           igst={igst}
+          showTax={showTax}
           companyConfig={companyConfig}
           logoUrl={getLogoPath()}
         />
@@ -201,6 +203,7 @@ export default function Preview() {
                 sgst={sgst}
                 cgst={cgst}
                 igst={igst}
+                showTax={showTax}
                 companyConfig={companyConfig}
               />
             </div>
