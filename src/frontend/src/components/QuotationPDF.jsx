@@ -246,7 +246,7 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
             <View style={styles.companyInfo}>
               <Text style={styles.companyName}>{companyConfig?.company_name || 'M/S R.K Casting & Engineering Works'}</Text>
               <Text style={styles.companyDetails}>{companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}</Text>
-              <Text style={styles.companyDetails}>Mobile No: {companyConfig?.mobile_no || '+91 6204583192'}</Text>
+              <Text style={styles.companyDetails}>Mobile No: {companyConfig?.mobile_no || '+919288020166'}</Text>
               <Text style={styles.companyDetails}>Email Id: {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}</Text>
               <Text style={styles.companyDetails}>
                 {companyConfig?.cin_no ? `CIN No.: ${companyConfig.cin_no}` : 'T. License No. - SEA2135400243601'}
