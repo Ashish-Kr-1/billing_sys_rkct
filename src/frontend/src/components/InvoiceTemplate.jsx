@@ -85,7 +85,7 @@ export default function InvoiceTemplate({ invoice, subtotalAmount, totalAmount, 
               {companyConfig?.company_address || 'Plot No. 125, Khata No.19, Rakuwa No. 05, Mouza-Gopinathdih, Dist.: Dhanbad, Jharkhand, PIN : 828129'}
             </p>
             <p style={{ fontSize: "14px", fontWeight: "600" }}>
-              Mobile No: {companyConfig?.mobile_no || '+919288020166'}
+              Mobile No: {companyConfig?.mobile_no || '+91 6204583192'}
             </p>
             <p style={{ fontSize: "14px", fontWeight: "600" }}>
               Email Id: {companyConfig?.email || 'rkcastingmoonidih@gmail.com'}
