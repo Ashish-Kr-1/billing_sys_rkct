@@ -224,6 +224,14 @@ function TableHeader() {
 }
 
 export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, sgst, cgst, igst, showTax, companyConfig, logoUrl }) {
+  const itemCount = quotation?.items?.length || 0;
+  const termsText = quotation?.Terms || "";
+  const estimatedTermsLines = Math.max(1, Math.ceil(termsText.length / 110));
+
+  // Keep full footer together for smaller documents so page 1 stays fully utilized.
+  // For larger content, allow terms/signature to flow to next page naturally.
+  const keepFullFooterTogether = itemCount <= 10 && estimatedTermsLines <= 14;
+
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
@@ -299,9 +307,9 @@ export default function QuotationPDF({ quotation, subtotalAmount, totalAmount, s
           ))}
         </View>
 
-        {/* FOOTER — never splits, always kept together on same page */}
-        <View wrap={false}>
-          <View style={styles.footerContainer}>
+        {/* FOOTER — keep everything on page 1 when it can fit */}
+        <View wrap={keepFullFooterTogether ? false : true}>
+          <View style={styles.footerContainer} wrap={false}>
             <View style={styles.bankDetails}>
               <Text style={styles.bankTitle}>Bank Details :-</Text>
               <Text style={styles.bankText}>{quotation.AccountName}</Text>
